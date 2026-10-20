@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-public class Interfaz implements Chequeable, EntidadDeclarada {
+public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTipo {
     private Token nombre;
     // Parámetro de tipo propio de esta interfaz (ej. el T de
     // "interface Comparador<T>"): 0 o 1 elemento (REQ-AS-010).
@@ -114,14 +114,14 @@ public class Interfaz implements Chequeable, EntidadDeclarada {
     }
 
     @Override
-    public void estaBienDeclarado(TablaSimbolos tabla, Set<String> entornoGenericoExterno) {
+    public void estaBienDeclarado(TablaSimbolos tabla, Map<String, OrigenParametroTipo> entornoGenericoExterno) {
         // metodos ya se puebla (metodoInterfaz() construye el Metodo
         // completo, sin placeholder/parcheo porque <MetodoInterfaz> no tiene
         // cuerpo que parsear después). Cada Metodo valida sus propios
         // parámetros (ERR_PARAMETRO_DUPLICADO) igual que en Clase.
-        Set<String> entornoInterfaz = new HashSet<>();
+        Map<String, OrigenParametroTipo> entornoInterfaz = new HashMap<>();
         for (Token parametroTipo : parametrosTipo) {
-            entornoInterfaz.add(parametroTipo.getLexema());
+            entornoInterfaz.put(parametroTipo.getLexema(), this);
         }
         for (Metodo metodo : metodos.values()) {
             metodo.estaBienDeclarado(tabla, entornoInterfaz);

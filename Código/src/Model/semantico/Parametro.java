@@ -2,7 +2,7 @@ package Model.semantico;
 
 import Model.lexico.Token;
 
-import java.util.Set;
+import java.util.Map;
 
 public class Parametro implements Chequeable{
     private Token nombre;
@@ -22,7 +22,7 @@ public class Parametro implements Chequeable{
     }
 
     @Override
-    public void estaBienDeclarado(TablaSimbolos tabla, Set<String> entornoGenerico){
+    public void estaBienDeclarado(TablaSimbolos tabla, Map<String, OrigenParametroTipo> entornoGenerico){
         tipo.estaBienDeclarado(tabla, entornoGenerico);
     }
 }

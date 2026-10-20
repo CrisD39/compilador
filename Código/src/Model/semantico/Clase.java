@@ -4,7 +4,7 @@ import Model.lexico.Token;
 
 import java.util.*;
 
-public class Clase implements Chequeable, EntidadDeclarada {
+public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo {
     private Token nombre;
     private Token herencia;
     private HashMap<String, Atributo> atributos;
@@ -171,11 +171,11 @@ public class Clase implements Chequeable, EntidadDeclarada {
     // anidadas en este lenguaje -- pero se mantiene por la firma uniforme de
     // Chequeable.
     @Override
-    public void estaBienDeclarado(TablaSimbolos tabla, Set<String> entornoGenericoExterno)
+    public void estaBienDeclarado(TablaSimbolos tabla, Map<String, OrigenParametroTipo> entornoGenericoExterno)
     {
-        Set<String> entornoClase = new HashSet<>();
+        Map<String, OrigenParametroTipo> entornoClase = new HashMap<>();
         for (Token parametroTipo : parametrosTipo) {
-            entornoClase.add(parametroTipo.getLexema());
+            entornoClase.put(parametroTipo.getLexema(), this);
         }
         for(Metodo metodo: metodos.values())
         {
