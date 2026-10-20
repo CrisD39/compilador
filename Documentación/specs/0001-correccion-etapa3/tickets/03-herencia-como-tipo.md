@@ -1,6 +1,6 @@
 ---
 titulo: Herencia como Tipo, con argumentos validados
-estado: ready-for-agent
+estado: hecho
 spec: ../../0001-correccion-etapa3.md
 ---
 
@@ -15,12 +15,12 @@ supertipo inexistente se reporta una sola vez, como tipo no declarado.
 
 **Historias:** 20, 21, 22, 23, 24.
 
-- [ ] La herencia de una clase, su interfaz implementada y las interfaces
+- [x] La herencia de una clase, su interfaz implementada y las interfaces
       extendidas se guardan como `Tipo` (cabeza más argumento opcional).
-- [ ] Pasan `semError68` (`extends Caja<Nada>`), `semError69`
+- [x] Pasan `semError68` (`extends Caja<Nada>`), `semError69`
       (`extends Bb<Bb>`), `semError75` (`extends Caja<T>` con `T` fuera de
       alcance) y `semError84` (`implements Nada`).
-- [ ] `semCorrecto33` (herencia sin argumento) sigue en verde.
-- [ ] La consolidación saltea sin reportar las relaciones que no
+- [x] `semCorrecto33` (herencia sin argumento) sigue en verde.
+- [x] La consolidación saltea sin reportar las relaciones que no
       resuelven. Se retira `ERR_INTERFAZ_NO_DECLARADA`.
-- [ ] Ningún caso que pasaba deja de pasar.
+- [x] Ningún caso que pasaba deja de pasar.
