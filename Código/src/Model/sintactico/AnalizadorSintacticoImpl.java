@@ -668,17 +668,17 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
             bloque();
         } else if (actualEn(PRIMEROS_TIPO_PRIMITIVO)) {
             Token tipoTok = tipoPrimitivo();
-            dimensionesOpcionales();
+            int dimensiones = dimensionesOpcionales();
             Token nombreMiembro = tokenActual;
             match(TokenType.ID_MET_VAR);
-            restoMiembro(nombreMiembro, new Tipo(tipoTok), esFinal);
+            restoMiembro(nombreMiembro, new Tipo(tipoTok, null, dimensiones), esFinal);
         } else if (actualEs(TokenType.ID_GEN)) {
             Token tipoTok = tokenActual;
             match(TokenType.ID_GEN);
-            dimensionesOpcionales();
+            int dimensiones = dimensionesOpcionales();
             Token nombreMiembro = tokenActual;
             match(TokenType.ID_MET_VAR);
-            restoMiembro(nombreMiembro, new Tipo(tipoTok), esFinal);
+            restoMiembro(nombreMiembro, new Tipo(tipoTok, null, dimensiones), esFinal);
         } else if (actualEs(TokenType.ID_CLASE)) {
             Token idClaseTok = tokenActual;
             match(TokenType.ID_CLASE);
@@ -724,8 +724,8 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
             Constructor constructor = new Constructor(idClassToken, params);
             tablaSimbolo.getClaseActual().agregarConstructor(constructor);
         } else {
-            Tipo tipo = new Tipo(idClassToken, tipoGenericoOpcional());
-            dimensionesOpcionales();
+            Tipo argumento = tipoGenericoOpcional();
+            Tipo tipo = new Tipo(idClassToken, argumento, dimensionesOpcionales());
             Token nombreMiembro = tokenActual;
             match(TokenType.ID_MET_VAR);
             restoMiembro(nombreMiembro, tipo, esFinal);
@@ -807,12 +807,12 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     }
 
     // <Tipo> ::= <TipoBase> <DimensionesOpcionales>
-    // DimensionesOpcionales se consume pero no se guarda todavía (ver
-    // "Jerarquía Tipo" en analizador-semantico.md).
+    // tipoBase() devuelve null tras un error sintáctico; las dimensiones se
+    // consumen igual, para no cambiar la recuperación.
     private Tipo tipo() {
         Tipo t = tipoBase();
-        dimensionesOpcionales();
-        return t;
+        int dimensiones = dimensionesOpcionales();
+        return t == null ? null : t.conDimensiones(dimensiones);
     }
 
     // <TipoBase> ::= <TipoPrimitivo> | <TipoReferencia> | idGen
@@ -832,13 +832,15 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     }
 
     // <DimensionesOpcionales> ::= [ ] <DimensionesOpcionales> | ϵ
-    private void dimensionesOpcionales() {
+    // Devuelve cuántos "[]" consumió, para que Tipo distinga int[] de int.
+    private int dimensionesOpcionales() {
         if (actualEs(TokenType.CORCHETE_A)) {
             match(TokenType.CORCHETE_A);
             match(TokenType.CORCHETE_C);
-            dimensionesOpcionales();
+            return 1 + dimensionesOpcionales();
         } else {
-            // ϵ — no hace nada
+            // ϵ
+            return 0;
         }
     }
 

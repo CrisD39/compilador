@@ -116,7 +116,7 @@ public class TablaSimbolos {
         // entorno de la hija, donde no existen.
         for (EntidadDeclarada entidad : clases.values()) {
             if (entidad instanceof Chequeable) {
-                ((Chequeable) entidad).estaBienDeclarado(this, Collections.emptySet());
+                ((Chequeable) entidad).estaBienDeclarado(this, Collections.emptyMap());
             }
         }
         // 2) Resolver herencia/ciclos e interfaces -- recorre en orden de

@@ -4,6 +4,7 @@ import Model.lexico.Token;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -32,7 +33,7 @@ public class Constructor implements Chequeable{
     }
 
     @Override
-    public void estaBienDeclarado(TablaSimbolos tabla, Set<String> entornoGenerico) {
+    public void estaBienDeclarado(TablaSimbolos tabla, Map<String, OrigenParametroTipo> entornoGenerico) {
         Set<String> nombresVisibles = new HashSet<>();
         for (Parametro parametro : parametros) {
             if (!nombresVisibles.add(parametro.getNombre().getLexema())) {

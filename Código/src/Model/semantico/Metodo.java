@@ -4,12 +4,14 @@ import Model.lexico.Token;
 import Model.lexico.TokenType;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class Metodo implements Chequeable {
+public class Metodo implements Chequeable, OrigenParametroTipo {
     private Token nombre;
     private Tipo tipoRetorno; // null representa "void" ?? not sure
     private boolean estatico;
@@ -125,14 +127,16 @@ public class Metodo implements Chequeable {
     }
 
     @Override
-    public void estaBienDeclarado(TablaSimbolos tabla, Set<String> entornoContenedor) {
+    public void estaBienDeclarado(TablaSimbolos tabla, Map<String, OrigenParametroTipo> entornoContenedor) {
         // Entorno vigente para la firma de ESTE método: el de la clase/
         // interfaz contenedora más los propios -- shadowing permitido (si el
         // método reutiliza un nombre ya vigente, no es error, ver decisión
-        // de diseño en analizador-semantico.md).
-        Set<String> entornoVigente = new HashSet<>(entornoContenedor);
+        // de diseño en analizador-semantico.md). El put pisa al contenedor:
+        // en "class C<T> { <T> T m(T x) }" el T de m tiene origen m, como en
+        // Java.
+        Map<String, OrigenParametroTipo> entornoVigente = new HashMap<>(entornoContenedor);
         for (Token parametroTipo : parametrosTipoPropios) {
-            entornoVigente.add(parametroTipo.getLexema());
+            entornoVigente.put(parametroTipo.getLexema(), this);
         }
         if (tipoRetorno != null) {
             tipoRetorno.estaBienDeclarado(tabla, entornoVigente);
