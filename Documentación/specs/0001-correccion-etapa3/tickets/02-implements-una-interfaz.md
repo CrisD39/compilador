@@ -1,6 +1,6 @@
 ---
 titulo: implements de una sola interfaz
-estado: ready-for-agent
+estado: hecho
 spec: ../../0001-correccion-etapa3.md
 ---
 
@@ -16,13 +16,13 @@ porque la clase implementaba las dos directamente).
 
 **Historias:** 25, 26, 27, 70.
 
-- [ ] `sintError52` (`implements Uno, Dos`) da `[Error:,|5]`.
-- [ ] Una clase guarda una sola interfaz implementada. El control de
+- [x] `sintError52` (`implements Uno, Dos`) da `[Error:,|5]`.
+- [x] Una clase guarda una sola interfaz implementada. El control de
       interfaz repetida en el `implements` de una clase se retira; en el
       `extends` de una interfaz se mantiene (`semError33`, `semError34`).
-- [ ] Una interfaz que extiende varias compara entre sí los métodos que
+- [x] Una interfaz que extiende varias compara entre sí los métodos que
       hereda, con la comparación actual (misma clave, distinto retorno):
       pasan `semError36` y `semError44`.
-- [ ] Siguen en verde los casos reescritos: `sintCorrecto31`,
+- [x] Siguen en verde los casos reescritos: `sintCorrecto31`,
       `semCorrecto10`, `13`, `15`, `21`, `semError30`, `33`.
-- [ ] Ningún caso que pasaba deja de pasar.
+- [x] Ningún caso que pasaba deja de pasar.
