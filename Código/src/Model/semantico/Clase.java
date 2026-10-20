@@ -32,6 +32,27 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
     // MENOS UN supertipo directo sealed, da igual si es por extends o por
     // implements).
     private boolean tieneSupertipoSellado = false;
+    // Object, String o System (ADR 0004): las registra la tabla al
+    // construirse, no pasan por el control de declaraciones y no se
+    // descartan si el programa las redeclara (TablaSimbolos.insertarClase()).
+    private boolean predefinida = false;
+
+    public void setPredefinida(boolean predefinida) {
+        this.predefinida = predefinida;
+    }
+
+    public boolean isPredefinida() {
+        return predefinida;
+    }
+
+    // Padre resuelto en la consolidación: el de 'extends' o, si no hay,
+    // Object (ver consolidarHerencia()). null para Object, y para una clase
+    // cuya herencia no se pudo resolver (padre inexistente o ciclo).
+    private Clase padreEfectivo;
+
+    public Clase getPadreEfectivo() {
+        return padreEfectivo;
+    }
 
     public void setSealed(boolean sealed) {
         this.sealed = sealed;
@@ -327,6 +348,7 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
             return;
         }
         camino.add(this);
+        Clase padre = null;
         if (herencia != null) {
             EntidadDeclarada padreEntidad = tablaSimbolos.buscarClase(herencia.getLexema());
             if (padreEntidad == null) {
@@ -335,7 +357,18 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
                 camino.remove(this);
                 return;
             }
-            Clase padre = (Clase) padreEntidad;
+            padre = (Clase) padreEntidad;
+        } else if (this != tablaSimbolos.getObject()) {
+            // Object implícito (Parte I §4): sin 'extends', el padre efectivo
+            // es Object -- también si la clase implementa una interfaz. Se
+            // resuelve sólo acá: 'herencia' sigue en null, porque sealed/
+            // permits (esSubclaseDirecta) tiene que distinguir 'class A' de
+            // 'class A extends Object'. Object no es final ni sealed y no
+            // puede cerrar un ciclo, así que los chequeos de abajo no le
+            // agregan errores; sólo copian toString/debugPrint.
+            padre = tablaSimbolos.getObject();
+        }
+        if (padre != null) {
             if (camino.contains(padre)) {
                 tablaSimbolos.agregarError(new ErrorSemantico(
                         "ERR_HERENCIA_CICLICA", nombre.getLinea(), nombre.getLexema()));
@@ -375,6 +408,7 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
                             "ERR_HERENCIA_PERMITIDA_SIN_MODIFICADOR", nombre.getLinea(), nombre.getLexema()));
                 }
             }
+            padreEfectivo = padre;
             consolidarConPadre(padre);
         }
         consolidado = true;
