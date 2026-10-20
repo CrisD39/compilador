@@ -1,12 +1,15 @@
-///[Error:{|6]
-// Lista de 'implements' con coma final sin otra interfaz despues --
-// <ListaInterfacesResto> exige otro <TipoReferencia> tras la coma, no se
-// puede quedar colgada. Reemplaza el viejo contenido de este archivo:
-// "implements A, B" (sin coma colgante) ya es valido ahora (Logro 2).
-class Malo implements Uno, {
+///[Error:,|5]
+// ADR 0005: una clase implementa como maximo una interfaz. <HerenciaOpcional>
+// acepta un unico <TipoReferencia> tras 'implements', asi que la coma que
+// abre una segunda interfaz es inesperada (se esperaba '{').
+class Malo implements Uno, Dos {
 
 }
 
 interface Uno{
+
+}
+
+interface Dos{
 
 }

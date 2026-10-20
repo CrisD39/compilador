@@ -1,4 +1,4 @@
-///[ErrorSem:ERR_METODO_REDEFINE_FINAL|13]
+///[Error:m|13]
 // Superclase declara un metodo generico FINAL; la subclase intenta
 // redefinirlo renombrando su propio parametro de tipo (T -> U). Antes del
 // fix de canonicalizacion, "m(T)" y "m(U)" no coincidian como firma y este

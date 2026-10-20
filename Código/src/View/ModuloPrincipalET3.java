@@ -23,7 +23,7 @@ public final class ModuloPrincipalET3 implements ResultadoLexicoListener {
 
     public static void main(String[] args) {
         if (args.length != 1) {
-            System.out.println("Uso: java View.ModuloPrincipalET3 <archivo-fuente>");
+            System.out.println("Uso: java -jar compilador.jar <archivo-fuente>");
             return;
         }
         new ModuloPrincipalET3().ejecutar(args[0]);
@@ -62,13 +62,13 @@ public final class ModuloPrincipalET3 implements ResultadoLexicoListener {
         System.out.println("[Error:" + error.getLexema() + "|" + error.getLinea() + "]");
     }
 
-    // Formato análogo, pero con la etiqueta [ErrorSem:<codigo>|<linea>] que
-    // fija propuesta_casos_test_semantico.md (código por categoría, no
-    // substring de mensaje libre).
+    // Mismo formato que exigen las pautas para todo error: una línea legible y
+    // la etiqueta [Error:<lexema>|<linea>]. El código ERR_* es interno (sólo
+    // elige la descripción), no se imprime en la etiqueta.
     private void reportarErrorSemantico(ErrorSemantico error) {
         System.out.println("Error Semántico en línea " + error.getLinea()
-                + ": " + error.getCodigo() + " (\"" + error.getLexema() + "\").");
-        System.out.println("[ErrorSem:" + error.getCodigo() + "|" + error.getLinea() + "]");
+                + ": " + error.getDescripcion() + ".");
+        System.out.println("[Error:" + error.getLexema() + "|" + error.getLinea() + "]");
     }
 
     // En modo pull el sintáctico consume los tokens uno a uno; no se listan.

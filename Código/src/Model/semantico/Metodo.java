@@ -16,7 +16,7 @@ public class Metodo implements Chequeable {
     private boolean esFinal;
     private List<Parametro> parametros;
     // Variables locales del cuerpo (ver "Chequeo de sentencias" en
-    // analizador_semantico.md): se reutiliza Atributo (nombre+tipo) en vez de
+    // analizador-semantico.md): se reutiliza Atributo (nombre+tipo) en vez de
     // una clase nueva, mismo criterio que para Constructor con Metodo. Todavía
     // no se puebla — bloque() sigue siendo puramente sintáctico (Pasada 2).
     private List<Atributo> variablesLocales = new ArrayList<>();
@@ -39,7 +39,7 @@ public class Metodo implements Chequeable {
     }
 
     // Parchea el placeholder creado por crearMetodo() (Estrategia A de
-    // transición, ver "Estrategia de construcción" en analizador_semantico.md)
+    // transición, ver "Estrategia de construcción" en analizador-semantico.md)
     // con los valores reales una vez que Pasada 2 los termina de resolver.
     public void setTipoRetorno(Tipo tipoRetorno) {
         this.tipoRetorno = tipoRetorno;
@@ -129,7 +129,7 @@ public class Metodo implements Chequeable {
         // Entorno vigente para la firma de ESTE método: el de la clase/
         // interfaz contenedora más los propios -- shadowing permitido (si el
         // método reutiliza un nombre ya vigente, no es error, ver decisión
-        // de diseño en analizador_semantico.md).
+        // de diseño en analizador-semantico.md).
         Set<String> entornoVigente = new HashSet<>(entornoContenedor);
         for (Token parametroTipo : parametrosTipoPropios) {
             entornoVigente.add(parametroTipo.getLexema());
@@ -139,7 +139,7 @@ public class Metodo implements Chequeable {
         }
         // El chequeo de variables locales (variablesLocales) es chequeo de
         // SENTENCIAS, fuera de alcance de esta etapa -- ver
-        // analizador_semantico.md. Acá solo se valida que los parámetros no
+        // analizador-semantico.md. Acá solo se valida que los parámetros no
         // se repitan entre sí.
         Set<String> nombresVisibles = new HashSet<>();
         for (Parametro parametro : parametros) {

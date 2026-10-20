@@ -1,10 +1,12 @@
 package Model.semantico;
 
-// Error semántico de "chequeo de declaraciones": se identifica con un código
-// fijo por regla violada (ver "Decisión tomada" en
-// propuesta_casos_test_semantico.md), no con un mensaje libre -- así no
-// depende de la redacción exacta y permite comparar contra un conjunto de
-// constantes compartido con los tests (///[ErrorSem:<codigo>|<línea>]).
+// Error semántico de "chequeo de declaraciones". Internamente se clasifica con
+// un código fijo por regla violada (ERR_*, ver casos-de-prueba.md), que sirve
+// para documentar los casos y elegir la descripción legible; hacia afuera se
+// reporta con el formato de la cátedra, igual que léxico y sintáctico:
+//   Error Semántico en línea <L>: <descripción>
+//   [Error:<lexema>|<L>]
+// donde lexema y línea salen del MISMO token (la entidad que dispara el error).
 public final class ErrorSemantico {
 
     private final String codigo;
@@ -25,8 +27,38 @@ public final class ErrorSemantico {
         return linea;
     }
 
-    // Lexema de la entidad que dispara el error (para el mensaje legible).
+    // Lexema de la entidad que dispara el error (va en la etiqueta [Error:...]).
     public String getLexema() {
         return lexema;
+    }
+
+    // Texto legible del error, análogo a ErrorLexico.getRazon(). Un código sin
+    // descripción cae en el código mismo, así un ERR_* nuevo nunca se reporta
+    // vacío aunque se olvide agregarlo acá.
+    public String getDescripcion() {
+        String x = "\"" + lexema + "\"";
+        return switch (codigo) {
+            case "ERR_CLASE_DUPLICADA" -> "ya existe una clase o interfaz llamada " + x;
+            case "ERR_INTERFAZ_DUPLICADA" -> "la interfaz " + x + " está repetida en la lista de supertipos";
+            case "ERR_ATRIBUTO_DUPLICADO" -> "el atributo " + x + " ya está declarado o heredado";
+            case "ERR_METODO_DUPLICADO" -> "el método " + x + " ya está declarado con la misma firma";
+            case "ERR_CONSTRUCTOR_DUPLICADO" -> "ya existe un constructor de " + x + " con los mismos parámetros";
+            case "ERR_PARAMETRO_DUPLICADO" -> "el parámetro " + x + " está repetido";
+            case "ERR_TIPO_NO_DECLARADO" -> "el tipo " + x + " no está declarado";
+            case "ERR_TIPO_GENERICO_NO_DECLARADO" -> "el parámetro de tipo " + x + " no está declarado en este alcance";
+            case "ERR_TIPO_NO_GENERICO" -> "el tipo " + x + " no es genérico y no admite argumentos de tipo";
+            case "ERR_INTERFAZ_NO_DECLARADA" -> "la interfaz " + x + " no está declarada";
+            case "ERR_HERENCIA_CICLICA" -> x + " forma parte de un ciclo de herencia";
+            case "ERR_HERENCIA_CLASE_FINAL" -> x + " no puede extender una clase final";
+            case "ERR_HERENCIA_NO_PERMITIDA" -> x + " no figura en el permits de su supertipo sealed";
+            case "ERR_HERENCIA_PERMITIDA_SIN_MODIFICADOR" ->
+                    x + " extiende un tipo sealed y debe declararse final, sealed o non-sealed";
+            case "ERR_NONSEALED_SIN_PADRE_SEALED" -> x + " es non-sealed pero no tiene un supertipo sealed";
+            case "ERR_PERMITS_NO_ES_SUBTIPO" -> x + " figura en el permits pero no es subtipo directo";
+            case "ERR_METODO_REDEFINE_FINAL" -> "el método " + x + " redefine un método final heredado";
+            case "ERR_METODO_INTERFAZ_NOIMPLEMENTADO" -> "el método " + x + " de la interfaz no está implementado";
+            case "ERR_METODO_RETORNO_INCOMPATIBLE" -> "el método " + x + " se hereda con tipos de retorno incompatibles";
+            default -> codigo + " (" + x + ")";
+        };
     }
 }

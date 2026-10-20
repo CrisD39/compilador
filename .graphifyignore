@@ -1,0 +1,5 @@
+# Configuración de herramientas: no es parte del compilador
+.claude/
+.agents/
+skills-lock.json
+.idea/

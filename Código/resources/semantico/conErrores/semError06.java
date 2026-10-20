@@ -1,4 +1,4 @@
-///[ErrorSem:ERR_HERENCIA_CICLICA|7]
+///[Error:I2|7]
 // Mismo ciclo que semError02, pero entre INTERFACES (<ExtensionOpcional>)
 // en vez de entre clases (<HerenciaOpcional>). El chequeo de ciclo tiene
 // que recorrer tambien la cadena "extends" de Interfaz, no solo la de

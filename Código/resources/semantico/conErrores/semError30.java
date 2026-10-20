@@ -1,8 +1,9 @@
-///[ErrorSem:ERR_HERENCIA_NO_PERMITIDA|13]
-// Pato implementa dos interfaces sealed: Volador (que SI lo permite) y
-// Nadador (que permite a Ganso, no a Pato) -- cada entrada de la lista de
-// 'implements' se chequea de forma independiente contra su propio permits.
-sealed interface Volador permits Pato {
+///[Error:Ave|14]
+// Ave extiende dos interfaces sealed: Volador (que SI la permite) y Nadador
+// (que permite a Ganso, no a Ave) -- cada entrada de la lista de 'extends'
+// se chequea de forma independiente contra su propio permits. A diferencia
+// de semError31, las dos entradas son sealed.
+sealed interface Volador permits Ave {
     void volar();
 }
 
@@ -10,9 +11,17 @@ sealed interface Nadador permits Ganso {
     void nadar();
 }
 
-final class Pato implements Volador, Nadador {
+nonsealed interface Ave extends Volador, Nadador {
+}
+
+final class Pato implements Ave {
     void volar(){
     }
+    void nadar(){
+    }
+}
+
+final class Ganso implements Nadador {
     void nadar(){
     }
 }

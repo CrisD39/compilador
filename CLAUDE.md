@@ -1,0 +1,59 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+MiniJava compiler for the Compiladores e Intérpretes course (UNS), built in stages: Etapa 1 lexer, Etapa 2 LL(1) recursive-descent parser with panic mode, Etapa 3 semantic analysis (declaration checking via a symbol table; statement checking is still pending). Plain Java (no Maven/Gradle), JDK 21. Code, comments, identifiers and docs are in Spanish; keep it that way.
+
+## Commands
+
+All commands run from `Código/` — testers resolve case folders with relative paths like `resources/semantico/conErrores/`, so they fail from anywhere else.
+
+```bash
+./build.sh                                     # compiles src/Model, src/Controller, src/View into out/classes and builds out/compilador.jar (main: View.ModuloPrincipalET3)
+java -jar out/compilador.jar <archivo-fuente>  # run lexer + parser + semantic checks on one file
+
+# Tests (JUnit 4 in lib/); build.sh must run first, since tests compile against out/classes
+CP="out/classes:lib/junit-4.13.2.jar:lib/hamcrest-core-1.3.jar"
+javac -cp "$CP" -d out/test-classes $(find src/test -name "*.java")
+java -cp "$CP:out/test-classes" org.junit.runner.JUnitCore test.java.TesterSemanticoDeCasosConErrores
+```
+
+Test classes (package `test.java`): `TesterDeCasos{Sin,Con}Errores` (lexer), `TesterSintacticoDeCasos{Sin,Con}Errores` and `TesterSintacticoModoPanico` (parser), `TesterSemanticoDeCasos{Sin,Con}Errores` (semantic, declarations), `Tester{Sin,Con}ErroresSem2` (semantic, statements: Sem2). To check a single case, run the jar directly on its file and compare against the file's first line.
+
+## Architecture
+
+Layered MVC under `Código/src/`:
+
+- **View**: one entry point per stage, all kept working because the testers for each stage call them: `ModuloPrincipal` (lexer only, prints tokens), `ModuloPrincipalET2` (lexer + parser), `ModuloPrincipalET3` (full pipeline; the jar's main). View only handles presentation and output format.
+- **Controller**: `Analizador*HandlerImpl` wires the pipeline for each stage. The ET3 wiring is in `AnalizadorSemanticoHandlerImpl`: `SourceManagerMejorado` → `AnalizadorLexicoImpl` → `AnalizadorSintacticoImpl(lexico, tablaSimbolos)` → `sintactico.start()` → `tablaSimbolos.consolidar()`. `consolidar()` runs even when there were syntax errors.
+- **Model/lexico**: hand-written automaton (one method per state) in `AnalizadorLexicoImpl`. The parser pulls tokens from it one at a time. Lexical errors are pushed to a `ResultadoLexicoListener` (the View), and analysis continues after them.
+- **Model/sintactico**: `AnalizadorSintacticoImpl` is a recursive-descent LL(1) parser. Each method has the grammar production it implements in a comment above it. It recovers in panic mode (`sincronizar()`) and collects `ErrorSintactico`s instead of throwing. It also runs the semantic actions that build the symbol table while it parses (Pasada 1: register names; Pasada 2: inheritance, attributes, methods), calling the `TablaSimbolos` setters (`setClaseActual`, `setMetodoActual`, `agregarMetodoActualAClaseActual`, …).
+- **Model/semantico**: `TablaSimbolos` is a single instance passed by reference (deliberately not a Singleton; see the docs). It stores `Clase`/`Interfaz` in one shared namespace (`LinkedHashMap`, so error order is deterministic) and collects all `ErrorSemantico`s. `consolidar()` runs in two steps, and the order matters: (1) `Chequeable.estaBienDeclarado(tabla, entornoGenerico)` on each entity as the user wrote it, delegating down to members and passing along the in-scope generic type params; (2) `Clase/Interfaz.consolidar()` resolves inheritance and cycles and copies parent members. Running (1) after (2) would report errors twice in subclasses. `Tipo` is a hierarchy that separates primitive types from reference types.
+
+## Output format and test cases
+
+Testers capture stdout and match tags, so the output format is a contract:
+- Success: `[SinErrores]`
+- Lexical/syntax error: a readable line, then `[Error:<lexema>|<línea>]`
+- Semantic error: `Error Semántico en línea <L>: <descripción>`, then `[Error:<lexema>|<línea>]`. This is the same tag as lexical/syntax errors, as the course guidelines require. The lexeme is the name of the entity that triggers the error, and lexeme and line come from the same token. Internally each error has a fixed category code (`ERR_CLASE_DUPLICADA`, `ERR_HERENCIA_CICLICA`, …) that only picks the description (`ErrorSemantico.getDescripcion()`) and documents the cases. It is never printed in the tag (see `Documentación/etapa3-semantico/casos-de-prueba.md`).
+
+Case files live in `Código/resources/{sinErrores,conErrores}` (lexer), `resources/sintactico/{sinErrores,conErrores,panico}` and `resources/semantico/{sinErrores,conErrores,multiError}` and `resources/semantico2/{sinErrores,conErrores}` (Sem2). Parameterized testers pick up every file in their folder. In error cases, the **first line** must be `///<expected tag>` (e.g. `///[Error:A1|5]`), and the test checks that the tag appears in the output. To add a case, drop a file in the folder; no code changes are needed. Panic-mode and `multiError` cases have hand-written assertions or are not covered by a tester.
+
+## Sem2 (statement checking, in progress)
+
+`Tester{Sin,Con}ErroresSem2` and `resources/semantico2/` (`semIICorrectoNN`, `semIIErrorNN`) cover statement/expression checking (undeclared variable, incompatible assignment, non-assignable left side, wrong argument types, repeated local). Sem2 error tags use the same `[Error:<lexema>|<línea>]` format. They are not yet wired to a main module: `init` is typed `ModuloPrincipalET3` only so the file compiles, so the error cases fail until the statement checker exists. Change that type when the stage's main is created. The usage guide is `Documentación/testers/guia-testers-sem2.md`. `Documentación/etapa4-semantico2/casos-de-prueba.md` indexes every base case (rule § of the spec PDF it covers) and fixes the lexeme convention for Sem2 error tags.
+
+Per-achievement cases (one folder per logro of `Documentación/etapa4-semantico2/requerimientos.md`) live in `Código/resources/semantico2/logros/<logro>/{conErrores,sinErrores}/`. Currently a skeleton (1 correct + 1 error case each), no tester walks it yet, and the expected lexemes are provisional until the checker exists. `logros/` is a sibling of `sinErrores/conErrores` so the existing Sem2 testers don't pick it up.
+
+## Design docs
+
+`Documentación/` holds the reasoning behind the design. Read the relevant file before changing behaviour:
+- `etapa2-sintactico/analizador-sintactico.md`: the grammar, how it was turned into LL(1), and FIRST/FOLLOW sets.
+- `etapa3-semantico/analizador-semantico.md`: symbol table design, the two passes, the "Logros (Etapa 3)" requirements, and plans for statement checking (AST, `Entorno`).
+- `etapa1-lexico/informe-analizador-lexico.md`: tokens and the REQ-* requirements.
+- `testers/guia-testers-lexico.md`: how the testers work.
+- `enunciados/`: the course spec PDFs. `Documentación/README.md` is the index.
+
+## Project skills
+
+`.claude/skills/diseno-testing` (designing and adding test cases, running the testers) and `.claude/skills/implementacion` (rules for changing the lexer, parser or semantic analysis). Load the matching one before working on either task.

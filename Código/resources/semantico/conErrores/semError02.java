@@ -1,4 +1,4 @@
-///[ErrorSem:ERR_HERENCIA_CICLICA|7]
+///[Error:B1|7]
 // Ciclo indirecto de longitud 2. Convencion de reporte: caminando el grafo
 // de herencia en orden de declaracion (A primero, por eso arranca ahi), el
 // ciclo se cierra en la ULTIMA clase visitada antes de volver a encontrar

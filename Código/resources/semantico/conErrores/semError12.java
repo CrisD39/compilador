@@ -1,4 +1,4 @@
-///[ErrorSem:ERR_PARAMETRO_DUPLICADO|6]
+///[Error:x|6]
 // Dos parametros con el mismo nombre en la MISMA lista de argumentos
 // formales de un metodo.
 class Figura{

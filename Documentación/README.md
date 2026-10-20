@@ -1,0 +1,14 @@
+# Documentación
+
+Orden de lectura sugerido: `enunciados/` (qué pide la cátedra) → carpeta de la etapa que se esté trabajando → `testers/` para correr y ampliar pruebas.
+
+| Carpeta | Contenido |
+|---|---|
+| `enunciados/` | PDFs de la cátedra: pautas de las etapas, aspectos léxicos, reglas de sintaxis y semántica de MiniJava. |
+| `etapa1-lexico/` | `informe-analizador-lexico.md`: requisitos REQ-*, tokens, arquitectura, autómata y casos de prueba. |
+| `etapa2-sintactico/` | `analizador-sintactico.md` (gramática, paso a LL(1), FIRST/FOLLOW, modo pánico), `sintaxis-minijava.md` (gramática de la cátedra), `logros.md` (logros apuntados). |
+| `etapa3-semantico/` | `analizador-semantico.md` (tabla de símbolos, pasadas, logros, chequeo de sentencias), `casos-de-prueba.md` (propuesta de casos, formato `[Error:<lexema>|<línea>]` y categorías internas `ERR_*`), `diagramas/` (UML de la tabla de símbolos), `plan-correccion-etapa3.md` (pasos para dejar el chequeo de declaraciones conforme a la Parte I del enunciado). |
+| `testers/` | Guías de uso de los testers JUnit: `guia-testers-lexico.md` y `guia-testers-sem2.md`. |
+| `GLOSARIO.md` | Vocabulario del análisis semántico: tipos declarados, fases, miembros, herencia y genericidad. Ante dos palabras para lo mismo, usar la del glosario. |
+| `specs/` | Tracker local: una spec por archivo (`NNNN-<nombre>.md`, frontmatter `estado: ready-for-agent` / `hecho`) y, si se trocea, sus tickets en `NNNN-<nombre>/tickets/`. |
+| `adr/` | Decisiones de diseño difíciles de revertir o que se apartan del enunciado, una por archivo (`0001-…md`). |

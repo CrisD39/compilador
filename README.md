@@ -14,26 +14,22 @@ Desde `Código/`:
 ./build.sh
 ```
 
-Esto compila el proyecto y arma `Código/out/interpretador.jar`.
+Esto compila el proyecto y arma `Código/out/compilador.jar`.
 
 ### Ejecutar
 
 ```bash
-java -jar Código/out/interpretador.jar <archivo-fuente>
+java -jar Código/out/compilador.jar <archivo-fuente>
 ```
 
-`<archivo-fuente>` puede tener cualquier extensión. Por cada token reconocido se imprime una línea `(NombreToken,lexema,NroLinea)`; por cada error léxico se imprime el detalle con la línea fuente y un `^` apuntando al carácter que lo generó; al final, si no hubo errores, se imprime `[SinErrores]`.
+Corre la etapa 3 (léxico + sintáctico + semántico). `<archivo-fuente>` puede tener cualquier extensión. Si no hay errores se imprime `[SinErrores]`; si los hay, cada uno se imprime con una línea legible seguida de la etiqueta `[Error:<lexema>|<línea>]` (léxico/sintáctico) o `[ErrorSem:<código>|<línea>]` (semántico).
 
 Ejemplo:
 
 ```bash
-$ java -jar Código/out/interpretador.jar programa1.java
-(pr_class,class,1)
-(idClase,Persona,1)
-(llaveA,{,1)
-...
-(EOF,$,4)
-[SinErrores]
+$ java -jar Código/out/compilador.jar Código/resources/semantico/conErrores/semError15.java
+Error Semántico en línea 5: ERR_TIPO_NO_DECLARADO ("Foo").
+[ErrorSem:ERR_TIPO_NO_DECLARADO|5]
 ```
 
 ### Correr los tests
@@ -49,7 +45,7 @@ java -cp "out/classes:out/test-classes:lib/junit-4.13.2.jar:lib/hamcrest-core-1.
 Este README es solo una guía rápida de uso. **Todo el detalle técnico está en el informe**, en:
 
 ```
-Documentación/Informe Analizador Léxico.md
+Documentación/etapa1-lexico/informe-analizador-lexico.md
 ```
 
 Ahí se encuentra, entre otras cosas:
@@ -61,4 +57,4 @@ Ahí se encuentra, entre otras cosas:
 
 Documentos adicionales, también en `Documentación/`:
 
-- `Guia_de_uso_testers.md`: cómo están armados y cómo agregar casos nuevos a los testers de JUnit (`resources/sinErrores/`, `resources/conErrores/`).
+- `testers/guia-testers-lexico.md`: cómo están armados y cómo agregar casos nuevos a los testers de JUnit (`resources/sinErrores/`, `resources/conErrores/`).

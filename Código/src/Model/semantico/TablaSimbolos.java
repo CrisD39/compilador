@@ -68,13 +68,13 @@ public class TablaSimbolos {
     public EntidadDeclarada buscarClase(String nombre) {
         return clases.get(nombre);
     }
-    // Clase e Interfaz comparten namespace (ver insertarClase / analizador_
+    // Clase e Interfaz comparten namespace (ver insertarClase / analizador-
     // semantico.md), así que se resuelven contra el mismo mapa.
     public EntidadDeclarada buscarInterfaz(String nombre) {
         return clases.get(nombre);
     }
     // Parchean el placeholder dejado por crearMetodo() (Estrategia A de
-    // transición, ver "Estrategia de construcción" en analizador_semantico.md)
+    // transición, ver "Estrategia de construcción" en analizador-semantico.md)
     // delegando sobre metodoActual, igual criterio que
     // agregarMetodoActualAClaseActual delega sobre claseActual.
     public void setTipoRetornoAMetodoActual(Tipo tipoRetorno) {
@@ -104,10 +104,22 @@ public class TablaSimbolos {
     }
 
     // Chequeo de corrección (ver "TODO — Chequeo de corrección" en
-    // analizador_semantico.md): corre DESPUÉS de que Pasada 1+2 ya armaron
+    // analizador-semantico.md): corre DESPUÉS de que Pasada 1+2 ya armaron
     // toda la tabla, en dos pasos.
     public void consolidar() {
-        // 1) Resolver herencia/ciclos e interfaces -- recorre en orden de
+        // 1) Chequear cada declaración tal como la escribió el usuario
+        // (parámetros duplicados, tipos no declarados, etc.), delegando hacia
+        // abajo. Tiene que ir ANTES de consolidar la herencia: consolidarConPadre
+        // copia los miembros del padre dentro de la hija, y si este chequeo
+        // corriera después los re-validaría en la hija -- errores duplicados
+        // por cada subclase, y los genéricos del padre (T) evaluados contra el
+        // entorno de la hija, donde no existen.
+        for (EntidadDeclarada entidad : clases.values()) {
+            if (entidad instanceof Chequeable) {
+                ((Chequeable) entidad).estaBienDeclarado(this, Collections.emptySet());
+            }
+        }
+        // 2) Resolver herencia/ciclos e interfaces -- recorre en orden de
         // declaración (LinkedHashMap) para que, ante un ciclo, la clase/
         // interfaz reportada sea determinística.
         for (EntidadDeclarada entidad : clases.values()) {
@@ -115,14 +127,6 @@ public class TablaSimbolos {
                 ((Clase) entidad).consolidar();
             } else if (entidad instanceof Interfaz) {
                 ((Interfaz) entidad).consolidar();
-            }
-        }
-        // 2) Con la herencia ya resuelta, chequear el resto de cada
-        // declaración (parámetros duplicados, tipos no declarados, etc.),
-        // delegando hacia abajo.
-        for (EntidadDeclarada entidad : clases.values()) {
-            if (entidad instanceof Chequeable) {
-                ((Chequeable) entidad).estaBienDeclarado(this, Collections.emptySet());
             }
         }
     }

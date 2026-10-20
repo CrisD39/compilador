@@ -1,4 +1,4 @@
-///[ErrorSem:ERR_METODO_REDEFINE_FINAL|11]
+///[Error:valor|11]
 // Base declara un metodo final; Hija lo redefine con la misma firma --
 // eso es justo lo que 'final' prohibe (chequeo de firmas, no de cuerpo).
 class Base {

@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="TesterConErroresSem2" type="JUnit" factoryName="JUnit">
+    <module name="etapa1" />
+    <option name="PACKAGE_NAME" value="test.java" />
+    <option name="MAIN_CLASS_NAME" value="test.java.TesterConErroresSem2" />
+    <option name="TEST_OBJECT" value="class" />
+    <option name="WORKING_DIRECTORY" value="$MODULE_DIR$" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

@@ -1,4 +1,4 @@
-///[ErrorSem:ERR_NONSEALED_SIN_PADRE_SEALED|9]
+///[Error:Circulo|9]
 // Forma es una interfaz comun (no sealed); Circulo se declara nonsealed
 // al implementarla, pero no hay nada sealed que este reabriendo --
 // mismo chequeo que para 'extends', ahora considerando 'implements'.

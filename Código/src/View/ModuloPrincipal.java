@@ -15,7 +15,7 @@ public final class ModuloPrincipal implements ResultadoLexicoListener {
 
     public static void main(String[] args) {
         if (args.length != 1) {
-            System.out.println("Uso: java -jar interpretador.jar <archivo-fuente>");
+            System.out.println("Uso: java View.ModuloPrincipal <archivo-fuente>");
             return;
         }
         new ModuloPrincipal().ejecutar(args[0]);

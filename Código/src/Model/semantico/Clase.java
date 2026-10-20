@@ -238,7 +238,7 @@ public class Clase implements Chequeable, EntidadDeclarada {
             } else if (!(interfaceActual instanceof Interfaz)) {
                 // 'implements' apuntando a algo que no es interfaz: fuera de
                 // alcance por ahora (mismo criterio que el 'extends' de
-                // Interfaz), ver propuesta_casos_test_semantico.md 3.6.
+                // Interfaz), ver casos-de-prueba.md 3.6.
             } else {
                 Interfaz interfazResuelta = (Interfaz) interfaceActual;
                 interfazResuelta.consolidar();
@@ -344,7 +344,7 @@ public class Clase implements Chequeable, EntidadDeclarada {
             EntidadDeclarada padreEntidad = tablaSimbolos.buscarClase(herencia.getLexema());
             if (padreEntidad == null) {
                 tablaSimbolos.agregarError(new ErrorSemantico(
-                        "ERR_TIPO_NO_DECLARADO", nombre.getLinea(), herencia.getLexema()));
+                        "ERR_TIPO_NO_DECLARADO", herencia.getLinea(), herencia.getLexema()));
                 camino.remove(this);
                 return;
             }

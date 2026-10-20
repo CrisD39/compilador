@@ -155,13 +155,13 @@ public class Interfaz implements Chequeable, EntidadDeclarada {
             EntidadDeclarada padreEntidad = tablaSimbolos.buscarInterfaz(padreToken.getLexema());
             if (padreEntidad == null) {
                 tablaSimbolos.agregarError(new ErrorSemantico(
-                        "ERR_TIPO_NO_DECLARADO", nombre.getLinea(), padreToken.getLexema()));
+                        "ERR_TIPO_NO_DECLARADO", padreToken.getLinea(), padreToken.getLexema()));
                 continue;
             }
             if (!(padreEntidad instanceof Interfaz)) {
                 // 'extends' de interfaz apuntando a algo que no es interfaz:
                 // fuera de alcance por ahora (pregunta abierta, ver
-                // propuesta_casos_test_semantico.md 3.6).
+                // casos-de-prueba.md 3.6).
                 continue;
             }
             Interfaz padre = (Interfaz) padreEntidad;
@@ -178,7 +178,7 @@ public class Interfaz implements Chequeable, EntidadDeclarada {
                 continue;
             }
             // Mismo chequeo que Clase.consolidarHerencia, sin la rama 'final'
-            // (no existe 'final interface', ver analizador_semantico.md Logro
+            // (no existe 'final interface', ver analizador-semantico.md Logro
             // 1): sealed + permits de un solo nivel, y exhaustividad de dos
             // vías (sealed/nonsealed -- no hay tercera opción 'final' acá).
             if (padre.sealed) {

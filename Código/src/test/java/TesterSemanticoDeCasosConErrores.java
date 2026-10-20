@@ -16,10 +16,11 @@ import org.junit.runners.Parameterized.Parameters;
 
 // Gemelo semántico de TesterSintacticoDeCasosConErrores: misma mecanica,
 // pero sobre casos del chequeo semántico de declaraciones (ModuloPrincipalET3)
-// y su propia carpeta de recursos. Cada caso lleva en su primera linea el
-// codigo de error esperado con el formato ///<codigo> (acá, casi siempre
-// [ErrorSem:<CODIGO>|<linea>] -- ver propuesta_casos_test_semantico.md); el
-// test verifica que ese codigo aparezca en la salida.
+// y su propia carpeta de recursos. Cada caso lleva en su primera linea la
+// etiqueta esperada con el formato ///<etiqueta>, que es la misma de la
+// catedra para todo error: [Error:<lexema>|<linea>] (el codigo ERR_* de la
+// categoria va en los comentarios del caso, ver casos-de-prueba.md); el
+// test verifica que esa etiqueta aparezca en la salida.
 @RunWith(Parameterized.class)
 public class TesterSemanticoDeCasosConErrores {
 

@@ -3,8 +3,8 @@
 // de su propio componente conexo, sin que la deduplicacion de un ciclo
 // "tape" al otro (Logro 4, multi-deteccion de errores semanticos -- ver
 // seccion 5.4 de propuesta_casos_test_semantico.md). Harness esperado:
-// containsString("[ErrorSem:ERR_HERENCIA_CICLICA|10]") (cierra en B) y
-// containsString("[ErrorSem:ERR_HERENCIA_CICLICA|12]") (cierra en Y), los
+// containsString("[Error:B|10]") (cierra en B) y
+// containsString("[Error:Y|12]") (cierra en Y), los
 // dos en la misma corrida.
 class A extends B{}
 class B extends A{}

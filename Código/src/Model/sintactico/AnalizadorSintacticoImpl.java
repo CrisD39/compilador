@@ -428,7 +428,7 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     }
     // <Clase> ::= class idClase <GenericidadOpcional> <HerenciaOpcional> { <ListaMiembros> }
     // Pasada 1 del EDT (ver "Acciones semánticas sobre la gramática original"
-    // en analizador_semantico.md): apenas se reconoce el nombre, se crea la
+    // en analizador-semantico.md): apenas se reconoce el nombre, se crea la
     // Clase (vacía) y se registra en la tabla. Herencia/miembros quedan para
     // la Pasada 2 (fuera de alcance de este pase).
     private void clase() {
@@ -466,7 +466,7 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     }
 
     // Construye la Clase y la deja como "clase actual" de la tabla (Estrategia A,
-    // ver "Tabla de símbolos: por qué no usar Singleton" en analizador_semantico.md).
+    // ver "Tabla de símbolos: por qué no usar Singleton" en analizador-semantico.md).
     // La inserción en la tabla queda a cargo de clase(), que es quien decide cómo
     // reportar un nombre repetido.
     private Clase crearClase(Token nombre) {
@@ -741,11 +741,11 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     // nombreMiembro/tipo llegan por parámetro (heredado) desde
     // cuerpoMiembro()/trasIdClaseMiembro(): son el tipo y el idMetVar ya
     // consumidos antes de saber si es atributo o método — recién acá se
-    // construye el objeto (Estrategia B, ver analizador_semantico.md).
+    // construye el objeto (Estrategia B, ver analizador-semantico.md).
     private void restoMiembro(Token nombreMiembro, Tipo tipo, boolean esFinal) {
         if (actualEs(TokenType.PUNTO_COMA)) {
             // 'final' no aplica a atributos (solo clase/interfaz/método, ver
-            // Logro 1 en analizador_semantico.md) — error sintáctico en vez de
+            // Logro 1 en analizador-semantico.md) — error sintáctico en vez de
             // dejarlo pasar sin guardarlo (Atributo no tiene campo 'final').
             if (esFinal) {
                 error("un método (\"final\" no se puede aplicar a un atributo)");
@@ -808,7 +808,7 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
 
     // <Tipo> ::= <TipoBase> <DimensionesOpcionales>
     // DimensionesOpcionales se consume pero no se guarda todavía (ver
-    // "Jerarquía Tipo" en analizador_semantico.md).
+    // "Jerarquía Tipo" en analizador-semantico.md).
     private Tipo tipo() {
         Tipo t = tipoBase();
         dimensionesOpcionales();
@@ -942,7 +942,7 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     // <ListaArgsFormales> ::= <ArgFormal> <ListaArgsFormalesResto>
     // A <ListaArgsFormalesResto> se le eliminó la recursión a izquierda: el
     // acumulador se arrastra a derecha y se cierra en el caso base ϵ (ver "De
-    // la gramática original a la LL(1)" en analizador_semantico.md).
+    // la gramática original a la LL(1)" en analizador-semantico.md).
     private List<Parametro> listaArgsFormales() {
         Parametro primero = argFormal();
         List<Parametro> resto = listaArgsFormalesResto();

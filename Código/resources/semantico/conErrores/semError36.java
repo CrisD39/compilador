@@ -1,7 +1,7 @@
-///[ErrorSem:ERR_METODO_RETORNO_INCOMPATIBLE|10]
+///[Error:getValor|10]
 // Alfa exige "int getValor()" y Beta exige "char getValor()" -- misma
-// firma (nombre + parametros, sin tipo de retorno) pero retornos
-// incompatibles -- conflicto real de Java, distinto de la sobrecarga.
+// clave pero retornos incompatibles. AlfaBeta las hereda a las dos, asi que
+// es un conflicto real de Java. Se reporta sobre el getValor de Beta.
 interface Alfa {
     int getValor();
 }
@@ -10,5 +10,8 @@ interface Beta {
     char getValor();
 }
 
-class Gama implements Alfa, Beta {
+interface AlfaBeta extends Alfa, Beta {
+}
+
+class Gama implements AlfaBeta {
 }

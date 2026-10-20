@@ -11,7 +11,7 @@ import java.util.Set;
 // <InstanciadoOParametrico> en la gramática. Un único argumento por nivel
 // (REQ-AS-010). La jerarquía completa (TipoPrimitivo/TipoReferencia/
 // TipoGenerico/TipoArreglo, ver "Diseño: jerarquía Tipo" en
-// analizador_semantico.md) y las dimensiones de arreglo siguen pendientes.
+// analizador-semantico.md) y las dimensiones de arreglo siguen pendientes.
 public class Tipo implements Chequeable {
     private final Token token;
     private final Tipo argumento;
