@@ -5,6 +5,8 @@ import Model.lexico.TokenType;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 // Tipo usado en una declaración (atributo, parámetro o retorno). Recursivo:
 // el argumento genérico de "idClase<argumento>" es a su vez un Tipo (un idGen
@@ -67,6 +69,51 @@ public class Tipo implements Chequeable {
         Tipo copia = new Tipo(token, argumento, dimensiones);
         copia.origen = origen;
         return copia;
+    }
+
+    // Un parámetro de tipo ya resuelto, sin pasar por estaBienDeclarado: lo
+    // usa la comparación de signaturas para renombrar los parámetros de tipo
+    // de un método por los de otro (D6, Metodo.mismaSignatura()).
+    static Tipo parametroDeTipo(Token token, OrigenParametroTipo origen) {
+        Tipo parametro = new Tipo(token);
+        parametro.origen = origen;
+        return parametro;
+    }
+
+    // Vista de este tipo con algunos parámetros de tipo reemplazados: para
+    // cada idGen (a cualquier profundidad), 'reemplazo' devuelve el tipo que
+    // va en su lugar, o null para dejarlo como está. Las dimensiones del
+    // idGen se suman a las del reemplazo (T[] con T := int es int[]). No
+    // modifica este Tipo ni comparte estado mutable con él: devuelve una
+    // copia, o this si no cambió nada (§5.1: las vistas no modifican las
+    // declaraciones originales). Es la base de la comparación de signaturas:
+    // hoy la usa el emparejamiento por posición de D6; la instanciación
+    // genérica (ticket 10) sustituye con ella el parámetro de un ancestro
+    // por el argumento de la herencia.
+    public Tipo reemplazarParametros(Function<Tipo, Tipo> reemplazo) {
+        if (esParametroDeTipo()) {
+            Tipo nuevo = reemplazo.apply(this);
+            return nuevo == null ? this : nuevo.conDimensiones(nuevo.dimensiones + dimensiones);
+        }
+        if (argumento == null) {
+            return this;
+        }
+        Tipo nuevoArgumento = argumento.reemplazarParametros(reemplazo);
+        if (nuevoArgumento == argumento) {
+            return this;
+        }
+        Tipo copia = new Tipo(token, nuevoArgumento, dimensiones);
+        copia.origen = origen;
+        return copia;
+    }
+
+    // true si algún idGen de este tipo (a cualquier profundidad) cumple
+    // 'condicion'.
+    public boolean contieneParametro(Predicate<Tipo> condicion) {
+        if (esParametroDeTipo() && condicion.test(this)) {
+            return true;
+        }
+        return argumento != null && argumento.contieneParametro(condicion);
     }
 
     // Logro 5: cada nivel se valida contra la tabla (idClase) o contra el

@@ -217,21 +217,18 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
     private void consolidarConPadre(Clase padre) {
         for (Metodo metodoHeredado : padre.metodos.values())
         {
-            if (metodos.containsKey(metodoHeredado.getClave()))
+            Metodo propio = metodos.get(metodoHeredado.getClave());
+            if (propio != null)
             {
-                // Esta clase ya declaró un método con la misma clave: lo está
-                // redefiniendo. Si el heredado era 'final', eso es justo lo
-                // que 'final' prohíbe -- chequeo de claves, nada de cuerpo/
-                // sentencias (esa etapa sigue sin implementar y no hace falta
-                // para esto).
-                if (metodoHeredado.isFinal()) {
-                    Metodo propio = metodos.get(metodoHeredado.getClave());
-                    tablaSimbolos.agregarError(new ErrorSemantico(
-                            "ERR_METODO_REDEFINE_FINAL", propio.getNombre().getLinea(), propio.getNombre().getLexema()));
-                }
+                chequearRedefinicion(propio, metodoHeredado);
             }
             else
             {
+                // Se copian también los estáticos (§6.2): en Etapa 4,
+                // A.debugPrint(3) tiene que encontrarlo en A. Como 'padre' ya
+                // está consolidado, sus heredados ya vienen copiados y la
+                // regla alcanza a cualquier ancestro, no sólo al directo
+                // (semError82).
                 metodos.put(metodoHeredado.getClave(), metodoHeredado);
             }
         }
@@ -247,6 +244,39 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
             {
                 atributos.put(atributo.getClave(), atributo);
             }
+        }
+    }
+
+    // 'propio' (declarado en esta clase) tiene la clave de 'heredado' (de un
+    // ancestro). Reglas de la Parte I §6.2, en este orden, una sola por
+    // método (como javac, que reporta un único motivo por redefinición):
+    // - Estáticos (ERR_REDEFINE_ESTATICO): si el heredado es estático, nadie
+    //   abajo declara otro método con su clave, sea estático o de instancia
+    //   (void debugPrint(int x) es un error en cualquier clase, semError58,
+    //   81, 82); y un estático no puede tener la clave de un método de
+    //   instancia heredado (semError59).
+    // - Ambos de instancia: es una redefinición. Si el heredado es 'final',
+    //   ERR_METODO_REDEFINE_FINAL (semError22, 42) -- con eso ya no importa
+    //   la signatura. Si no, la signatura tiene que ser exactamente igual
+    //   (ERR_REDEFINICION_INCOMPATIBLE, semError57, 60, 78).
+    // Todo se reporta sobre el método de esta clase.
+    // TODO ticket 10: sin instanciación genérica todavía, la vista del
+    // heredado es la identidad, así que un heredado que nombra el parámetro
+    // de tipo de su clase (T get() de Base<T>) no se compara: sin sustituir
+    // T por el argumento de la herencia daría falsos errores (semCorrecto25,
+    // 26). El ticket 10 quita esta guarda y pasa la vista instanciada.
+    private void chequearRedefinicion(Metodo propio, Metodo heredado) {
+        String codigo = null;
+        if (heredado.isEstatico() || propio.isEstatico()) {
+            codigo = "ERR_REDEFINE_ESTATICO";
+        } else if (heredado.isFinal()) {
+            codigo = "ERR_METODO_REDEFINE_FINAL";
+        } else if (!heredado.usaParametrosDeTipoDelContenedor() && !propio.mismaSignatura(heredado)) {
+            codigo = "ERR_REDEFINICION_INCOMPATIBLE";
+        }
+        if (codigo != null) {
+            tablaSimbolos.agregarError(new ErrorSemantico(
+                    codigo, propio.getNombre().getLinea(), propio.getNombre().getLexema()));
         }
     }
 
