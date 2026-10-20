@@ -58,6 +58,20 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
         return padreEfectivo;
     }
 
+    // Instanciación genérica (spec 0001): para cada ancestro genérico, el
+    // argumento con que esta clase lo hereda, visto desde acá (con Base<T>,
+    // "class Dd extends Base<String>" deja Base -> String). Se compone en
+    // consolidarHerencia() a partir del del padre (Tipo.componerInstanciacion()),
+    // así cubre la cadena entera. Un ancestro heredado sin argumento no tiene
+    // entrada: su parámetro se conserva (D5). Sólo se usa para comparar
+    // signaturas; los miembros copiados del padre no se reescriben (§5.1).
+    // Vacío para Object, para una clase en un ciclo y antes de consolidar.
+    private Map<OrigenParametroTipo, Tipo> instanciacion = Collections.emptyMap();
+
+    public Map<OrigenParametroTipo, Tipo> getInstanciacion() {
+        return Collections.unmodifiableMap(instanciacion);
+    }
+
     public void setSealed(boolean sealed) {
         this.sealed = sealed;
     }
@@ -295,18 +309,17 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
     //   la signatura. Si no, la signatura tiene que ser exactamente igual
     //   (ERR_REDEFINICION_INCOMPATIBLE, semError57, 60, 78).
     // Todo se reporta sobre el método de esta clase.
-    // TODO ticket 10: sin instanciación genérica todavía, la vista del
-    // heredado es la identidad, así que un heredado que nombra el parámetro
-    // de tipo de su clase (T get() de Base<T>) no se compara: sin sustituir
-    // T por el argumento de la herencia daría falsos errores (semCorrecto25,
-    // 26). El ticket 10 quita esta guarda y pasa la vista instanciada.
+    // La signatura del heredado se compara instanciada desde esta clase:
+    // "T get()" de Base<T> es "String get()" en "Dd extends Base<String>"
+    // (semCorrecto25, 26). Heredado sin argumento, el T de Base se conserva y
+    // no iguala ni a Object ni al T de esta clase (semError79, 61; D5).
     private void chequearRedefinicion(Metodo propio, Metodo heredado) {
         String codigo = null;
         if (heredado.isEstatico() || propio.isEstatico()) {
             codigo = "ERR_REDEFINE_ESTATICO";
         } else if (heredado.isFinal()) {
             codigo = "ERR_METODO_REDEFINE_FINAL";
-        } else if (!heredado.usaParametrosDeTipoDelContenedor() && !propio.mismaSignatura(heredado)) {
+        } else if (!propio.mismaSignatura(heredado, tipo -> tipo.sustituir(instanciacion))) {
             codigo = "ERR_REDEFINICION_INCOMPATIBLE";
         }
         if (codigo != null) {
@@ -441,6 +454,11 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
         }
         camino.add(this);
         Clase padre = null;
+        // Argumento escrito en 'extends' (el String de "extends Base<String>"),
+        // sólo si la relación resolvió a una clase genérica: con un padre no
+        // genérico ya salió ERR_TIPO_NO_GENERICO (semError69) y el argumento
+        // no tiene parámetro que reemplazar.
+        Tipo argumentoDelPadre = null;
         if (herencia != null) {
             EntidadDeclarada padreEntidad = tablaSimbolos.buscarClase(herencia.getToken().getLexema());
             if (padreEntidad == null) {
@@ -454,6 +472,9 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
                 padre = tablaSimbolos.getObject();
             } else {
                 padre = (Clase) padreEntidad;
+                if (!padre.getParametrosTipo().isEmpty()) {
+                    argumentoDelPadre = herencia.getArgumento();
+                }
             }
         } else if (this != tablaSimbolos.getObject()) {
             // Object implícito (Parte I §4): sin 'extends', el padre efectivo
@@ -506,6 +527,10 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
                 }
             }
             padreEfectivo = padre;
+            // Antes de consolidarConPadre(): la redefinición compara con esta
+            // vista. El padre ya está consolidado, así que su mapa está
+            // completo.
+            instanciacion = Tipo.componerInstanciacion(padre.instanciacion, padre, argumentoDelPadre);
             consolidarConPadre(padre);
         }
         consolidado = true;

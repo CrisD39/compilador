@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
 public class Metodo implements Chequeable, OrigenParametroTipo {
@@ -137,10 +136,10 @@ public class Metodo implements Chequeable, OrigenParametroTipo {
      * (ticket 11) la reutiliza.
      *
      * 'vistaDelOtro' transforma cada tipo de 'otro' antes de comparar: es
-     * cómo se ve 'otro' desde el tipo que compara. En la redefinición sin
-     * genéricos es la identidad; la instanciación genérica (ticket 10) pasa
-     * acá la sustitución del parámetro del ancestro por el argumento de la
-     * herencia (Tipo.reemplazarParametros()). No modifica a 'otro'.
+     * cómo se ve 'otro' desde el tipo que compara. En la redefinición es la
+     * instanciación genérica: el parámetro de cada ancestro reemplazado por
+     * el argumento de la herencia (Tipo.sustituir() con el mapa de
+     * Clase.getInstanciacion()). No modifica a 'otro'.
      *
      * Los parámetros de tipo PROPIOS de cada método se emparejan por
      * posición (D6): "<T> T m(T x)" y "<U> U m(U x)" tienen la misma
@@ -174,27 +173,6 @@ public class Metodo implements Chequeable, OrigenParametroTipo {
             }
         }
         return true;
-    }
-
-    /**
-     * true si la signatura nombra un parámetro de tipo que no es propio del
-     * método: el de la clase o interfaz que lo declara (o uno sin origen
-     * resuelto, ya reportado). Comparar una signatura así sin instanciarla
-     * con el argumento de la herencia daría falsos errores (semCorrecto25,
-     * 26): Clase.chequearRedefinicion() la saltea hasta que el ticket 10
-     * pase la vista instanciada a mismaSignatura().
-     */
-    public boolean usaParametrosDeTipoDelContenedor() {
-        Predicate<Tipo> ajeno = parametro -> parametro.getOrigen() != this;
-        if (tipoRetorno != null && tipoRetorno.contieneParametro(ajeno)) {
-            return true;
-        }
-        for (Parametro parametro : parametros) {
-            if (parametro.getTipo().contieneParametro(ajeno)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     // null es void (ver tipoRetorno): sólo es igual a otro void.

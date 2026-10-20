@@ -3,6 +3,7 @@ package Model.semantico;
 import Model.lexico.Token;
 import Model.lexico.TokenType;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
@@ -87,9 +88,8 @@ public class Tipo implements Chequeable {
     // modifica este Tipo ni comparte estado mutable con él: devuelve una
     // copia, o this si no cambió nada (§5.1: las vistas no modifican las
     // declaraciones originales). Es la base de la comparación de signaturas:
-    // hoy la usa el emparejamiento por posición de D6; la instanciación
-    // genérica (ticket 10) sustituye con ella el parámetro de un ancestro
-    // por el argumento de la herencia.
+    // la usan el emparejamiento por posición de D6 y la instanciación
+    // genérica (sustituir()).
     public Tipo reemplazarParametros(Function<Tipo, Tipo> reemplazo) {
         if (esParametroDeTipo()) {
             Tipo nuevo = reemplazo.apply(this);
@@ -105,6 +105,48 @@ public class Tipo implements Chequeable {
         Tipo copia = new Tipo(token, nuevoArgumento, dimensiones);
         copia.origen = origen;
         return copia;
+    }
+
+    // Instanciación genérica (spec 0001, "Instanciación genérica"): este
+    // tipo visto desde un descendiente, con cada parámetro de tipo de un
+    // ancestro reemplazado por el argumento con que ese descendiente lo
+    // hereda. 'instanciacion' es el mapa ancestro -> argumento (ver
+    // componerInstanciacion()); como cada tipo declara a lo sumo un
+    // parámetro (REQ-AS-010), el origen alcanza para identificarlo. Un
+    // parámetro cuyo origen no tiene entrada (herencia sin argumento, o un
+    // parámetro de método) queda como está: no se borra a Object (D5, §5).
+    // Es una vista para comparar; no modifica este Tipo.
+    public Tipo sustituir(Map<OrigenParametroTipo, Tipo> instanciacion) {
+        if (instanciacion.isEmpty()) {
+            return this;
+        }
+        return reemplazarParametros(parametro -> instanciacion.get(parametro.getOrigen()));
+    }
+
+    // Mapa "ancestro -> argumento visto desde acá" de un tipo que hereda de
+    // 'supertipo' escribiendo 'argumento' (el de "extends Base<String>";
+    // null si hereda sin argumento). Se compone a partir del mapa ya
+    // calculado del supertipo ('delSupertipo'): cada argumento que el
+    // supertipo da a SUS ancestros puede nombrar el parámetro del propio
+    // supertipo, y ese se reemplaza por 'argumento'. Así la cadena
+    // "Final extends Intermedia<String>", "Intermedia<U> extends Base<U>"
+    // deja Base -> String e Intermedia -> String (semCorrecto26). Sin
+    // argumento no se agrega la entrada del supertipo, y lo que el
+    // supertipo pasaba en función de su parámetro sigue nombrándolo (D5).
+    // Lo usa Clase al consolidar su 'extends'; el contrato de una interfaz
+    // (ticket 11) puede armar el suyo igual, por 'implements' y por el
+    // 'extends' de una interfaz.
+    public static Map<OrigenParametroTipo, Tipo> componerInstanciacion(
+            Map<OrigenParametroTipo, Tipo> delSupertipo, OrigenParametroTipo supertipo, Tipo argumento) {
+        Map<OrigenParametroTipo, Tipo> propio = new HashMap<>();
+        if (argumento != null) {
+            propio.put(supertipo, argumento);
+        }
+        Map<OrigenParametroTipo, Tipo> compuesto = new HashMap<>(propio);
+        for (Map.Entry<OrigenParametroTipo, Tipo> entrada : delSupertipo.entrySet()) {
+            compuesto.put(entrada.getKey(), entrada.getValue().sustituir(propio));
+        }
+        return compuesto;
     }
 
     // true si algún idGen de este tipo (a cualquier profundidad) cumple
