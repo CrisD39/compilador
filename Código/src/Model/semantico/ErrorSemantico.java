@@ -67,6 +67,10 @@ public final class ErrorSemantico {
             case "ERR_NONSEALED_SIN_PADRE_SEALED" -> x + " es non-sealed pero no tiene un supertipo sealed";
             case "ERR_PERMITS_NO_ES_SUBTIPO" -> x + " figura en el permits pero no es subtipo directo";
             case "ERR_METODO_REDEFINE_FINAL" -> "el método " + x + " redefine un método final heredado";
+            case "ERR_REDEFINICION_INCOMPATIBLE" ->
+                    "el método " + x + " redefine un método heredado con otra signatura";
+            case "ERR_REDEFINE_ESTATICO" ->
+                    "el método " + x + " tiene la clave de un método heredado y uno de los dos es estático";
             case "ERR_METODO_INTERFAZ_NOIMPLEMENTADO" -> "el método " + x + " de la interfaz no está implementado";
             case "ERR_METODO_RETORNO_INCOMPATIBLE" -> "el método " + x + " se hereda con tipos de retorno incompatibles";
             case "ERR_HERENCIA_TIPO_INCORRECTO" ->

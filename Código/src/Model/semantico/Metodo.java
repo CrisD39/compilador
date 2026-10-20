@@ -9,6 +9,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 
 public class Metodo implements Chequeable, OrigenParametroTipo {
     private Token nombre;
@@ -116,10 +119,98 @@ public class Metodo implements Chequeable, OrigenParametroTipo {
         return nombre.getLexema() + "/" + parametros.size();
     }
 
+    /**
+     * Signatura (glosario: Signatura) igual a la de 'otro', sin
+     * instanciación: ver {@link #mismaSignatura(Metodo, UnaryOperator)}.
+     */
+    public boolean mismaSignatura(Metodo otro) {
+        return mismaSignatura(otro, UnaryOperator.identity());
+    }
+
+    /**
+     * true si este método y 'otro' tienen la misma signatura: misma cantidad
+     * de parámetros, los mismos tipos en orden y el mismo retorno (void sólo
+     * es igual a void), con la igualdad estructural de Tipo (cabeza,
+     * argumento, dimensiones y origen de los parámetros de tipo). Los nombres
+     * de los parámetros no cuentan. Se usa en la redefinición
+     * (Clase.consolidarConPadre(), ticket 09); el contrato de interfaz
+     * (ticket 11) la reutiliza.
+     *
+     * 'vistaDelOtro' transforma cada tipo de 'otro' antes de comparar: es
+     * cómo se ve 'otro' desde el tipo que compara. En la redefinición sin
+     * genéricos es la identidad; la instanciación genérica (ticket 10) pasa
+     * acá la sustitución del parámetro del ancestro por el argumento de la
+     * herencia (Tipo.reemplazarParametros()). No modifica a 'otro'.
+     *
+     * Los parámetros de tipo PROPIOS de cada método se emparejan por
+     * posición (D6): "<T> T m(T x)" y "<U> U m(U x)" tienen la misma
+     * signatura (semCorrecto20, semError42). Para eso, después de la vista,
+     * cada idGen cuyo origen es 'otro' se renombra al parámetro de tipo de
+     * esta posición en este método, y recién ahí se compara con
+     * Tipo.equals(). Si la cantidad de parámetros de tipo propios difiere,
+     * las signaturas difieren ("<T> T id(T x)" contra "Object id(Object x)",
+     * semError80).
+     */
+    public boolean mismaSignatura(Metodo otro, UnaryOperator<Tipo> vistaDelOtro) {
+        if (parametros.size() != otro.parametros.size()
+                || parametrosTipoPropios.size() != otro.parametrosTipoPropios.size()) {
+            return false;
+        }
+        Function<Tipo, Tipo> renombrarPropiosDelOtro = parametro -> {
+            if (parametro.getOrigen() != otro) {
+                return null;
+            }
+            int indice = otro.indiceEnPropios(parametro.getToken().getLexema());
+            return indice < 0 ? null : Tipo.parametroDeTipo(parametrosTipoPropios.get(indice), this);
+        };
+        UnaryOperator<Tipo> verDesdeAca =
+                tipo -> vistaDelOtro.apply(tipo).reemplazarParametros(renombrarPropiosDelOtro);
+        if (!mismoTipo(tipoRetorno, otro.tipoRetorno, verDesdeAca)) {
+            return false;
+        }
+        for (int i = 0; i < parametros.size(); i++) {
+            if (!mismoTipo(parametros.get(i).getTipo(), otro.parametros.get(i).getTipo(), verDesdeAca)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * true si la signatura nombra un parámetro de tipo que no es propio del
+     * método: el de la clase o interfaz que lo declara (o uno sin origen
+     * resuelto, ya reportado). Comparar una signatura así sin instanciarla
+     * con el argumento de la herencia daría falsos errores (semCorrecto25,
+     * 26): Clase.chequearRedefinicion() la saltea hasta que el ticket 10
+     * pase la vista instanciada a mismaSignatura().
+     */
+    public boolean usaParametrosDeTipoDelContenedor() {
+        Predicate<Tipo> ajeno = parametro -> parametro.getOrigen() != this;
+        if (tipoRetorno != null && tipoRetorno.contieneParametro(ajeno)) {
+            return true;
+        }
+        for (Parametro parametro : parametros) {
+            if (parametro.getTipo().contieneParametro(ajeno)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // null es void (ver tipoRetorno): sólo es igual a otro void.
+    private static boolean mismoTipo(Tipo propio, Tipo delOtro, UnaryOperator<Tipo> verDesdeAca) {
+        if (propio == null || delOtro == null) {
+            return propio == delOtro;
+        }
+        return propio.equals(verDesdeAca.apply(delOtro));
+    }
+
     // Retorno canonicalizado, usado para comparar compatibilidad de retorno
     // entre métodos con la misma clave (Clase.consolidarInterfaces(),
     // Interfaz.heredarMetodosDe()). null representa "void", igual que
-    // tipoRetorno.
+    // tipoRetorno. Compara por lexema, no por origen: el ticket 11 lo
+    // reemplaza por mismaSignatura() con la vista instanciada (sin ella, el
+    // T de una interfaz genérica nunca sería igual al de la clase).
     public String getRetornoCanonico() {
         return tipoRetorno == null ? null : tipoCanonico(tipoRetorno.getToken());
     }
