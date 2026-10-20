@@ -133,8 +133,11 @@ public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTi
         }
         // Superinterfaces: mismo control que el 'extends'/'implements' de
         // Clase (D2, D7; ver Clase.estaBienDeclarado()).
+        // Una superinterfaz que resulta ser una clase da
+        // ERR_HERENCIA_TIPO_INCORRECTO (D1) y la consolidación la saltea.
         for (Tipo padre : herencias) {
             padre.estaBienDeclarado(tabla, entornoInterfaz);
+            tabla.chequearCategoriaSupertipo(padre, false);
         }
         for (Metodo metodo : metodos.values()) {
             metodo.estaBienDeclarado(tabla, entornoInterfaz);
@@ -177,9 +180,9 @@ public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTi
                 continue;
             }
             if (!(padreEntidad instanceof Interfaz)) {
-                // 'extends' de interfaz apuntando a algo que no es interfaz:
-                // fuera de alcance por ahora (pregunta abierta, ver
-                // casos-de-prueba.md 3.6).
+                // D1: 'extends' de interfaz apuntando a una clase. Ya
+                // reportado como ERR_HERENCIA_TIPO_INCORRECTO en
+                // estaBienDeclarado(): se saltea sin reportar.
                 continue;
             }
             Interfaz padre = (Interfaz) padreEntidad;

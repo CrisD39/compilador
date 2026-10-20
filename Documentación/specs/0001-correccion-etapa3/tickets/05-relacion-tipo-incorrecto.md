@@ -1,6 +1,6 @@
 ---
 titulo: Relación con el tipo equivocado
-estado: ready-for-agent
+estado: hecho
 spec: ../../0001-correccion-etapa3.md
 ---
 
@@ -17,10 +17,10 @@ demás errores.
 
 **Historias:** 1, 2, 3, 16, 17, 18, 19.
 
-- [ ] Pasan `semError65` (hoy `ClassCastException`), `semError66` y
+- [x] Pasan `semError65` (hoy `ClassCastException`), `semError66` y
       `semError67`.
-- [ ] Pasa `semError72`: un error anterior al de la relación se sigue
+- [x] Pasa `semError72`: un error anterior al de la relación se sigue
       imprimiendo.
-- [ ] La descripción dice qué se esperaba ("Ii no es una clase",
+- [x] La descripción dice qué se esperaba ("Ii no es una clase",
       "Aa no es una interfaz").
-- [ ] Ningún caso que pasaba deja de pasar.
+- [x] Ningún caso que pasaba deja de pasar.

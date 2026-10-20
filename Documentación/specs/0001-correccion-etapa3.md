@@ -533,7 +533,7 @@ ninguno de los que ya pasaban.
 | 02 | `implements` de una sola interfaz (ADR 0005) | 01 | hecho |
 | 03 | Herencia como `Tipo`, con argumentos validados | 02 | hecho |
 | 04 | Tipos predefinidos y `Object` implícito | 01 | hecho |
-| 05 | Relación con el tipo equivocado | 03, 04 | ready-for-agent |
+| 05 | Relación con el tipo equivocado | 03, 04 | hecho |
 | 06 | Clave (nombre, aridad) | 01 | hecho |
 | 07 | Constructores | 04 | ready-for-agent |
 | 08 | Prefactor de `Tipo` | 01 | hecho |
