@@ -1,6 +1,6 @@
 ---
 titulo: Tipos predefinidos y Object implícito
-estado: ready-for-agent
+estado: hecho
 spec: ../../0001-correccion-etapa3.md
 ---
 
@@ -15,15 +15,15 @@ y hereda `toString` y `debugPrint`.
 
 **Historias:** 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15.
 
-- [ ] Pasan `semCorrecto23` (predefinidas como tipos) y `semCorrecto29`
+- [x] Pasan `semCorrecto23` (predefinidas como tipos) y `semCorrecto29`
       (`extends Object` explícito).
-- [ ] `class Object {}` da clase duplicada sobre la declaración del
+- [x] `class Object {}` da clase duplicada sobre la declaración del
       programa, y la predefinida se conserva (`semError54`).
-- [ ] `String` y `System` son finales: pasan `semError55` y `semError73`.
-- [ ] `Object` es el padre efectivo de toda clase sin `extends`, incluidas
+- [x] `String` y `System` son finales: pasan `semError55` y `semError73`.
+- [x] `Object` es el padre efectivo de toda clase sin `extends`, incluidas
       las que implementan una interfaz. Lo que el programa escribió no
       cambia: `sealed`/`permits` siguen distinguiendo `class A` de
       `class A extends Object`.
-- [ ] Las predefinidas no pasan por el control de declaraciones, pero sí se
+- [x] Las predefinidas no pasan por el control de declaraciones, pero sí se
       consolidan, y van primero.
-- [ ] Ningún caso que pasaba deja de pasar.
+- [x] Ningún caso que pasaba deja de pasar.
