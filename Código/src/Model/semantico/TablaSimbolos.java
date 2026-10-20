@@ -158,6 +158,32 @@ public class TablaSimbolos {
     public EntidadDeclarada buscarInterfaz(String nombre) {
         return clases.get(nombre);
     }
+
+    // Relación con el tipo equivocado (D1): el 'extends' de una clase tiene
+    // que nombrar una clase; el 'implements' de una clase y el 'extends' de
+    // una interfaz, interfaces. Como Clase e Interfaz comparten namespace,
+    // buscarClase()/buscarInterfaz() devuelven cualquiera de las dos, y el
+    // chequeo de categoría queda en manos de quien declara la relación.
+    // Se reporta sobre el tipo nombrado (lexema y línea de ese token, igual
+    // que ERR_TIPO_NO_DECLARADO) y una sola vez, en el control de
+    // declaraciones: la consolidación saltea la relación sin reportar (una
+    // clase queda con Object como padre efectivo). Un supertipo que no
+    // resuelve ya lo reportó Tipo.estaBienDeclarado() (D7), acá no se toca.
+    // Devuelve true si la relación es del tipo correcto (o no resuelve).
+    public boolean chequearCategoriaSupertipo(Tipo supertipo, boolean esperaClase) {
+        Token token = supertipo.getToken();
+        EntidadDeclarada entidad = clases.get(token.getLexema());
+        if (entidad == null) {
+            return true;
+        }
+        boolean esClase = entidad instanceof Clase;
+        if (esClase == esperaClase) {
+            return true;
+        }
+        agregarError(new ErrorSemantico("ERR_HERENCIA_TIPO_INCORRECTO",
+                token.getLinea(), token.getLexema(), esperaClase ? "una clase" : "una interfaz"));
+        return false;
+    }
     // Parchean el placeholder dejado por crearMetodo() (Estrategia A de
     // transición, ver "Estrategia de construcción" en analizador-semantico.md)
     // delegando sobre metodoActual, igual criterio que

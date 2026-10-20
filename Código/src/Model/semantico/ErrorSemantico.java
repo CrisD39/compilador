@@ -12,11 +12,22 @@ public final class ErrorSemantico {
     private final String codigo;
     private final int linea;
     private final String lexema;
+    // Dato extra para la descripción cuando un mismo código cubre variantes
+    // que el lexema solo no distingue. Hoy sólo lo usa
+    // ERR_HERENCIA_TIPO_INCORRECTO (D1): qué se esperaba en la relación,
+    // "una clase" o "una interfaz". null en el resto. Nunca va en la
+    // etiqueta [Error:...].
+    private final String detalle;
 
     public ErrorSemantico(String codigo, int linea, String lexema) {
+        this(codigo, linea, lexema, null);
+    }
+
+    public ErrorSemantico(String codigo, int linea, String lexema, String detalle) {
         this.codigo = codigo;
         this.linea = linea;
         this.lexema = lexema;
+        this.detalle = detalle;
     }
 
     public String getCodigo() {
@@ -57,6 +68,8 @@ public final class ErrorSemantico {
             case "ERR_METODO_REDEFINE_FINAL" -> "el método " + x + " redefine un método final heredado";
             case "ERR_METODO_INTERFAZ_NOIMPLEMENTADO" -> "el método " + x + " de la interfaz no está implementado";
             case "ERR_METODO_RETORNO_INCOMPATIBLE" -> "el método " + x + " se hereda con tipos de retorno incompatibles";
+            case "ERR_HERENCIA_TIPO_INCORRECTO" ->
+                    x + " no es " + (detalle != null ? detalle : "del tipo esperado en la relación");
             default -> codigo + " (" + x + ")";
         };
     }
