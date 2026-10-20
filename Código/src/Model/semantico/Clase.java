@@ -11,7 +11,9 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
     private HashMap<String, Metodo> metodos;
     private List<Constructor> constructores ;
     private boolean tieneConstructor;
-    private LinkedHashSet<Token> interfaces;
+    // Interfaz implementada: a lo sumo una (ADR 0005, la gramática ya no
+    // admite lista en 'implements'). null si la clase no implementa nada.
+    private Token interfaz;
     private boolean consolidado = false;
     private boolean enCiclo = false;
     private final TablaSimbolos tablaSimbolos;
@@ -51,26 +53,21 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
         permitidos.add(permitido);
     }
 
-    // Chequea por lexema, no por Set.add() (Token no sobrescribe equals()/
-    // hashCode(), así que el LinkedHashSet nunca detectaría un duplicado
-    // literal por sí solo -- "implements A, A" debe ser error, no
-    // deduplicarse en silencio). Mismo chequeo en Interfaz.agregarHerencia().
-    public void agregarInterfaz(Token interfaz) {
-        for (Token existente : interfaces) {
-            if (existente.getLexema().equals(interfaz.getLexema())) {
-                tablaSimbolos.agregarError(new ErrorSemantico(
-                        "ERR_INTERFAZ_DUPLICADA", interfaz.getLinea(), interfaz.getLexema()));
-                return;
-            }
-        }
-        interfaces.add(interfaz);
+    // Con una sola interfaz no hay repetición posible: el control de
+    // interfaz repetida (ERR_INTERFAZ_DUPLICADA) queda sólo en el 'extends'
+    // de una interfaz (Interfaz.agregarHerencia()).
+    public void setInterfaz(Token interfaz) {
+        this.interfaz = interfaz;
+    }
+
+    public Token getInterfaz() {
+        return interfaz;
     }
 
     public Clase(Token nombre, TablaSimbolos tablaSimbolos) {
         atributos = new HashMap<String,Atributo>();
         metodos = new HashMap<String,Metodo>();
         constructores = new LinkedList<Constructor>();
-        interfaces = new LinkedHashSet<>();
         this.nombre = nombre;
         this.tablaSimbolos = tablaSimbolos;
     }
@@ -139,10 +136,6 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
 
     public Token getHerencia() {
         return herencia;
-    }
-
-    public Iterable<Token> getInterfaces() {
-        return interfaces;
     }
 
     public List<Token> getParametrosTipo() {
@@ -215,62 +208,56 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
         }
     }
 
+    // Contrato con la interfaz implementada (a lo sumo una, ADR 0005). La
+    // interfaz ya trae, tras su consolidar(), los métodos que hereda de sus
+    // superinterfaces, y los conflictos entre ellos los reporta ella misma
+    // (Interfaz.consolidarHerencia()). Acá sólo se compara la clase -- sus
+    // métodos propios y los heredados de su padre, ya copiados por
+    // consolidarHerencia() -- contra cada método de la interfaz: si falta la
+    // firma, el método no está implementado; si está con otro retorno, es
+    // el conflicto "override-equivalente" de Java (misma firma, retorno
+    // incompatible).
     private void consolidarInterfaces(){
-        // Rastrea, por firma, el tipo de retorno "esperado" visto hasta
-        // ahora -- arranca con los métodos propios de la clase (si ya
-        // declaró uno) y se va completando con el primer método de cada
-        // interfaz que aporte una firma nueva. Si una interfaz posterior
-        // (o la propia clase) trae la MISMA firma con un retorno distinto,
-        // es el conflicto real de Java entre interfaces con métodos
-        // "override-equivalentes" pero de retorno incompatible (ej.
-        // `int getValor()` en una interfaz vs `String getValor()` en otra)
-        // -- distinto de la sobrecarga (parámetros distintos), que ya queda
-        // resuelta sola porque ahí la firma difiere.
-        Map<String, String> retornoCanonicoVisto = new HashMap<>();
-        for (Metodo propio : metodos.values()) {
-            retornoCanonicoVisto.put(propio.getFirma(), propio.getRetornoCanonico());
+        if (interfaz == null) {
+            return;
         }
-        for(Token interfaz: interfaces) {
-            EntidadDeclarada interfaceActual = tablaSimbolos.buscarInterfaz(interfaz.getLexema());
-            if (interfaceActual == null) {
+        EntidadDeclarada interfaceActual = tablaSimbolos.buscarInterfaz(interfaz.getLexema());
+        if (interfaceActual == null) {
+            tablaSimbolos.agregarError(new ErrorSemantico(
+                    "ERR_INTERFAZ_NO_DECLARADA", interfaz.getLinea(), interfaz.getLexema()));
+            return;
+        }
+        if (!(interfaceActual instanceof Interfaz)) {
+            // 'implements' apuntando a algo que no es interfaz: fuera de
+            // alcance por ahora (mismo criterio que el 'extends' de
+            // Interfaz), ver casos-de-prueba.md 3.6.
+            return;
+        }
+        Interfaz interfazResuelta = (Interfaz) interfaceActual;
+        interfazResuelta.consolidar();
+        // Mismo chequeo que consolidarHerencia() para 'extends', pero del
+        // lado 'implements': una interfaz sealed también controla qué clases
+        // pueden implementarla (Java real no distingue entre "subtipo por
+        // extends" y "subtipo por implements" -- ambos son subtipos directos
+        // y el permits aplica igual).
+        if (interfazResuelta.isSealed()) {
+            tieneSupertipoSellado = true;
+            if (!interfazResuelta.permiteComoSubclase(nombre.getLexema())) {
                 tablaSimbolos.agregarError(new ErrorSemantico(
-                        "ERR_INTERFAZ_NO_DECLARADA", interfaz.getLinea(), interfaz.getLexema()));
-            } else if (!(interfaceActual instanceof Interfaz)) {
-                // 'implements' apuntando a algo que no es interfaz: fuera de
-                // alcance por ahora (mismo criterio que el 'extends' de
-                // Interfaz), ver casos-de-prueba.md 3.6.
-            } else {
-                Interfaz interfazResuelta = (Interfaz) interfaceActual;
-                interfazResuelta.consolidar();
-                // Mismo chequeo que consolidarHerencia() para 'extends', pero
-                // del lado 'implements': una interfaz sealed también controla
-                // qué clases pueden implementarla (Java real no distingue
-                // entre "subtipo por extends" y "subtipo por implements" --
-                // ambos son subtipos directos y el permits aplica igual).
-                if (interfazResuelta.isSealed()) {
-                    tieneSupertipoSellado = true;
-                    if (!interfazResuelta.permiteComoSubclase(nombre.getLexema())) {
-                        tablaSimbolos.agregarError(new ErrorSemantico(
-                                "ERR_HERENCIA_NO_PERMITIDA", nombre.getLinea(), nombre.getLexema()));
-                    } else if (!esFinal && !sealed && !nonSealed) {
-                        tablaSimbolos.agregarError(new ErrorSemantico(
-                                "ERR_HERENCIA_PERMITIDA_SIN_MODIFICADOR", nombre.getLinea(), nombre.getLexema()));
-                    }
-                }
-                for (Metodo metodo : interfazResuelta.getMetodos()) {
-                    String firma = metodo.getFirma();
-                    if (!metodos.containsKey(firma)) {
-                        tablaSimbolos.agregarError(new ErrorSemantico(
-                                "ERR_METODO_INTERFAZ_NOIMPLEMENTADO", metodo.getNombre().getLinea(), metodo.getNombre().getLexema()));
-                    }
-                    if (retornoCanonicoVisto.containsKey(firma)
-                            && !Objects.equals(retornoCanonicoVisto.get(firma), metodo.getRetornoCanonico())) {
-                        tablaSimbolos.agregarError(new ErrorSemantico(
-                                "ERR_METODO_RETORNO_INCOMPATIBLE", metodo.getNombre().getLinea(), metodo.getNombre().getLexema()));
-                    } else {
-                        retornoCanonicoVisto.put(firma, metodo.getRetornoCanonico());
-                    }
-                }
+                        "ERR_HERENCIA_NO_PERMITIDA", nombre.getLinea(), nombre.getLexema()));
+            } else if (!esFinal && !sealed && !nonSealed) {
+                tablaSimbolos.agregarError(new ErrorSemantico(
+                        "ERR_HERENCIA_PERMITIDA_SIN_MODIFICADOR", nombre.getLinea(), nombre.getLexema()));
+            }
+        }
+        for (Metodo metodo : interfazResuelta.getMetodos()) {
+            Metodo propio = metodos.get(metodo.getFirma());
+            if (propio == null) {
+                tablaSimbolos.agregarError(new ErrorSemantico(
+                        "ERR_METODO_INTERFAZ_NOIMPLEMENTADO", metodo.getNombre().getLinea(), metodo.getNombre().getLexema()));
+            } else if (!Objects.equals(propio.getRetornoCanonico(), metodo.getRetornoCanonico())) {
+                tablaSimbolos.agregarError(new ErrorSemantico(
+                        "ERR_METODO_RETORNO_INCOMPATIBLE", metodo.getNombre().getLinea(), metodo.getNombre().getLexema()));
             }
         }
     }
@@ -304,7 +291,7 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
 
     // Solo una Clase puede 'extends' de una Clase (una interfaz no puede)
     // -- por eso alcanza con mirar Clase.herencia, nunca Interfaz.herencias
-    // ni Clase.interfaces.
+    // ni Clase.interfaz.
     private boolean esSubclaseDirecta(EntidadDeclarada entidad) {
         if (!(entidad instanceof Clase)) {
             return false;

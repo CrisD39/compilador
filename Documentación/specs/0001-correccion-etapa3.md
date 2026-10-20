@@ -530,7 +530,7 @@ ninguno de los que ya pasaban.
 | # | Ticket | Bloqueado por | Estado |
 |---|---|---|---|
 | 01 | Línea de base | — | hecho |
-| 02 | `implements` de una sola interfaz (ADR 0005) | 01 | ready-for-agent |
+| 02 | `implements` de una sola interfaz (ADR 0005) | 01 | hecho |
 | 03 | Herencia como `Tipo`, con argumentos validados | 02 | ready-for-agent |
 | 04 | Tipos predefinidos y `Object` implícito | 01 | ready-for-agent |
 | 05 | Relación con el tipo equivocado | 03, 04 | ready-for-agent |

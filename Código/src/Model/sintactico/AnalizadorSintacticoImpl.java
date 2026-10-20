@@ -507,14 +507,13 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
         return parametrosTipo;
     }
 
-    // <HerenciaOpcional> ::= extends <TipoReferencia> | implements <ListaInterfaces> | ϵ
-    // 'extends' sigue aceptando un único tipo (una clase no puede heredar de
-    // varias clases, ni en Java real) y sigue siendo mutuamente excluyente
-    // con 'implements' en la misma clase (ver sintError47.java) -- lo único
-    // que cambia es que 'implements' ahora acepta una lista separada por
-    // coma (Logro 2: "class X implements A, B"), antes limitado a un único
-    // <TipoReferencia> (ver sintError52.java, reescrito para la nueva
-    // gramática).
+    // <HerenciaOpcional> ::= extends <TipoReferencia> | implements <TipoReferencia> | ϵ
+    // Una clase extiende como máximo una clase o implementa como máximo una
+    // interfaz, y las dos relaciones son mutuamente excluyentes (ver
+    // sintError47.java). La herencia múltiple vale sólo entre interfaces, en
+    // <ExtensionOpcional> (ADR 0005): en "class X implements A, B" la coma
+    // queda como token inesperado donde se esperaba '{' o 'permits'
+    // (sintError52.java).
     private void herenciaOpcional() {
         if (actualEs(TokenType.PR_EXTENDS)) {
             match(TokenType.PR_EXTENDS);
@@ -523,39 +522,21 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
             tablaSimbolo.getClaseActual().setHerencia(padre);
         } else if (actualEs(TokenType.PR_IMPLEMENTS)) {
             match(TokenType.PR_IMPLEMENTS);
-            listaInterfacesImplementadas(tablaSimbolo.getClaseActual());
+            Token interfaz = tokenActual; // idClase de la interfaz, mismo criterio que 'padre'
+            tipoReferencia();
+            tablaSimbolo.getClaseActual().setInterfaz(interfaz);
         } else {
             // ϵ — no hace nada
         }
     }
 
-    // <ListaInterfaces>      ::= idClase <TipoGenericoOpcional> <ListaInterfacesResto>
-    // <ListaInterfacesResto> ::= , idClase <TipoGenericoOpcional> <ListaInterfacesResto> | ϵ
-    // (el idClase + <TipoGenericoOpcional> de cada entrada se consumen vía
-    // tipoReferencia(), igual que en el resto de la gramática).
-    private void listaInterfacesImplementadas(Clase claseActual) {
-        Token interfaz = tokenActual;
-        tipoReferencia();
-        claseActual.agregarInterfaz(interfaz);
-        listaInterfacesImplementadasResto(claseActual);
-    }
-
-    private void listaInterfacesImplementadasResto(Clase claseActual) {
-        if (actualEs(TokenType.COMA)) {
-            match(TokenType.COMA);
-            Token interfaz = tokenActual;
-            tipoReferencia();
-            claseActual.agregarInterfaz(interfaz);
-            listaInterfacesImplementadasResto(claseActual);
-        }
-        // ϵ
-    }
-
-    // <ExtensionOpcional> ::= extends <ListaInterfaces> | ϵ
-    // Mismas dos producciones que listaInterfacesImplementadas()/
-    // ...Resto(), pero acumulando sobre Interfaz.agregarHerencia() en vez de
-    // Clase.agregarInterfaz() -- ahora también admite varias (Logro 2:
-    // "interface X extends Y, Z"), antes un único <TipoReferencia>.
+    // <ExtensionOpcional>    ::= extends <ListaInterfaces> | ϵ
+    // <ListaInterfaces>      ::= <TipoReferencia> <ListaInterfacesResto>
+    // <ListaInterfacesResto> ::= , <TipoReferencia> <ListaInterfacesResto> | ϵ
+    // Herencia múltiple de interfaces (Logro 2: "interface X extends Y, Z").
+    // Es el único lugar de la gramática que admite una lista de supertipos
+    // (ADR 0005). Cada entrada se acumula con Interfaz.agregarHerencia(),
+    // que reporta la interfaz repetida (semError33/34).
     private void extensionOpcional(Interfaz interfazActual) {
         if (actualEs(TokenType.PR_EXTENDS)) {
             match(TokenType.PR_EXTENDS);

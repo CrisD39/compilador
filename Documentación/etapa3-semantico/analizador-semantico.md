@@ -1025,11 +1025,17 @@ atributos/métodos resueltos) — igual que el resto de "Chequeo de corrección"
 2. **Herencia múltiple (E3).** El compilador permite herencia múltiple de
    interfaces, como en Java.
 
-   **Decisión (pendiente de implementar):** el logro vale sólo entre
-   interfaces (`interface X extends A, B`). Una clase implementa como máximo
-   una interfaz, así que `class X implements A, B` vuelve a ser un error
-   sintáctico, como en la gramática base. Lo que sigue describe el estado
-   actual del código, que todavía acepta la lista en `implements`. Ver
+   **Decisión (implementada, spec 0001 ticket 02):** el logro vale sólo
+   entre interfaces (`interface X extends A, B`). Una clase implementa como
+   máximo una interfaz, así que `class X implements A, B` vuelve a ser un
+   error sintáctico, como en la gramática base. `Clase` guarda una sola
+   interfaz (`Clase.interfaz`) y el control de interfaz repetida queda sólo
+   en el `extends` de una interfaz. Al consolidarse, una interfaz copia los
+   métodos de sus superinterfaces (`Interfaz.heredarMetodosDe()`) y reporta
+   `ERR_METODO_RETORNO_INCOMPATIBLE` si dos de ellas traen la misma firma
+   con distinto retorno; la clase compara su contrato contra esa vista
+   completa. Lo que sigue sobre la lista en `implements` describe el estado
+   anterior. Ver
    `Documentación/adr/0005-herencia-multiple-solo-entre-interfaces.md` y la
    sección "Decisiones: tipos predefinidos, clave y redefinición".
 
