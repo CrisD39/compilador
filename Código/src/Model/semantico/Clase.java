@@ -191,12 +191,16 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
         // entorno de la clase -- en "class Bb<T> extends Caja<T>" el T es el
         // de Bb. Heredar sin argumento de un genérico es válido (§5). Un
         // supertipo inexistente se reporta sólo acá: la consolidación lo
-        // saltea sin volver a reportarlo.
+        // saltea sin volver a reportarlo. Lo mismo vale para una relación
+        // con el tipo equivocado (D1): 'extends' de una interfaz o
+        // 'implements' de una clase.
         if (herencia != null) {
             herencia.estaBienDeclarado(tabla, entornoClase);
+            tabla.chequearCategoriaSupertipo(herencia, true);
         }
         if (interfaz != null) {
             interfaz.estaBienDeclarado(tabla, entornoClase);
+            tabla.chequearCategoriaSupertipo(interfaz, false);
         }
         for(Metodo metodo: metodos.values())
         {
@@ -270,9 +274,9 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
             return;
         }
         if (!(interfaceActual instanceof Interfaz)) {
-            // 'implements' apuntando a algo que no es interfaz: fuera de
-            // alcance por ahora (mismo criterio que el 'extends' de
-            // Interfaz), ver casos-de-prueba.md 3.6.
+            // D1: 'implements' de una clase. Ya reportado como
+            // ERR_HERENCIA_TIPO_INCORRECTO en estaBienDeclarado(); la
+            // relación se ignora (no hay contrato que chequear).
             return;
         }
         Interfaz interfazResuelta = (Interfaz) interfaceActual;
@@ -354,6 +358,9 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
           relación sin reportar: la clase queda con Object como padre
           efectivo y marcada consolidada, así sus hijas no vuelven a
           tropezar con el abuelo inexistente.
+        - Si el padre es una interfaz (D1): mismo tratamiento que el caso
+          anterior; ERR_HERENCIA_TIPO_INCORRECTO ya salió en
+          estaBienDeclarado().
         - Si el padre ya está en 'camino': es un ciclo. Se reporta una sola
           vez, sobre esta clase (la última visitada antes de repetir), y se
           marca 'enCiclo' en todo el tramo del camino que efectivamente cierra
@@ -379,11 +386,12 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
                 // D7: reportado una sola vez en estaBienDeclarado(); acá la
                 // relación se ignora, como si no hubiera 'extends'.
                 padre = tablaSimbolos.getObject();
+            } else if (padreEntidad instanceof Interfaz) {
+                // D1: 'extends' de una interfaz. Ya reportado como
+                // ERR_HERENCIA_TIPO_INCORRECTO en estaBienDeclarado(); la
+                // relación se ignora igual que la de arriba.
+                padre = tablaSimbolos.getObject();
             } else {
-                // TODO ticket 05 (D1): si padreEntidad es una Interfaz, el
-                // cast falla. Ahí va ERR_HERENCIA_TIPO_INCORRECTO y
-                // padre = tablaSimbolos.getObject(), igual que la rama de
-                // arriba.
                 padre = (Clase) padreEntidad;
             }
         } else if (this != tablaSimbolos.getObject()) {
