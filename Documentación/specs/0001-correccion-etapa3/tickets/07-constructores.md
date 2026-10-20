@@ -1,6 +1,6 @@
 ---
 titulo: Constructores
-estado: ready-for-agent
+estado: hecho
 spec: ../../0001-correccion-etapa3.md
 ---
 
@@ -15,9 +15,9 @@ defecto; `System` no tiene ninguno.
 
 **Historias:** 34, 35, 36, 37, 38.
 
-- [ ] Pasa `semError70` (`ERR_CONSTRUCTOR_NOMBRE_INVALIDO`, con el lexema
+- [x] Pasa `semError70` (`ERR_CONSTRUCTOR_NOMBRE_INVALIDO`, con el lexema
       y la línea del constructor).
-- [ ] Una clase con al menos un constructor no recibe el de por defecto.
-- [ ] Los parámetros repetidos de un constructor siguen dando error
+- [x] Una clase con al menos un constructor no recibe el de por defecto.
+- [x] Los parámetros repetidos de un constructor siguen dando error
       (`semError13`).
-- [ ] Ningún caso que pasaba deja de pasar.
+- [x] Ningún caso que pasaba deja de pasar.

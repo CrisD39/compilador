@@ -535,7 +535,7 @@ ninguno de los que ya pasaban.
 | 04 | Tipos predefinidos y `Object` implícito | 01 | hecho |
 | 05 | Relación con el tipo equivocado | 03, 04 | hecho |
 | 06 | Clave (nombre, aridad) | 01 | hecho |
-| 07 | Constructores | 04 | ready-for-agent |
+| 07 | Constructores | 04 | hecho |
 | 08 | Prefactor de `Tipo` | 01 | hecho |
 | 09 | Redefinición exacta y estáticos | 04, 06, 08 | ready-for-agent |
 | 10 | Instanciación genérica en la redefinición | 03, 09 | ready-for-agent |
