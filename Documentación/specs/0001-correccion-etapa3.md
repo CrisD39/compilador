@@ -536,7 +536,7 @@ ninguno de los que ya pasaban.
 | 05 | Relación con el tipo equivocado | 03, 04 | ready-for-agent |
 | 06 | Clave (nombre, aridad) | 01 | ready-for-agent |
 | 07 | Constructores | 04 | ready-for-agent |
-| 08 | Prefactor de `Tipo` | 01 | ready-for-agent |
+| 08 | Prefactor de `Tipo` | 01 | hecho |
 | 09 | Redefinición exacta y estáticos | 04, 06, 08 | ready-for-agent |
 | 10 | Instanciación genérica en la redefinición | 03, 09 | ready-for-agent |
 | 11 | Contratos de interfaz e interfaz contra `Object` | 10 | ready-for-agent |
