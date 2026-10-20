@@ -1,6 +1,6 @@
 ---
 titulo: Redefinición exacta y estáticos
-estado: ready-for-agent
+estado: hecho
 spec: ../../0001-correccion-etapa3.md
 ---
 
@@ -15,11 +15,11 @@ puede tener la clave de un método de instancia heredado.
 
 **Historias:** 39, 40, 41, 42, 43, 50, 51, 52, 53, 54.
 
-- [ ] Pasa `semCorrecto24` (`String toString()` redefinido).
-- [ ] `ERR_REDEFINICION_INCOMPATIBLE`: pasan `semError57`, `60`, `78`.
-- [ ] `ERR_REDEFINE_ESTATICO`: pasan `semError58`, `59`, `81`, `82`, y
+- [x] Pasa `semCorrecto24` (`String toString()` redefinido).
+- [x] `ERR_REDEFINICION_INCOMPATIBLE`: pasan `semError57`, `60`, `78`.
+- [x] `ERR_REDEFINE_ESTATICO`: pasan `semError58`, `59`, `81`, `82`, y
       `semError74` (tras descartar un `extends` con D1, `Object` es el
       padre efectivo).
-- [ ] Los estáticos se siguen copiando a los descendientes, y se mantiene
+- [x] Los estáticos se siguen copiando a los descendientes, y se mantiene
       `ERR_METODO_REDEFINE_FINAL` (`semError22`, `42`).
-- [ ] Ningún caso que pasaba deja de pasar.
+- [x] Ningún caso que pasaba deja de pasar.
