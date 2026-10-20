@@ -687,7 +687,9 @@ parámetros = sobrecarga, nunca duplicado) y ahora funciona de verdad.
 `sinErrores/semCorrecto14.java` (sobrecarga dentro de una sola clase),
 `semCorrecto15.java` (el caso completo de 5.2 que antes no se podía probar
 en limpio: dos interfaces con `mover()` de distinta firma, implementadas
-ambas por la misma clase).
+ambas por la misma clase). **Revertido por la clave (nombre, aridad)**
+(spec 0001, ticket 06): la sobrecarga es sólo por aridad, así que los dos
+casos pasaron a `conErrores/semError86.java` y `semError87.java`.
 
 ### 5.3 Logro 3 — métodos genéricos
 
@@ -939,11 +941,19 @@ el `implements` de una clase se retira. Hoy fallan `sintError52` (la
 gramática todavía acepta la lista), `semError36` y `semError44` (los
 métodos que una interfaz hereda de varias no se comparan entre sí).
 
-**Casos existentes que cambian con la clave (paso 4):** `semCorrecto14`
-(`mover(int)` + `mover(char)` en una clase) y `semCorrecto15` (lo mismo,
-heredado de dos interfaces) pasan a ser errores por la clave
-(nombre, aridad). Se mueven a `conErrores/` con su etiqueta corregida al
-implementar ese paso.
+**Casos existentes que cambian con la clave (paso 4, hecho):**
+`semCorrecto14` (`mover(int)` + `mover(char)` en una clase) y
+`semCorrecto15` (lo mismo, heredado de dos interfaces) pasaron a ser
+errores por la clave (nombre, aridad). Se movieron a `conErrores/` sin
+tocar su código, con la etiqueta corregida y el comentario de cabecera
+reescrito (mismas líneas):
+
+| Archivo | Antes | Qué prueba | Código | Etiqueta |
+|---|---|---|---|---|
+| `conErrores/semError86.java` | `sinErrores/semCorrecto14.java` | `mover(int pasos)` + `mover(char pasos)` en una clase | `ERR_METODO_DUPLICADO` | `[Error:mover\|13]` |
+| `conErrores/semError87.java` | `sinErrores/semCorrecto15.java` | lo mismo en `Pato implements Anfibio`, con `Anfibio extends Volador, Nadador` | `ERR_METODO_DUPLICADO` | `[Error:mover\|22]` |
+
+Además, con la clave pasan `semError56`, `semError76` y `semError77`.
 
 Después de implementar se corren todos los testers. Un caso existente que
 cambie de resultado por una regla nueva (por ejemplo, uno que dependía de la

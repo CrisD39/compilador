@@ -89,37 +89,37 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
 
     public void agregarAtributo(Atributo atributo)
     {
-        String firma = atributo.getFirma();
-        if(atributos.containsKey(firma)){
+        String clave = atributo.getClave();
+        if(atributos.containsKey(clave)){
             tablaSimbolos.agregarError(new ErrorSemantico(
                     "ERR_ATRIBUTO_DUPLICADO", atributo.getNombre().getLinea(), atributo.getNombre().getLexema()));
         }
         else
         {
-            atributos.put(firma,atributo);
+            atributos.put(clave,atributo);
         }
     }
 
-    /** Devuelve false si ya había un método con la misma firma (nombre +
-     *  tipos de parámetros, ver Metodo.getFirma()) — key por firma, no por
-     *  nombre, para que las sobrecargas legítimas convivan en el mapa. */
+    /** Reporta ERR_METODO_DUPLICADO si ya había un método con la misma clave
+     *  (nombre/aridad, ver Metodo.getClave()) — key por clave, no por nombre,
+     *  para que las sobrecargas por aridad convivan en el mapa (D4). */
     public void agregarMetodo(Metodo metodo)
     {
-        String firma = metodo.getFirma();
-        if (metodos.containsKey(firma))
+        String clave = metodo.getClave();
+        if (metodos.containsKey(clave))
         {
             tablaSimbolos.agregarError(new ErrorSemantico(
                     "ERR_METODO_DUPLICADO", metodo.getNombre().getLinea(), metodo.getNombre().getLexema()));
             return;
         }
-        metodos.put(firma, metodo);
+        metodos.put(clave, metodo);
     }
 
     public void agregarConstructor(Constructor constructor)
     {
-        String firma = constructor.getFirma();
+        String clave = constructor.getClave();
         for (Constructor existente : constructores) {
-            if (existente.getFirma().equals(firma)) {
+            if (existente.getClave().equals(clave)) {
                 tablaSimbolos.agregarError(new ErrorSemantico(
                         "ERR_CONSTRUCTOR_DUPLICADO", constructor.getNombre().getLinea(), constructor.getNombre().getLexema()));
                 return;
@@ -175,35 +175,35 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
     private void consolidarConPadre(Clase padre) {
         for (Metodo metodoHeredado : padre.metodos.values())
         {
-            if (metodos.containsKey(metodoHeredado.getFirma()))
+            if (metodos.containsKey(metodoHeredado.getClave()))
             {
-                // Esta clase ya declaró un método con la misma firma: lo está
+                // Esta clase ya declaró un método con la misma clave: lo está
                 // redefiniendo. Si el heredado era 'final', eso es justo lo
-                // que 'final' prohíbe -- chequeo de firmas, nada de cuerpo/
+                // que 'final' prohíbe -- chequeo de claves, nada de cuerpo/
                 // sentencias (esa etapa sigue sin implementar y no hace falta
                 // para esto).
                 if (metodoHeredado.isFinal()) {
-                    Metodo propio = metodos.get(metodoHeredado.getFirma());
+                    Metodo propio = metodos.get(metodoHeredado.getClave());
                     tablaSimbolos.agregarError(new ErrorSemantico(
                             "ERR_METODO_REDEFINE_FINAL", propio.getNombre().getLinea(), propio.getNombre().getLexema()));
                 }
             }
             else
             {
-                metodos.put(metodoHeredado.getFirma(), metodoHeredado);
+                metodos.put(metodoHeredado.getClave(), metodoHeredado);
             }
         }
         for (Atributo atributo : padre.atributos.values())
         {
-            if (atributos.containsKey(atributo.getFirma()))
+            if (atributos.containsKey(atributo.getClave()))
             {
-                Atributo propio = atributos.get(atributo.getFirma());
+                Atributo propio = atributos.get(atributo.getClave());
                 tablaSimbolos.agregarError(new ErrorSemantico(
                         "ERR_ATRIBUTO_DUPLICADO", propio.getNombre().getLinea(), propio.getNombre().getLexema()));
             }
             else
             {
-                atributos.put(atributo.getFirma(), atributo);
+                atributos.put(atributo.getClave(), atributo);
             }
         }
     }
@@ -214,8 +214,8 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
     // (Interfaz.consolidarHerencia()). Acá sólo se compara la clase -- sus
     // métodos propios y los heredados de su padre, ya copiados por
     // consolidarHerencia() -- contra cada método de la interfaz: si falta la
-    // firma, el método no está implementado; si está con otro retorno, es
-    // el conflicto "override-equivalente" de Java (misma firma, retorno
+    // clave, el método no está implementado; si está con otro retorno, es
+    // el conflicto "override-equivalente" de Java (misma clave, retorno
     // incompatible).
     private void consolidarInterfaces(){
         if (interfaz == null) {
@@ -251,7 +251,7 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
             }
         }
         for (Metodo metodo : interfazResuelta.getMetodos()) {
-            Metodo propio = metodos.get(metodo.getFirma());
+            Metodo propio = metodos.get(metodo.getClave());
             if (propio == null) {
                 tablaSimbolos.agregarError(new ErrorSemantico(
                         "ERR_METODO_INTERFAZ_NOIMPLEMENTADO", metodo.getNombre().getLinea(), metodo.getNombre().getLexema()));

@@ -480,12 +480,12 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     // después de parchear los parámetros reales (setParametrosAMetodoActual),
     // vía tablaSimbolo.agregarMetodoActualAClaseActual() en cada call site.
     // Antes se agregaba acá mismo, con el placeholder todavía en params=[]:
-    // Clase.agregarMetodo() calcula getFirma() (nombre + tipos de parámetro)
-    // en ESE momento para la key del mapa y el chequeo de ERR_METODO_DUPLICADO,
-    // así que quedaba fijada como "nombre()" para siempre -- mutar
+    // Clase.agregarMetodo() calcula getClave() (nombre/aridad) en ESE
+    // momento para la key del mapa y el chequeo de ERR_METODO_DUPLICADO,
+    // así que quedaba fijada como "nombre/0" para siempre -- mutar
     // metodo.parametros después no reindexa el HashMap. Resultado: dos
-    // sobrecargas legítimas con distintos parámetros (ej. mover(int) y
-    // mover(char)) colisionaban como si fueran el mismo método.
+    // sobrecargas legítimas por aridad (ej. mostrar() y mostrar(int n))
+    // colisionaban como si fueran el mismo método.
     private void crearMetodo(Token nombre, boolean estatico, boolean esFinal) {
         Metodo metodo = new Metodo(nombre, null, estatico, new ArrayList<>());
         metodo.setFinal(esFinal);
