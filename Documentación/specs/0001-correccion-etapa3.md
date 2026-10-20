@@ -534,7 +534,7 @@ ninguno de los que ya pasaban.
 | 03 | Herencia como `Tipo`, con argumentos validados | 02 | hecho |
 | 04 | Tipos predefinidos y `Object` implícito | 01 | hecho |
 | 05 | Relación con el tipo equivocado | 03, 04 | ready-for-agent |
-| 06 | Clave (nombre, aridad) | 01 | ready-for-agent |
+| 06 | Clave (nombre, aridad) | 01 | hecho |
 | 07 | Constructores | 04 | ready-for-agent |
 | 08 | Prefactor de `Tipo` | 01 | hecho |
 | 09 | Redefinición exacta y estáticos | 04, 06, 08 | ready-for-agent |

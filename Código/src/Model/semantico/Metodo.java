@@ -9,7 +9,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class Metodo implements Chequeable, OrigenParametroTipo {
     private Token nombre;
@@ -88,13 +87,12 @@ public class Metodo implements Chequeable, OrigenParametroTipo {
         return -1;
     }
 
-    // Para firma/retorno: un idGen que es parametro de tipo PROPIO de este
+    // Para el retorno: un idGen que es parametro de tipo PROPIO de este
     // metodo se identifica por posicion, no por el nombre elegido -- "<T> T
-    // m(T x)" y "<U> U m(U x)" deben ser la MISMA firma (mismo metodo a
-    // efectos de override), igual que en Java real donde el nombre del type
-    // variable propio no importa para la identidad del metodo. Todo lo demas
-    // (primitivos, idClase, idGen de la clase/interfaz contenedora) sigue
-    // comparandose por lexema crudo.
+    // m(T x)" y "<U> U m(U x)" tienen el MISMO retorno (D6), igual que en
+    // Java real donde el nombre del type variable propio no importa. Todo
+    // lo demas (primitivos, idClase, idGen de la clase/interfaz
+    // contenedora) sigue comparandose por lexema crudo.
     private String tipoCanonico(Token tipoToken) {
         if (tipoToken.getTipo() == TokenType.ID_GEN) {
             int indice = indiceEnPropios(tipoToken.getLexema());
@@ -106,21 +104,21 @@ public class Metodo implements Chequeable, OrigenParametroTipo {
     }
 
     /**
-     * Firma para distinguir sobrecargas dentro de una clase (ver
-     * Clase.agregarMetodo): nombre + cabeza del tipo de cada parámetro. El
-     * argumento genérico se ignora a propósito: m(Lista<A>) y m(Lista<B>)
-     * tienen el mismo erasure en Java y no son una sobrecarga válida.
+     * Clave del método (glosario: Clave): "nombre/aridad". La Parte I sólo
+     * admite sobrecarga por cantidad de parámetros (D4), así que
+     * imprimir(int) e imprimir(char) tienen la misma clave imprimir/1 y son
+     * una declaración repetida, aunque difieran los tipos o el retorno
+     * (semError56, semError85). Indexa los métodos de Clase e Interfaz y es
+     * lo que se compara al heredar y al cumplir un contrato; la signatura
+     * (tipos) se compara aparte, en la redefinición.
      */
-    public String getFirma() {
-        String tipos = parametros.stream()
-                .map(p -> tipoCanonico(p.getTipo().getToken()))
-                .collect(Collectors.joining(","));
-        return nombre.getLexema() + "(" + tipos + ")";
+    public String getClave() {
+        return nombre.getLexema() + "/" + parametros.size();
     }
 
-    // Retorno canonicalizado -- mismo criterio que getFirma(), usado para
-    // comparar compatibilidad de retorno entre metodos con la misma firma
-    // (Clase.consolidarInterfaces()). null representa "void", igual que
+    // Retorno canonicalizado, usado para comparar compatibilidad de retorno
+    // entre métodos con la misma clave (Clase.consolidarInterfaces(),
+    // Interfaz.heredarMetodosDe()). null representa "void", igual que
     // tipoRetorno.
     public String getRetornoCanonico() {
         return tipoRetorno == null ? null : tipoCanonico(tipoRetorno.getToken());
@@ -128,7 +126,7 @@ public class Metodo implements Chequeable, OrigenParametroTipo {
 
     @Override
     public void estaBienDeclarado(TablaSimbolos tabla, Map<String, OrigenParametroTipo> entornoContenedor) {
-        // Entorno vigente para la firma de ESTE método: el de la clase/
+        // Entorno vigente para la signatura de ESTE método: el de la clase/
         // interfaz contenedora más los propios -- shadowing permitido (si el
         // método reutiliza un nombre ya vigente, no es error, ver decisión
         // de diseño en analizador-semantico.md). El put pisa al contenedor:

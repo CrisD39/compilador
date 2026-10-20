@@ -24,8 +24,8 @@ admiten una sola relación por clase, y el logro sólo nombra interfaces.
 - Los casos que usaban `implements` con lista se reescriben con una
   interfaz intermedia (`interface AB extends A, B` + `class X implements AB`):
   `sintCorrecto31`, `sintError52`, `semCorrecto10`, `semCorrecto13`,
-  `semCorrecto15`, `semCorrecto21`, `semError30`, `semError33`,
-  `semError36` y `semError44`. Uno de ellos pasa a ser el caso de error
+  `semCorrecto15` (hoy `semError87`, por la clave), `semCorrecto21`,
+  `semError30`, `semError33`, `semError36` y `semError44`. Uno de ellos pasa a ser el caso de error
   sintáctico de `implements A, B`.
 - Si la cátedra confirma que el logro incluye las clases, alcanza con volver
   a la lista en `<HerenciaOpcional>` y restaurar esos casos.
