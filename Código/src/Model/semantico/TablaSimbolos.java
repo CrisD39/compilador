@@ -39,16 +39,17 @@ public class TablaSimbolos {
     // la línea 0: ningún error del programa puede caer ahí.
     // Lo que el enunciado no dice se completa como Java (ADR 0004): String y
     // System son finales. Ninguna declara 'extends': su padre efectivo es
-    // Object por la regla general de Clase.consolidarHerencia(). Los
-    // constructores por defecto de Object/String (System no tiene) son
-    // del ticket de constructores.
+    // Object por la regla general de Clase.consolidarHerencia(). Object y
+    // String tienen constructor por defecto; System no tiene ninguno (no se
+    // instancia: todos sus métodos son estáticos).
     private void registrarPredefinidas() {
         Clase object = crearPredefinida("Object", false);
+        object.agregarConstructorPorDefectoSiFalta();
         object.agregarMetodo(metodoPredefinido("debugPrint", true, null,
                 parametroPredefinido("i", tipoPrimitivo(TokenType.PR_INT, "int"))));
         object.agregarMetodo(metodoPredefinido("toString", false, tipoClase("String")));
 
-        crearPredefinida("String", true);
+        crearPredefinida("String", true).agregarConstructorPorDefectoSiFalta();
 
         // Cada método recibe Tipos propios (no compartidos): así ningún
         // cambio posterior sobre un Tipo se propaga entre firmas.
@@ -230,6 +231,12 @@ public class TablaSimbolos {
         for (EntidadDeclarada entidad : clases.values()) {
             if (entidad instanceof Clase && ((Clase) entidad).isPredefinida()) {
                 continue;
+            }
+            // Constructor por defecto (§6.3): recién acá, con el parseo
+            // terminado, se sabe si la clase quedó sin constructores
+            // registrados. Sin parámetros, no tiene nada que chequear.
+            if (entidad instanceof Clase) {
+                ((Clase) entidad).agregarConstructorPorDefectoSiFalta();
             }
             if (entidad instanceof Chequeable) {
                 ((Chequeable) entidad).estaBienDeclarado(this, Collections.emptyMap());

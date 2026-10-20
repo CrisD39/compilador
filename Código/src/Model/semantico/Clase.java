@@ -13,7 +13,6 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
     private HashMap<String, Atributo> atributos;
     private HashMap<String, Metodo> metodos;
     private List<Constructor> constructores ;
-    private boolean tieneConstructor;
     // Interfaz implementada: a lo sumo una (ADR 0005, la gramática ya no
     // admite lista en 'implements'). Es un Tipo por el mismo motivo que
     // 'herencia' (D2). null si la clase no implementa nada.
@@ -143,8 +142,20 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
         metodos.put(clave, metodo);
     }
 
+    // D3 (Parte I §6.3): un constructor se llama como su clase. Si no, se
+    // reporta ERR_CONSTRUCTOR_NOMBRE_INVALIDO sobre el nombre escrito y NO
+    // se registra: no entra al control de duplicados ni al de parámetros, y
+    // si era el único la clase recibe el constructor por defecto. Corre al
+    // parsear el constructor (lo llama el sintáctico), así que el error sale
+    // en orden de aparición. Vale aunque la clase esté descartada por nombre
+    // repetido: son errores independientes.
     public void agregarConstructor(Constructor constructor)
     {
+        if (!constructor.getNombre().getLexema().equals(getName())) {
+            tablaSimbolos.agregarError(new ErrorSemantico(
+                    "ERR_CONSTRUCTOR_NOMBRE_INVALIDO", constructor.getNombre().getLinea(), constructor.getNombre().getLexema()));
+            return;
+        }
         String clave = constructor.getClave();
         for (Constructor existente : constructores) {
             if (existente.getClave().equals(clave)) {
@@ -154,7 +165,27 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
             }
         }
         constructores.add(constructor);
-        tieneConstructor = true;
+    }
+
+    // Constructor por defecto (Parte I §6.3, como Java): una clase sin
+    // constructores registrados recibe uno sin parámetros, con el token del
+    // nombre de la clase (así su clave y su nombre son los de cualquier
+    // constructor propio). Una clase con al menos uno no lo recibe. Se
+    // llama una vez terminado el parseo (TablaSimbolos.consolidar()), cuando
+    // ya se sabe si quedó alguno registrado -- uno con nombre inválido no
+    // cuenta (D3). Las predefinidas lo reciben al registrarse: Object y
+    // String sí, System no (ADR 0004). Los constructores no se heredan, así
+    // que consolidarConPadre() no los copia.
+    public void agregarConstructorPorDefectoSiFalta() {
+        if (constructores.isEmpty()) {
+            constructores.add(new Constructor(nombre, new ArrayList<>()));
+        }
+    }
+
+    // Lista de solo lectura: se agregan sólo vía agregarConstructor() y
+    // agregarConstructorPorDefectoSiFalta(), que aplican D3/D4.
+    public List<Constructor> getConstructores() {
+        return Collections.unmodifiableList(constructores);
     }
 
     public void setHerencia(Tipo herencia)

@@ -696,8 +696,9 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
             }
             List<Parametro> params = argsFormales();
             bloque();
-            Constructor constructor = new Constructor(idClassToken, params);
-            tablaSimbolo.getClaseActual().agregarConstructor(constructor);
+            // D3: el nombre se controla al registrarlo, mientras se parsea
+            // (Clase.agregarConstructor()); uno con otro nombre no se registra.
+            tablaSimbolo.getClaseActual().agregarConstructor(new Constructor(idClassToken, params));
         } else {
             Tipo argumento = tipoGenericoOpcional();
             Tipo tipo = new Tipo(idClassToken, argumento, dimensionesOpcionales());

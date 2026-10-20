@@ -54,6 +54,7 @@ public final class ErrorSemantico {
             case "ERR_ATRIBUTO_DUPLICADO" -> "el atributo " + x + " ya está declarado o heredado";
             case "ERR_METODO_DUPLICADO" -> "el método " + x + " ya está declarado con la misma cantidad de parámetros";
             case "ERR_CONSTRUCTOR_DUPLICADO" -> "ya existe un constructor de " + x + " con la misma cantidad de parámetros";
+            case "ERR_CONSTRUCTOR_NOMBRE_INVALIDO" -> "el constructor " + x + " no tiene el nombre de su clase";
             case "ERR_PARAMETRO_DUPLICADO" -> "el parámetro " + x + " está repetido";
             case "ERR_TIPO_NO_DECLARADO" -> "el tipo " + x + " no está declarado";
             case "ERR_TIPO_GENERICO_NO_DECLARADO" -> "el parámetro de tipo " + x + " no está declarado en este alcance";
