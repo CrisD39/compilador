@@ -176,10 +176,10 @@ public class TablaSimbolos {
 
     // Recién ahora -- después de setParametrosAMetodoActual, con los
     // parámetros reales ya parcheados -- se puede registrar en
-    // Clase.metodos sin que Clase.agregarMetodo() calcule la firma
-    // (nombre + tipos de parámetro) sobre el placeholder vacío. Antes esto
-    // se hacía dentro de crearMetodo(), con params=[] todavía, y la firma
-    // quedaba fijada mal para siempre (ver el comentario en crearMetodo()
+    // Clase.metodos sin que Clase.agregarMetodo() calcule la clave
+    // (nombre/aridad) sobre el placeholder vacío. Antes esto se hacía
+    // dentro de crearMetodo(), con params=[] todavía, y la clave quedaba
+    // fijada mal para siempre (ver el comentario en crearMetodo()
     // en AnalizadorSintacticoImpl.java).
     public void agregarMetodoActualAClaseActual(){
         if (claseActual == null) {

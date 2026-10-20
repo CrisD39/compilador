@@ -193,7 +193,7 @@ package Model {
       + isFinal() : boolean
       + getParametrosTipoPropios() : List<Token>
       + setParametrosTipoPropios(parametrosTipoPropios : List<Token>) : void
-      + getFirma() : String
+      + getClave() : String
       + getRetornoCanonico() : String
       + estaBienDeclarado(tabla : TablaSimbolos, entornoContenedor : Set<String>) : void
       - indiceEnPropios(lexema : String) : int
@@ -206,7 +206,7 @@ package Model {
       --
       + Constructor(nombre : Token, parametros : List<Parametro>)
       + getNombre() : Token
-      + getFirma() : String
+      + getClave() : String
       + estaBienDeclarado(tabla : TablaSimbolos, entornoGenerico : Set<String>) : void
     }
 
@@ -217,7 +217,7 @@ package Model {
       + Atributo(nombre : Token, tipo : Tipo)
       + getNombre() : Token
       + getTipo() : Tipo
-      + getFirma() : String
+      + getClave() : String
       + estaBienDeclarado(tabla : TablaSimbolos, entornoGenerico : Set<String>) : void
     }
   }

@@ -16,10 +16,10 @@ public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTi
     // Parámetro de tipo propio de esta interfaz (ej. el T de
     // "interface Comparador<T>"): 0 o 1 elemento (REQ-AS-010).
     private List<Token> parametrosTipo = new ArrayList<>();
-    // Key por firma (nombre + tipos de parámetros), no por Token -- mismo
-    // criterio que Clase.metodos (ver Metodo.getFirma()): Token no sobrescribe
+    // Key por clave (nombre/aridad), no por Token -- mismo criterio que
+    // Clase.metodos (ver Metodo.getClave()): Token no sobrescribe
     // equals()/hashCode(), así que un HashMap<Token,Metodo> nunca detectaría
-    // una firma repetida (cada Token es una instancia distinta del lexer).
+    // una clave repetida (cada Token es una instancia distinta del lexer).
     private HashMap<String,Metodo> metodos = new HashMap<>();
     private boolean consolidado = false;
     private boolean enCiclo = false;
@@ -80,16 +80,17 @@ public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTi
         herencias.add(padre);
     }
 
-    // Devuelve false si ya había un método con la misma firma -- mismo
-    // criterio que Clase.agregarMetodo (ver su comentario).
+    // Reporta ERR_METODO_DUPLICADO si ya había un método con la misma clave
+    // -- mismo criterio que Clase.agregarMetodo (ver su comentario):
+    // m(int x) y m(char c) son la clave m/1 (semError77).
     public void agregarMetodo(Metodo metodo) {
-        String firma = metodo.getFirma();
-        if (metodos.containsKey(firma)) {
+        String clave = metodo.getClave();
+        if (metodos.containsKey(clave)) {
             tablaSimbolos.agregarError(new ErrorSemantico(
                     "ERR_METODO_DUPLICADO", metodo.getNombre().getLinea(), metodo.getNombre().getLexema()));
             return;
         }
-        metodos.put(firma, metodo);
+        metodos.put(clave, metodo);
     }
 
     @Override
@@ -164,7 +165,7 @@ public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTi
         }
         camino.add(this);
 
-        // Métodos heredados de los padres ya recorridos, por firma -- sirve
+        // Métodos heredados de los padres ya recorridos, por clave -- sirve
         // para comparar entre sí lo que llega de padres distintos (ver
         // heredarMetodosDe()).
         Map<String, Metodo> heredados = new HashMap<>();
@@ -221,25 +222,25 @@ public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTi
     // que la implementa vea el contrato completo (ADR 0005: la clase
     // implementa una sola interfaz, y la herencia múltiple se arma acá).
     //
-    // Si dos padres traen la misma firma con distinto retorno, es el
+    // Si dos padres traen la misma clave con distinto retorno, es el
     // conflicto real de Java entre métodos "override-equivalentes" de
     // retorno incompatible (semError36, semError44). Se reporta sobre el
-    // método del padre posterior en la lista de 'extends'. La misma firma
+    // método del padre posterior en la lista de 'extends'. La misma clave
     // con el mismo retorno no es conflicto (semCorrecto13, semCorrecto21:
     // los parámetros de tipo propios se comparan por posición, ver
     // Metodo.tipoCanonico()), y en un diamante llega el mismo Metodo por
     // los dos lados.
     //
-    // Un método que esta interfaz declara con una firma heredada no se pisa.
+    // Un método que esta interfaz declara con una clave heredada no se pisa.
     // La comparación entre el propio y el heredado es la de la redefinición,
     // que no se controla acá.
     private void heredarMetodosDe(Interfaz padre, Map<String, Metodo> heredados) {
         for (Metodo metodoHeredado : padre.metodos.values()) {
-            String firma = metodoHeredado.getFirma();
-            Metodo previo = heredados.get(firma);
+            String clave = metodoHeredado.getClave();
+            Metodo previo = heredados.get(clave);
             if (previo == null) {
-                heredados.put(firma, metodoHeredado);
-                metodos.putIfAbsent(firma, metodoHeredado);
+                heredados.put(clave, metodoHeredado);
+                metodos.putIfAbsent(clave, metodoHeredado);
             } else if (previo != metodoHeredado
                     && !Objects.equals(previo.getRetornoCanonico(), metodoHeredado.getRetornoCanonico())) {
                 tablaSimbolos.agregarError(new ErrorSemantico(

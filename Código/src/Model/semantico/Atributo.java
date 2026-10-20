@@ -21,7 +21,8 @@ public class Atributo implements Chequeable {
         return tipo;
     }
 
-    public String getFirma() {
+    // Clave del atributo: el nombre (los atributos no se sobrecargan).
+    public String getClave() {
         return nombre.getLexema();
     }
 

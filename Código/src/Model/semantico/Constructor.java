@@ -6,7 +6,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class Constructor implements Chequeable{
     private Token nombre;
@@ -21,15 +20,12 @@ public class Constructor implements Chequeable{
         return nombre;
     }
 
-    // Firma para distinguir sobrecargas entre constructores de una misma
-    // clase (ver Clase.agregarConstructor) -- igual criterio que
-    // Metodo.getFirma(), pero el nombre es siempre el de la clase, así que
-    // alcanza con los tipos de parámetro para distinguir.
-    public String getFirma() {
-        String tipos = parametros.stream()
-                .map(p -> p.getTipo().getToken().getLexema())
-                .collect(Collectors.joining(","));
-        return nombre.getLexema() + "(" + tipos + ")";
+    // Clave del constructor: la aridad (D4, mismo criterio que
+    // Metodo.getClave()). El nombre no participa porque todos los
+    // constructores de una clase se llaman igual; Punto(int) y Punto(char)
+    // tienen la misma clave y son un constructor duplicado (semError76).
+    public String getClave() {
+        return String.valueOf(parametros.size());
     }
 
     @Override
