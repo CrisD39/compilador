@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public class Interfaz implements Chequeable, EntidadDeclarada {
@@ -24,9 +26,9 @@ public class Interfaz implements Chequeable, EntidadDeclarada {
     private final TablaSimbolos tablaSimbolos;
     // Todas las interfaces que esta extiende (0, 1 o varias -- Logro 2:
     // "interface X extends Y, Z"). No hay un campo separado para "la primera"
-    // como pasaba antes con 'extendida': una lista homogénea es más simple y
-    // es exactamente el mismo patrón que ya usa Clase.interfaces para
-    // 'implements'.
+    // como pasaba antes con 'extendida': una lista homogénea es más simple.
+    // Es la única lista de supertipos del lenguaje: una clase implementa a
+    // lo sumo una interfaz (ADR 0005, Clase.interfaz).
     private LinkedHashSet<Token> herencias;
     private boolean sealed = false;
     private boolean nonSealed = false;
@@ -142,15 +144,18 @@ public class Interfaz implements Chequeable, EntidadDeclarada {
     // X extends Y, Z"). A diferencia de Clase (que solo puede tener un
     // 'extends'), acá cada entrada de 'herencias' es independiente: un
     // problema con un padre (no declarado, ciclo) NO aborta el chequeo de
-    // los demás -- 'continue' en vez de 'return', mismo criterio de
-    // multi-detección que ya usa Clase.consolidarInterfaces() para su lista
-    // de 'implements'.
+    // los demás -- 'continue' en vez de 'return' (multi-detección, Logro 4).
+    // Además copia los métodos de cada padre resuelto (heredarMetodosDe()).
     private void consolidarHerencia(LinkedHashSet<Interfaz> camino) {
         if (consolidado || enCiclo) {
             return;
         }
         camino.add(this);
 
+        // Métodos heredados de los padres ya recorridos, por firma -- sirve
+        // para comparar entre sí lo que llega de padres distintos (ver
+        // heredarMetodosDe()).
+        Map<String, Metodo> heredados = new HashMap<>();
         for (Token padreToken : herencias) {
             EntidadDeclarada padreEntidad = tablaSimbolos.buscarInterfaz(padreToken.getLexema());
             if (padreEntidad == null) {
@@ -191,11 +196,45 @@ public class Interfaz implements Chequeable, EntidadDeclarada {
                             "ERR_HERENCIA_PERMITIDA_SIN_MODIFICADOR", nombre.getLinea(), nombre.getLexema()));
                 }
             }
+            heredarMetodosDe(padre, heredados);
         }
         validarNonSealed();
         validarPermitidos();
         consolidado = true;
         camino.remove(this);
+    }
+
+    // Copia en esta interfaz los métodos de 'padre' (ya consolidado, así que
+    // trae también los de sus propias superinterfaces), para que una clase
+    // que la implementa vea el contrato completo (ADR 0005: la clase
+    // implementa una sola interfaz, y la herencia múltiple se arma acá).
+    //
+    // Si dos padres traen la misma firma con distinto retorno, es el
+    // conflicto real de Java entre métodos "override-equivalentes" de
+    // retorno incompatible (semError36, semError44). Se reporta sobre el
+    // método del padre posterior en la lista de 'extends'. La misma firma
+    // con el mismo retorno no es conflicto (semCorrecto13, semCorrecto21:
+    // los parámetros de tipo propios se comparan por posición, ver
+    // Metodo.tipoCanonico()), y en un diamante llega el mismo Metodo por
+    // los dos lados.
+    //
+    // Un método que esta interfaz declara con una firma heredada no se pisa.
+    // La comparación entre el propio y el heredado es la de la redefinición,
+    // que no se controla acá.
+    private void heredarMetodosDe(Interfaz padre, Map<String, Metodo> heredados) {
+        for (Metodo metodoHeredado : padre.metodos.values()) {
+            String firma = metodoHeredado.getFirma();
+            Metodo previo = heredados.get(firma);
+            if (previo == null) {
+                heredados.put(firma, metodoHeredado);
+                metodos.putIfAbsent(firma, metodoHeredado);
+            } else if (previo != metodoHeredado
+                    && !Objects.equals(previo.getRetornoCanonico(), metodoHeredado.getRetornoCanonico())) {
+                tablaSimbolos.agregarError(new ErrorSemantico(
+                        "ERR_METODO_RETORNO_INCOMPATIBLE",
+                        metodoHeredado.getNombre().getLinea(), metodoHeredado.getNombre().getLexema()));
+            }
+        }
     }
 
     // 'nonsealed' solo es valido si esta interfaz tiene AL MENOS UN padre
@@ -239,12 +278,9 @@ public class Interfaz implements Chequeable, EntidadDeclarada {
             }
             return false;
         } else if (entidad instanceof Clase) {
-            for (Token interfazImplementada : ((Clase) entidad).getInterfaces()) {
-                if (interfazImplementada.getLexema().equals(nombre.getLexema())) {
-                    return true;
-                }
-            }
-            return false;
+            Token interfazImplementada = ((Clase) entidad).getInterfaz();
+            return interfazImplementada != null
+                    && interfazImplementada.getLexema().equals(nombre.getLexema());
         }
         return false;
     }

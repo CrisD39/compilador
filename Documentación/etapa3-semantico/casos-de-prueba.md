@@ -577,7 +577,7 @@ clause":
 
 ### 5.2 Logro 2 — herencia múltiple de interfaces
 
-**Decisión (pendiente de implementar):** el logro vale sólo entre
+**Decisión (implementada, spec 0001 ticket 02):** el logro vale sólo entre
 interfaces. `class X implements A, B` pasa a ser un error sintáctico, y los
 casos que usan `implements` con lista (`sintCorrecto31`, `sintError52`,
 `semCorrecto10`, `semCorrecto13`, `semCorrecto15`, `semCorrecto21`,
