@@ -29,7 +29,9 @@ public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTi
     // como pasaba antes con 'extendida': una lista homogénea es más simple.
     // Es la única lista de supertipos del lenguaje: una clase implementa a
     // lo sumo una interfaz (ADR 0005, Clase.interfaz).
-    private LinkedHashSet<Token> herencias;
+    // Cada entrada es un Tipo (cabeza más argumento opcional, D2), validado
+    // en estaBienDeclarado() como cualquier tipo referencia.
+    private LinkedHashSet<Tipo> herencias;
     private boolean sealed = false;
     private boolean nonSealed = false;
     private LinkedHashSet<Token> permitidos = new LinkedHashSet<Token>();
@@ -64,11 +66,14 @@ public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTi
     // hashCode(), así que el LinkedHashSet nunca detectaría un duplicado
     // literal por sí solo -- "interface X extends Y, Y" debe ser error, no
     // deduplicarse en silencio).
-    public void agregarHerencia(Token padre) {
-        for (Token existente : herencias) {
-            if (existente.getLexema().equals(padre.getLexema())) {
+    // Se compara sólo la cabeza: "extends Comp<A>, Comp<B>" también repite
+    // la interfaz (Java tampoco deja heredar dos parametrizaciones).
+    public void agregarHerencia(Tipo padre) {
+        Token cabeza = padre.getToken();
+        for (Tipo existente : herencias) {
+            if (existente.getToken().getLexema().equals(cabeza.getLexema())) {
                 tablaSimbolos.agregarError(new ErrorSemantico(
-                        "ERR_INTERFAZ_DUPLICADA", padre.getLinea(), padre.getLexema()));
+                        "ERR_INTERFAZ_DUPLICADA", cabeza.getLinea(), cabeza.getLexema()));
                 return;
             }
         }
@@ -109,7 +114,9 @@ public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTi
         this.parametrosTipo = parametrosTipo;
     }
 
-    public Iterable<Token> getHerencias() {
+    // Tal como se escribieron (con su argumento), sin resolver, en orden de
+    // declaración. Una repetida (ERR_INTERFAZ_DUPLICADA) no se guarda.
+    public Iterable<Tipo> getHerencias() {
         return herencias;
     }
 
@@ -122,6 +129,11 @@ public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTi
         Map<String, OrigenParametroTipo> entornoInterfaz = new HashMap<>();
         for (Token parametroTipo : parametrosTipo) {
             entornoInterfaz.put(parametroTipo.getLexema(), this);
+        }
+        // Superinterfaces: mismo control que el 'extends'/'implements' de
+        // Clase (D2, D7; ver Clase.estaBienDeclarado()).
+        for (Tipo padre : herencias) {
+            padre.estaBienDeclarado(tabla, entornoInterfaz);
         }
         for (Metodo metodo : metodos.values()) {
             metodo.estaBienDeclarado(tabla, entornoInterfaz);
@@ -156,11 +168,11 @@ public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTi
         // para comparar entre sí lo que llega de padres distintos (ver
         // heredarMetodosDe()).
         Map<String, Metodo> heredados = new HashMap<>();
-        for (Token padreToken : herencias) {
-            EntidadDeclarada padreEntidad = tablaSimbolos.buscarInterfaz(padreToken.getLexema());
+        for (Tipo padreTipo : herencias) {
+            EntidadDeclarada padreEntidad = tablaSimbolos.buscarInterfaz(padreTipo.getToken().getLexema());
             if (padreEntidad == null) {
-                tablaSimbolos.agregarError(new ErrorSemantico(
-                        "ERR_TIPO_NO_DECLARADO", padreToken.getLinea(), padreToken.getLexema()));
+                // Ya reportado como ERR_TIPO_NO_DECLARADO en
+                // estaBienDeclarado() (D7): se saltea sin reportar.
                 continue;
             }
             if (!(padreEntidad instanceof Interfaz)) {
@@ -271,16 +283,16 @@ public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTi
     // ambos lados para el 'permits' de una interfaz.
     private boolean esSubtipoDirecto(EntidadDeclarada entidad) {
         if (entidad instanceof Interfaz) {
-            for (Token padre : ((Interfaz) entidad).getHerencias()) {
-                if (padre.getLexema().equals(nombre.getLexema())) {
+            for (Tipo padre : ((Interfaz) entidad).getHerencias()) {
+                if (padre.getToken().getLexema().equals(nombre.getLexema())) {
                     return true;
                 }
             }
             return false;
         } else if (entidad instanceof Clase) {
-            Token interfazImplementada = ((Clase) entidad).getInterfaz();
+            Tipo interfazImplementada = ((Clase) entidad).getInterfaz();
             return interfazImplementada != null
-                    && interfazImplementada.getLexema().equals(nombre.getLexema());
+                    && interfazImplementada.getToken().getLexema().equals(nombre.getLexema());
         }
         return false;
     }

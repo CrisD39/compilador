@@ -6,14 +6,18 @@ import java.util.*;
 
 public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo {
     private Token nombre;
-    private Token herencia;
+    // Tipo nombrado en 'extends' (cabeza más argumento opcional, D2): se
+    // valida como cualquier tipo referencia en estaBienDeclarado(). null si
+    // la clase no escribe 'extends' (el padre efectivo es Object igual).
+    private Tipo herencia;
     private HashMap<String, Atributo> atributos;
     private HashMap<String, Metodo> metodos;
     private List<Constructor> constructores ;
     private boolean tieneConstructor;
     // Interfaz implementada: a lo sumo una (ADR 0005, la gramática ya no
-    // admite lista en 'implements'). null si la clase no implementa nada.
-    private Token interfaz;
+    // admite lista en 'implements'). Es un Tipo por el mismo motivo que
+    // 'herencia' (D2). null si la clase no implementa nada.
+    private Tipo interfaz;
     private boolean consolidado = false;
     private boolean enCiclo = false;
     private final TablaSimbolos tablaSimbolos;
@@ -46,8 +50,9 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
     }
 
     // Padre resuelto en la consolidación: el de 'extends' o, si no hay,
-    // Object (ver consolidarHerencia()). null para Object, y para una clase
-    // cuya herencia no se pudo resolver (padre inexistente o ciclo).
+    // Object (ver consolidarHerencia()). Un 'extends' a un tipo inexistente
+    // también deja Object (D7). null para Object y para una clase en un
+    // ciclo de herencia (o que depende de uno).
     private Clase padreEfectivo;
 
     public Clase getPadreEfectivo() {
@@ -77,11 +82,13 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
     // Con una sola interfaz no hay repetición posible: el control de
     // interfaz repetida (ERR_INTERFAZ_DUPLICADA) queda sólo en el 'extends'
     // de una interfaz (Interfaz.agregarHerencia()).
-    public void setInterfaz(Token interfaz) {
+    public void setInterfaz(Tipo interfaz) {
         this.interfaz = interfaz;
     }
 
-    public Token getInterfaz() {
+    // Tal como se escribió (con su argumento), no resuelta: puede nombrar
+    // algo que no existe o que no es una interfaz.
+    public Tipo getInterfaz() {
         return interfaz;
     }
 
@@ -150,12 +157,14 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
         tieneConstructor = true;
     }
 
-    public void setHerencia(Token herencia)
+    public void setHerencia(Tipo herencia)
     {
         this.herencia = herencia;
     }
 
-    public Token getHerencia() {
+    // Tal como se escribió (con su argumento), no resuelta: para el padre
+    // ya resuelto, getPadreEfectivo().
+    public Tipo getHerencia() {
         return herencia;
     }
 
@@ -176,6 +185,18 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
         Map<String, OrigenParametroTipo> entornoClase = new HashMap<>();
         for (Token parametroTipo : parametrosTipo) {
             entornoClase.put(parametroTipo.getLexema(), this);
+        }
+        // Supertipos (D2, D7): misma validación que cualquier tipo referencia
+        // (no declarado, no genérico, parámetro de tipo no declarado), en el
+        // entorno de la clase -- en "class Bb<T> extends Caja<T>" el T es el
+        // de Bb. Heredar sin argumento de un genérico es válido (§5). Un
+        // supertipo inexistente se reporta sólo acá: la consolidación lo
+        // saltea sin volver a reportarlo.
+        if (herencia != null) {
+            herencia.estaBienDeclarado(tabla, entornoClase);
+        }
+        if (interfaz != null) {
+            interfaz.estaBienDeclarado(tabla, entornoClase);
         }
         for(Metodo metodo: metodos.values())
         {
@@ -242,10 +263,10 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
         if (interfaz == null) {
             return;
         }
-        EntidadDeclarada interfaceActual = tablaSimbolos.buscarInterfaz(interfaz.getLexema());
+        EntidadDeclarada interfaceActual = tablaSimbolos.buscarInterfaz(interfaz.getToken().getLexema());
         if (interfaceActual == null) {
-            tablaSimbolos.agregarError(new ErrorSemantico(
-                    "ERR_INTERFAZ_NO_DECLARADA", interfaz.getLinea(), interfaz.getLexema()));
+            // Ya reportado como ERR_TIPO_NO_DECLARADO en estaBienDeclarado()
+            // (D7): la relación que no resuelve se saltea sin reportar.
             return;
         }
         if (!(interfaceActual instanceof Interfaz)) {
@@ -317,8 +338,8 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
         if (!(entidad instanceof Clase)) {
             return false;
         }
-        Token herenciaHija = ((Clase) entidad).getHerencia();
-        return herenciaHija != null && herenciaHija.getLexema().equals(nombre.getLexema());
+        Tipo herenciaHija = ((Clase) entidad).getHerencia();
+        return herenciaHija != null && herenciaHija.getToken().getLexema().equals(nombre.getLexema());
     }
 
     /*
@@ -328,8 +349,11 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
         de recursión actual (las clases entre la raíz de este recorrido y
         'this'): si el padre ya está ahí, hay un ciclo.
 
-        - Si el padre no existe en la tabla: no es un ciclo, es tipo no
-          declarado.
+        - Si el padre no existe en la tabla: no es un ciclo, y ya se reportó
+          como tipo no declarado en estaBienDeclarado() (D7). Se saltea la
+          relación sin reportar: la clase queda con Object como padre
+          efectivo y marcada consolidada, así sus hijas no vuelven a
+          tropezar con el abuelo inexistente.
         - Si el padre ya está en 'camino': es un ciclo. Se reporta una sola
           vez, sobre esta clase (la última visitada antes de repetir), y se
           marca 'enCiclo' en todo el tramo del camino que efectivamente cierra
@@ -350,14 +374,18 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
         camino.add(this);
         Clase padre = null;
         if (herencia != null) {
-            EntidadDeclarada padreEntidad = tablaSimbolos.buscarClase(herencia.getLexema());
+            EntidadDeclarada padreEntidad = tablaSimbolos.buscarClase(herencia.getToken().getLexema());
             if (padreEntidad == null) {
-                tablaSimbolos.agregarError(new ErrorSemantico(
-                        "ERR_TIPO_NO_DECLARADO", herencia.getLinea(), herencia.getLexema()));
-                camino.remove(this);
-                return;
+                // D7: reportado una sola vez en estaBienDeclarado(); acá la
+                // relación se ignora, como si no hubiera 'extends'.
+                padre = tablaSimbolos.getObject();
+            } else {
+                // TODO ticket 05 (D1): si padreEntidad es una Interfaz, el
+                // cast falla. Ahí va ERR_HERENCIA_TIPO_INCORRECTO y
+                // padre = tablaSimbolos.getObject(), igual que la rama de
+                // arriba.
+                padre = (Clase) padreEntidad;
             }
-            padre = (Clase) padreEntidad;
         } else if (this != tablaSimbolos.getObject()) {
             // Object implícito (Parte I §4): sin 'extends', el padre efectivo
             // es Object -- también si la clase implementa una interfaz. Se

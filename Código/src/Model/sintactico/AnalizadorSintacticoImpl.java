@@ -517,14 +517,12 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     private void herenciaOpcional() {
         if (actualEs(TokenType.PR_EXTENDS)) {
             match(TokenType.PR_EXTENDS);
-            Token padre = tokenActual; // idClase del padre, antes de que tipoReferencia() lo consuma
-            tipoReferencia();
-            tablaSimbolo.getClaseActual().setHerencia(padre);
+            // El supertipo se guarda como Tipo completo, con su argumento
+            // (D2): el semántico lo valida como cualquier tipo referencia.
+            tablaSimbolo.getClaseActual().setHerencia(tipoReferencia());
         } else if (actualEs(TokenType.PR_IMPLEMENTS)) {
             match(TokenType.PR_IMPLEMENTS);
-            Token interfaz = tokenActual; // idClase de la interfaz, mismo criterio que 'padre'
-            tipoReferencia();
-            tablaSimbolo.getClaseActual().setInterfaz(interfaz);
+            tablaSimbolo.getClaseActual().setInterfaz(tipoReferencia());
         } else {
             // ϵ — no hace nada
         }
@@ -547,18 +545,14 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     }
 
     private void listaInterfacesExtendidas(Interfaz interfazActual) {
-        Token padre = tokenActual;
-        tipoReferencia();
-        interfazActual.agregarHerencia(padre);
+        interfazActual.agregarHerencia(tipoReferencia());
         listaInterfacesExtendidasResto(interfazActual);
     }
 
     private void listaInterfacesExtendidasResto(Interfaz interfazActual) {
         if (actualEs(TokenType.COMA)) {
             match(TokenType.COMA);
-            Token padre = tokenActual;
-            tipoReferencia();
-            interfazActual.agregarHerencia(padre);
+            interfazActual.agregarHerencia(tipoReferencia());
             listaInterfacesExtendidasResto(interfazActual);
         }
         // ϵ
