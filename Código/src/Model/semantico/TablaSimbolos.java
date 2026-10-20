@@ -1,6 +1,7 @@
 package Model.semantico;
 
 import Model.lexico.Token;
+import Model.lexico.TokenType;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,6 +28,80 @@ public class TablaSimbolos {
 
     public TablaSimbolos() {
         this.clases = new LinkedHashMap<>();
+        registrarPredefinidas();
+    }
+
+    // Tipos predefinidos (Parte I §7, ADR 0004): Object, String y System
+    // están en la tabla ANTES de analizar el programa, así que se pueden
+    // usar como tipos sin declararlos. Se registran primero para que el
+    // LinkedHashMap los recorra primero en consolidar() (los hijos
+    // implícitos de Object lo necesitan consolidado). Tokens sintéticos en
+    // la línea 0: ningún error del programa puede caer ahí.
+    // Lo que el enunciado no dice se completa como Java (ADR 0004): String y
+    // System son finales. Ninguna declara 'extends': su padre efectivo es
+    // Object por la regla general de Clase.consolidarHerencia(). Los
+    // constructores por defecto de Object/String (System no tiene) son
+    // del ticket de constructores.
+    private void registrarPredefinidas() {
+        Clase object = crearPredefinida("Object", false);
+        object.agregarMetodo(metodoPredefinido("debugPrint", true, null,
+                parametroPredefinido("i", tipoPrimitivo(TokenType.PR_INT, "int"))));
+        object.agregarMetodo(metodoPredefinido("toString", false, tipoClase("String")));
+
+        crearPredefinida("String", true);
+
+        // Cada método recibe Tipos propios (no compartidos): así ningún
+        // cambio posterior sobre un Tipo se propaga entre firmas.
+        Clase system = crearPredefinida("System", true);
+        system.agregarMetodo(metodoPredefinido("read", true, tipoPrimitivo(TokenType.PR_INT, "int")));
+        agregarPrintPredefinido(system, "printB", "b", TokenType.PR_BOOLEAN, "boolean");
+        agregarPrintPredefinido(system, "printC", "c", TokenType.PR_CHAR, "char");
+        agregarPrintPredefinido(system, "printI", "i", TokenType.PR_INT, "int");
+        system.agregarMetodo(metodoPredefinido("printS", true, null, parametroPredefinido("s", tipoClase("String"))));
+        system.agregarMetodo(metodoPredefinido("println", true, null));
+        agregarPrintPredefinido(system, "printBln", "b", TokenType.PR_BOOLEAN, "boolean");
+        agregarPrintPredefinido(system, "printCln", "c", TokenType.PR_CHAR, "char");
+        agregarPrintPredefinido(system, "printIln", "i", TokenType.PR_INT, "int");
+        system.agregarMetodo(metodoPredefinido("printSln", true, null, parametroPredefinido("s", tipoClase("String"))));
+    }
+
+    // static void <nombre>(<primitivo> <param>) -- forma de los print* de System.
+    private static void agregarPrintPredefinido(Clase system, String nombre, String param,
+                                                TokenType tipo, String lexemaTipo) {
+        system.agregarMetodo(metodoPredefinido(nombre, true, null,
+                parametroPredefinido(param, tipoPrimitivo(tipo, lexemaTipo))));
+    }
+
+    private Clase crearPredefinida(String nombre, boolean esFinal) {
+        Clase clase = new Clase(new Token(TokenType.ID_CLASE, nombre, 0), this);
+        clase.setPredefinida(true);
+        clase.setFinal(esFinal);
+        clases.put(nombre, clase);
+        return clase;
+    }
+
+    private static Metodo metodoPredefinido(String nombre, boolean estatico, Tipo retorno, Parametro... params) {
+        return new Metodo(new Token(TokenType.ID_MET_VAR, nombre, 0), retorno, estatico,
+                new ArrayList<>(List.of(params)));
+    }
+
+    private static Parametro parametroPredefinido(String nombre, Tipo tipo) {
+        return new Parametro(new Token(TokenType.ID_MET_VAR, nombre, 0), tipo);
+    }
+
+    private static Tipo tipoPrimitivo(TokenType tipo, String lexema) {
+        return new Tipo(new Token(tipo, lexema, 0));
+    }
+
+    private static Tipo tipoClase(String nombre) {
+        return new Tipo(new Token(TokenType.ID_CLASE, nombre, 0));
+    }
+
+    // Object implícito (Parte I §4): padre efectivo de toda clase sin
+    // 'extends'. Nunca es null después del constructor -- redeclarar Object
+    // no lo saca de la tabla (ver insertarClase()).
+    public Clase getObject() {
+        return (Clase) clases.get("Object");
     }
 
     public void agregarError(ErrorSemantico error) {
@@ -53,8 +128,18 @@ public class TablaSimbolos {
     // descartan AMBAS entidades (Logro 4 -- "nombres repetidos... descarta
     // ambas") y se reporta sobre la línea de la SEGUNDA declaración, la que
     // "ya existe" cuando se intenta registrar.
+    //
+    // Excepción (Parte I §4, ADR 0004): redeclarar una predefinida descarta
+    // SÓLO la declaración del programa. La predefinida se conserva y su
+    // nombre no se invalida; si se descartaran las dos, cada uso de String
+    // (printS, toString) daría errores en cascada.
     public boolean insertarClase(EntidadDeclarada entidad) {
         String nombre = entidad.getName();
+        EntidadDeclarada existente = clases.get(nombre);
+        if (existente instanceof Clase && ((Clase) existente).isPredefinida()) {
+            agregarError(new ErrorSemantico("ERR_CLASE_DUPLICADA", entidad.getLinea(), nombre));
+            return false;
+        }
         if (clases.containsKey(nombre) || nombresInvalidados.contains(nombre)) {
             clases.remove(nombre);
             nombresInvalidados.add(nombre);
@@ -114,14 +199,21 @@ public class TablaSimbolos {
         // corriera después los re-validaría en la hija -- errores duplicados
         // por cada subclase, y los genéricos del padre (T) evaluados contra el
         // entorno de la hija, donde no existen.
+        // Las predefinidas no pasan por este control: las armó la tabla, no
+        // el usuario, y no hay nada que reportarle sobre ellas.
         for (EntidadDeclarada entidad : clases.values()) {
+            if (entidad instanceof Clase && ((Clase) entidad).isPredefinida()) {
+                continue;
+            }
             if (entidad instanceof Chequeable) {
                 ((Chequeable) entidad).estaBienDeclarado(this, Collections.emptySet());
             }
         }
         // 2) Resolver herencia/ciclos e interfaces -- recorre en orden de
         // declaración (LinkedHashMap) para que, ante un ciclo, la clase/
-        // interfaz reportada sea determinística.
+        // interfaz reportada sea determinística. Las predefinidas sí se
+        // consolidan (String hereda toString de Object), y van primero
+        // porque se registraron en el constructor.
         for (EntidadDeclarada entidad : clases.values()) {
             if (entidad instanceof Clase) {
                 ((Clase) entidad).consolidar();
