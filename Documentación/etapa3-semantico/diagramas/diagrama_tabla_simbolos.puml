@@ -72,6 +72,7 @@ package Model {
       + setParametrosAMetodoActual(parametros : List<Parametro>) : void
       + setParametrosTipoAMetodoActual(parametrosTipo : List<Token>) : void
       + agregarMetodoActualAClaseActual() : void
+      + estaBienDeclarado() : void
       + consolidar() : void
     }
 

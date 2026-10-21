@@ -15,7 +15,8 @@ Se agrupa según el nivel donde se realizan los chequeos:
 - Chequeo de sentencias
 
 **Estado actual**: el chequeo de declaraciones ya corre de punta a punta
-(`TablaSimbolos.consolidar()`, invocado desde `ModuloPrincipalET3`) y tiene
+(`TablaSimbolos.estaBienDeclarado()` y después `TablaSimbolos.consolidar()`,
+invocados desde `AnalizadorSemanticoHandlerImpl`) y tiene
 tests en `Código/resources/semantico/{sinErrores,conErrores}/` + los
 testers `TesterSemanticoDeCasosSinErrores`/`ConErrores`
 (`Código/src/test/java/`) — ver `casos-de-prueba.md` secciones
@@ -68,7 +69,7 @@ los registra; el chequeo de corrección corre **después**, recorriendo la
 todo resuelto de antemano, como herencia circular, compatibilidad de firmas
 al overridear un método heredado, o que los tipos referenciados efectivamente
 existan. Es lo que insinúa `Chequeable.estaBienDeclarado()` /
-`TablaSimbolos.consolidar()` en el código.
+`TablaSimbolos.estaBienDeclarado()` + `TablaSimbolos.consolidar()` en el código.
 
 **Estado actual (ya implementado, vía `estaBienDeclarado(TablaSimbolos,
 Map<String, OrigenParametroTipo>)` en
@@ -1123,7 +1124,8 @@ atributos/métodos resueltos) — igual que el resto de "Chequeo de corrección"
 
    **Estado actual — hecho.** El mecanismo base ya estaba implementado desde
    antes (la lista de errores se acumula sin abortar; `AnalizadorSemantico
-   HandlerImpl.analizar()` corre `tablaSimbolos.consolidar()` siempre, aun
+   HandlerImpl.analizar()` corre `tablaSimbolos.estaBienDeclarado()` y
+   `consolidar()` siempre, aun
    con errores sintácticos, y `ModuloPrincipalET3` junta ambas listas) — lo
    que faltaba era solo bajar a archivo los casos límite. Al hacerlo
    (`resources/semantico/multiError/`) se encontró y arregló un bug real:
@@ -1510,9 +1512,9 @@ Quedan sólo los de nombres y textos.
    corrección". El glosario usa **Construcción de la tabla**, **Control de
    declaraciones** y **Consolidación**. La "Pasada 2" de este documento es
    parte de la construcción de la tabla, no del control de declaraciones.
-2. **`consolidar()` hace más que consolidar.** `TablaSimbolos.consolidar()`
-   corre el control de declaraciones (`estaBienDeclarado`) y la
-   consolidación. A su vez, `Clase.consolidar()` hace parte del control de
+2. **`consolidar()` hace más que consolidar.** En `TablaSimbolos` ya está
+   separado: `estaBienDeclarado()` corre el control de declaraciones y
+   `consolidar()` sólo la consolidación. Pero `Clase.consolidar()` hace parte del control de
    declaraciones (circularidad, `sealed`/`final`, contratos de interfaz)
    junto con la consolidación, porque esos controles necesitan recorrer la
    herencia.

@@ -205,7 +205,7 @@ parser.parse();
 
 // 2. Primera pasada semántica: Verifica que los tipos declarados existan,
 // que no haya herencia circular, e incorpora métodos/atributos heredados.
-tablaSimbolos.chequearDeclaraciones();
+tablaSimbolos.estaBienDeclarado();
 tablaSimbolos.consolidar();
 
 // 3. Segunda pasada semántica: Recién AHORA que todas las clases están

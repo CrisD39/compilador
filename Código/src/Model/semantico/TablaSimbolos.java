@@ -217,19 +217,19 @@ public class TablaSimbolos {
         claseActual.agregarMetodo(metodoActual);
     }
 
-    // Chequeo de corrección (ver "TODO — Chequeo de corrección" en
+    // Control de declaraciones (ver "TODO — Chequeo de corrección" en
     // analizador-semantico.md): corre DESPUÉS de que Pasada 1+2 ya armaron
-    // toda la tabla, en dos pasos.
-    public void consolidar() {
-        // 1) Chequear cada declaración tal como la escribió el usuario
-        // (parámetros duplicados, tipos no declarados, etc.), delegando hacia
-        // abajo. Tiene que ir ANTES de consolidar la herencia: consolidarConPadre
-        // copia los miembros del padre dentro de la hija, y si este chequeo
-        // corriera después los re-validaría en la hija -- errores duplicados
-        // por cada subclase, y los genéricos del padre (T) evaluados contra el
-        // entorno de la hija, donde no existen.
-        // Las predefinidas no pasan por este control: las armó la tabla, no
-        // el usuario, y no hay nada que reportarle sobre ellas.
+    // toda la tabla, y ANTES de consolidar().
+    // Chequea cada declaración tal como la escribió el usuario (parámetros
+    // duplicados, tipos no declarados, etc.), delegando hacia abajo. Tiene
+    // que ir ANTES de consolidar la herencia: consolidarConPadre copia los
+    // miembros del padre dentro de la hija, y si este chequeo corriera
+    // después los re-validaría en la hija -- errores duplicados por cada
+    // subclase, y los genéricos del padre (T) evaluados contra el entorno de
+    // la hija, donde no existen.
+    // Las predefinidas no pasan por este control: las armó la tabla, no el
+    // usuario, y no hay nada que reportarle sobre ellas.
+    public void estaBienDeclarado() {
         for (EntidadDeclarada entidad : clases.values()) {
             if (esPredefinida(entidad)) {
                 continue;
@@ -244,11 +244,15 @@ public class TablaSimbolos {
                 ((Chequeable) entidad).estaBienDeclarado(this, Collections.emptyMap());
             }
         }
-        // 2) Resolver herencia/ciclos e interfaces -- recorre en orden de
-        // declaración (LinkedHashMap) para que, ante un ciclo, la clase/
-        // interfaz reportada sea determinística. Las predefinidas sí se
-        // consolidan (String hereda toString de Object), y van primero
-        // porque se registraron en el constructor.
+    }
+
+    // Consolidación: resuelve herencia/ciclos e interfaces. Asume que ya
+    // corrió estaBienDeclarado() (ver ahí por qué el orden importa).
+    // Recorre en orden de declaración (LinkedHashMap) para que, ante un
+    // ciclo, la clase/interfaz reportada sea determinística. Las
+    // predefinidas sí se consolidan (String hereda toString de Object), y
+    // van primero porque se registraron en el constructor.
+    public void consolidar() {
         for (EntidadDeclarada entidad : clases.values()) {
             if (entidad instanceof Clase) {
                 ((Clase) entidad).consolidar();

@@ -13,7 +13,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 
 // Módulo Principal de la etapa 3: corre léxico + sintáctico + el chequeo
-// SEMÁNTICO de declaraciones (TablaSimbolos.consolidar()) sobre el fuente.
+// SEMÁNTICO de declaraciones (TablaSimbolos.estaBienDeclarado() y después
+// consolidar()) sobre el fuente.
 // Es el espejo de ModuloPrincipalET2 (que se queda en lo sintáctico); el
 // wiring vive en AnalizadorSemanticoHandlerImpl (Controller), acá sólo queda
 // la presentación.

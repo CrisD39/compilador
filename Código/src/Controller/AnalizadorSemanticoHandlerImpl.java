@@ -22,9 +22,12 @@ public class AnalizadorSemanticoHandlerImpl implements AnalizadorSemanticoHandle
             TablaSimbolos tablaSimbolos = new TablaSimbolos();
             AnalizadorSintactico sintactico = new AnalizadorSintacticoImpl(lexico, tablaSimbolos);
             sintactico.start();
-            // Chequeo de corrección (ver TablaSimbolos.consolidar()): corre
-            // siempre, aun si hubo errores sintácticos -- opera sobre lo que
-            // efectivamente se llegó a registrar en la tabla.
+            // Chequeo de corrección: primero el control de declaraciones y
+            // después la consolidación (el orden importa, ver
+            // TablaSimbolos.estaBienDeclarado()). Corren siempre, aun si hubo
+            // errores sintácticos -- operan sobre lo que efectivamente se
+            // llegó a registrar en la tabla.
+            tablaSimbolos.estaBienDeclarado();
             tablaSimbolos.consolidar();
             return new ResultadoAnalisisSemantico(sintactico.getErrores(), tablaSimbolos.getErrores());
         } finally {

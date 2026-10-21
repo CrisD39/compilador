@@ -19,7 +19,7 @@ description: Implementar o modificar funcionalidad del compilador MiniJava (léx
 Capas en `Código/src/`, sin dependencias externas:
 
 - **View** (`ModuloPrincipal`, `ModuloPrincipalET2`, `ModuloPrincipalET3`): sólo presentación y formato de salida. Las tres se mantienen porque cada tester de etapa invoca la suya. No mover lógica acá.
-- **Controller** (`Analizador*HandlerImpl`): arma el pipeline. ET3: `SourceManagerMejorado` → `AnalizadorLexicoImpl` → `AnalizadorSintacticoImpl(lexico, tablaSimbolos)` → `start()` → `tablaSimbolos.consolidar()`.
+- **Controller** (`Analizador*HandlerImpl`): arma el pipeline. ET3: `SourceManagerMejorado` → `AnalizadorLexicoImpl` → `AnalizadorSintacticoImpl(lexico, tablaSimbolos)` → `start()` → `tablaSimbolos.estaBienDeclarado()` → `tablaSimbolos.consolidar()`.
 - **Model/lexico**: autómata con un método por estado. Errores léxicos van al `ResultadoLexicoListener` y no cortan.
 - **Model/sintactico**: descenso recursivo LL(1). Un método por no terminal, con la producción en un comentario encima. Errores → `ErrorSintactico` + `sincronizar()` (modo pánico), nunca excepción. Las acciones semánticas que construyen la tabla se ejecutan acá, mientras se parsea.
 - **Model/semantico**: `TablaSimbolos` (instancia única pasada por referencia, **no** Singleton), `Clase`, `Interfaz`, `Metodo`, `Constructor`, `Atributo`, `Parametro`, jerarquía `Tipo`, `ErrorSemantico`.
@@ -28,7 +28,7 @@ Capas en `Código/src/`, sin dependencias externas:
 
 - **Orden en `TablaSimbolos.consolidar()`**: primero `Chequeable.estaBienDeclarado(tabla, entornoGenerico)` sobre cada entidad (tal como la escribió el usuario), después `Clase/Interfaz.consolidar()` (herencia, ciclos, copia de miembros del padre). Invertirlo duplica errores en subclases y evalúa genéricos del padre en el entorno de la hija.
 - **Chequeable delega hacia abajo**: cada entidad chequea lo suyo y delega en sus miembros, pasando la misma tabla y extendiendo `entornoGenerico` con sus propios parámetros de tipo.
-- **Errores semánticos no cortan**: se agregan con `tabla.agregarError(new ErrorSemantico(CODIGO, linea, lexema))` y el análisis sigue. `consolidar()` corre aun con errores sintácticos.
+- **Errores semánticos no cortan**: se agregan con `tabla.agregarError(new ErrorSemantico(CODIGO, linea, lexema))` y el análisis sigue. `estaBienDeclarado()` y `consolidar()` corren aun con errores sintácticos.
 - **Códigos de error**: categorías fijas `ERR_*` (ver `Documentación/etapa3-semantico/casos-de-prueba.md`). Reusar uno existente si aplica; uno nuevo se documenta y se cubre con un caso.
 - **Determinismo**: clases/interfaces en `LinkedHashMap` (orden de declaración), así el error reportado ante ciclos o duplicados es siempre el mismo. No cambiar a `HashMap`.
 - **Clase e Interfaz comparten namespace**. Un nombre duplicado descarta ambas entidades para siempre (`nombresInvalidados`), y se reporta en la línea de la segunda declaración.
