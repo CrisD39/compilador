@@ -66,7 +66,8 @@ package Model {
       + insertarClase(entidad : EntidadDeclarada) : boolean
       + buscarClase(nombre : String) : EntidadDeclarada
       + buscarInterfaz(nombre : String) : EntidadDeclarada
-      + chequearCategoriaSupertipo(supertipo : Tipo, esperaClase : boolean) : boolean
+      + chequearCategoriaSupertipo(supertipo : Tipo, esperaClase : boolean) : void
+      - {static} esPredefinida(entidad : EntidadDeclarada) : boolean
       + setTipoRetornoAMetodoActual(tipoRetorno : Tipo) : void
       + setParametrosAMetodoActual(parametros : List<Parametro>) : void
       + setParametrosTipoAMetodoActual(parametrosTipo : List<Token>) : void
@@ -163,6 +164,7 @@ package Model {
       - permitidos : LinkedHashSet<Token>
       - tieneSupertipoSellado : boolean
       - instanciacion : Map<OrigenParametroTipo, Tipo>
+      - ancestrosEnConflicto : Set<OrigenParametroTipo> {readOnly}
       --
       + Interfaz(nombre : Token, tablaSimbolos : TablaSimbolos)
       + getName() : String
@@ -183,7 +185,8 @@ package Model {
       + consolidar() : void
       + permiteComoSubclase(lexemaHijo : String) : boolean
       - consolidarHerencia(camino : LinkedHashSet<Interfaz>) : void
-      - heredarMetodosDe(padre : Interfaz, heredados : Map<String, Metodo>) : void
+      - unirInstanciacion(delPadre : Map<OrigenParametroTipo, Tipo>) : void
+      - heredarMetodosDe(padre : Interfaz, propios : Map<String, Metodo>, heredados : Map<String, Metodo>, redefinicionesReportadas : Set<Metodo>) : void
       - compararConObject() : void
       - validarNonSealed() : void
       - validarPermitidos() : void

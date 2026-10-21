@@ -1391,8 +1391,18 @@ hija:
   `{Intermedia → String, Base → String}`. El argumento sólo cuenta si el
   padre resuelto es genérico.
 - Una interfaz arma el suyo igual (`Interfaz.getInstanciacion()`), uniendo
-  lo que compone cada superinterfaz. Si un mismo ancestro llega por dos
-  caminos con argumentos distintos, gana el último.
+  lo que compone cada superinterfaz (`Interfaz.unirInstanciacion()`). Si un
+  mismo ancestro genérico llega por dos caminos con argumentos distintos
+  (`Dd extends Bb, Cc`, con `Bb extends Aa<String>` y
+  `Cc extends Aa<Object>`), es `ERR_HERENCIA_ARGUMENTOS_DISTINTOS` sobre la
+  interfaz que los une, una vez por interfaz. La spec no fijaba una regla:
+  antes ganaba el último padre, y el resultado dependía del orden del
+  `extends`. Se eligió la más conservadora, la de Java, que no deja heredar
+  dos parametrizaciones del mismo tipo. El ancestro en conflicto queda sin
+  entrada en el mapa (su parámetro se conserva, como en D5), así ninguna
+  comparación depende del orden. Los métodos se heredan recién después de
+  unir todas las ramas. Un camino sin argumento no deja entrada y no choca
+  con uno que sí la tiene.
 - **Herencia sin argumento (D5).** Si el ancestro no tiene entrada, su
   parámetro se conserva y no se reemplaza por `Object`, como pide el §5:
   `Object get()` no redefine el `T get()` de `Base` heredado sin argumento.
@@ -1409,11 +1419,13 @@ hija:
   1. Si la clase no tiene la clave (propia o heredada), o sólo tiene un
      estático con ella: `ERR_METODO_INTERFAZ_NOIMPLEMENTADO` sobre el
      método de la interfaz. Un estático no cumple un contrato (§6.2).
-  2. Si el método que tiene la clase es el de `Object` (el `toString`
-     heredado), se saltea: esa comparación ya la hizo la interfaz contra
-     `Object` (abajo), y repetirla daría un segundo error sobre un token
-     sintético de la línea 0. Así `toString` heredado cumple
-     `String toString()`.
+  2. Si la clave es la de un método de instancia de `Object` (`toString`),
+     se saltea: el resultado ya lo deciden la interfaz contra `Object`
+     (abajo) y la clase contra `Object`, su padre efectivo (la
+     redefinición). Repetirla daba un segundo error idéntico sobre el
+     método de la clase (`semError94`), o uno sobre un token sintético de
+     la línea 0 si la clase heredaba el `toString` de `Object`. Así
+     `toString` heredado cumple `String toString()`.
   3. Si la signatura difiere: `ERR_REDEFINICION_INCOMPATIBLE` sobre el
      método de la clase.
 - **Conflicto entre superinterfaces.** Al consolidarse, una interfaz copia
@@ -1425,6 +1437,13 @@ hija:
   e `I2` traen la misma clave con otra signatura, y se reporta sobre el
   método de la segunda. En un diamante llega el mismo método por los dos
   lados y no se compara.
+- **Redefinición en una interfaz.** Si la interfaz declara un método con
+  una clave heredada, lo redefine con la regla de la redefinición de
+  clases: la signatura instanciada tiene que ser exactamente igual, y si
+  no, `ERR_REDEFINICION_INCOMPATIBLE` sobre el método de la interfaz
+  (`semError91`). Se reporta una vez por método aunque varios padres
+  traigan la clave. El propio oculta a los heredados: entre ellos ya no se
+  comparan, como en Java.
 - **Contra `Object`** (`Interfaz.compararConObject()`). Al empezar su
   consolidación, con sólo los métodos propios, una interfaz compara cada
   uno con el método **de instancia** de `Object` de la misma clave, con la
@@ -1460,6 +1479,15 @@ cambiaron de resultado por una regla de la Parte I se corrigieron en su
 etiqueta esperada, no en el código: `semCorrecto14`/`15` pasaron a
 `semError86`/`87` (clave por aridad) y `semError37` cambió de etiqueta
 (contrato con otra signatura).
+
+El code review de la spec agregó `semError90`–`94`, `semCorrecto35` y
+`semCorrecto36` ("Casos del code review" en `casos-de-prueba.md` §5.6), y
+los testers pasan a dar 270 tests. Uno de esos casos es sintáctico: un
+parámetro sin tipo (`void m(int a, )`) dejaba un `Parametro` con tipo
+`null` (`tipo()` devuelve `null` tras un error sintáctico), y el control de
+declaraciones, que corre aun con errores sintácticos, terminaba con una
+`NullPointerException`. `Parametro.estaBienDeclarado()` ahora saltea ese
+tipo, como `Tipo` con un argumento `null`.
 
 ## Desvíos respecto del glosario y el enunciado
 

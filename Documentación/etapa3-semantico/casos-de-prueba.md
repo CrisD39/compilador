@@ -131,7 +131,7 @@ reportaba cada error.
 
 | Categoría (`ERR_*`) | Lexema en la etiqueta |
 |---|---|
-| `CLASE_DUPLICADA`, `HERENCIA_CICLICA`, `HERENCIA_CLASE_FINAL`, `HERENCIA_NO_PERMITIDA`, `HERENCIA_PERMITIDA_SIN_MODIFICADOR`, `NONSEALED_SIN_PADRE_SEALED` | nombre de la clase/interfaz que se declara |
+| `CLASE_DUPLICADA`, `HERENCIA_CICLICA`, `HERENCIA_CLASE_FINAL`, `HERENCIA_NO_PERMITIDA`, `HERENCIA_PERMITIDA_SIN_MODIFICADOR`, `NONSEALED_SIN_PADRE_SEALED`, `HERENCIA_ARGUMENTOS_DISTINTOS` | nombre de la clase/interfaz que se declara |
 | `TIPO_NO_DECLARADO`, `TIPO_NO_GENERICO`, `TIPO_GENERICO_NO_DECLARADO` | el nombre del tipo usado (en `extends`, `implements`, atributo, parámetro, retorno, argumento de tipo, `permits`) |
 | `HERENCIA_TIPO_INCORRECTO` | el tipo nombrado en `extends`/`implements` que no es de la categoría esperada (una interfaz en el `extends` de una clase, una clase en `implements` o en el `extends` de una interfaz) |
 | `INTERFAZ_DUPLICADA` | la interfaz repetida en el `extends` de una interfaz |
@@ -676,6 +676,15 @@ la instanciación genérica aplicada):
   sobrecarga). En un diamante llega el mismo método por los dos lados y no
   se compara. `sinErrores/semCorrecto13.java` (dos interfaces exigen la
   misma signatura — sin conflicto).
+- **Redefinición en una interfaz.** Si la interfaz declara ella misma la
+  clave heredada, su método redefine al heredado con la regla de la
+  redefinición: otra signatura es `ERR_REDEFINICION_INCOMPATIBLE` sobre el
+  método de la interfaz (`semError91`; `semCorrecto36` es el gemelo sano).
+  El propio oculta a los heredados, que ya no se comparan entre sí.
+- **Mismo ancestro genérico por dos caminos.** Si los dos caminos le dan
+  argumentos distintos, `ERR_HERENCIA_ARGUMENTOS_DISTINTOS` sobre la
+  interfaz que los une, en cualquier orden del `extends` (`semError92`,
+  `semError93`; `semCorrecto35` con el mismo argumento por los dos lados).
 - **Contrato con otra signatura.** Si la clase tiene la clave pero con otra
   signatura, es `ERR_REDEFINICION_INCOMPATIBLE` sobre el método de la
   clase (`semError37`, `semError64`). Antes `semError37` daba
@@ -882,8 +891,9 @@ sintáctico.
 |---|---|---|---|
 | `ERR_HERENCIA_TIPO_INCORRECTO` | Relación con el tipo equivocado (D1): una clase extiende una interfaz, una clase implementa una clase o una interfaz extiende una clase. Se reporta en el control de declaraciones (`TablaSimbolos.chequearCategoriaSupertipo()`), y la consolidación ignora la relación: la clase queda con `Object` como padre efectivo. | el tipo nombrado en la relación | `"Ii" no es una clase` / `"Aa" no es una interfaz` |
 | `ERR_CONSTRUCTOR_NOMBRE_INVALIDO` | Un constructor no tiene el nombre de su clase (D3). Se reporta al parsearlo (`Clase.agregarConstructor()`) y no se registra. | el nombre escrito en el constructor | `el constructor "Bb" no tiene el nombre de su clase` |
-| `ERR_REDEFINICION_INCOMPATIBLE` | Un método de instancia tiene la clave de uno de instancia heredado (o de uno de la interfaz que implementa la clase) y su signatura no es exactamente igual después de instanciar. También cuando un método de interfaz choca con un método de instancia de `Object`. | nombre del método de la hija, de la clase o de la interfaz | `el método "m" redefine o implementa un método con otra signatura` |
+| `ERR_REDEFINICION_INCOMPATIBLE` | Un método de instancia tiene la clave de uno de instancia heredado (o de uno de la interfaz que implementa la clase) y su signatura no es exactamente igual después de instanciar. También cuando un método de interfaz choca con un método de instancia de `Object`, o con un método que la interfaz hereda de una superinterfaz (`semError91`). | nombre del método de la hija, de la clase o de la interfaz | `el método "m" redefine o implementa un método con otra signatura` |
 | `ERR_REDEFINE_ESTATICO` | Un descendiente declara un método con la clave de un estático heredado, o declara un estático con la clave de un método de instancia heredado. | nombre del método del descendiente | `el método "m" tiene la clave de un método heredado y uno de los dos es estático` |
+| `ERR_HERENCIA_ARGUMENTOS_DISTINTOS` | Una interfaz llega a un mismo ancestro genérico por dos caminos con argumentos distintos (`Dd extends Bb, Cc`, con `Bb extends Aa<String>` y `Cc extends Aa<Object>`). Lo agregó el code review de la spec (ver "Casos del code review" al final de esta sección). | nombre de la interfaz que une los dos caminos | `"Dd" hereda un mismo tipo genérico con argumentos distintos` |
 
 **Código retirado:** `ERR_INTERFAZ_NO_DECLARADA` (D7). Un supertipo
 inexistente se reporta una sola vez como `ERR_TIPO_NO_DECLARADO`
@@ -1008,6 +1018,31 @@ Todos los testers de Etapas 1–3 pasan (263 tests al cerrar la spec). Los
 casos existentes que cambiaron de resultado por una regla de la Parte I
 (`semCorrecto14`/`15` → `semError86`/`87`, y la etiqueta de `semError37`) se
 corrigieron en su etiqueta esperada, no en el código, como se anota arriba.
+
+**Casos del code review (hecho).** El code review de la spec encontró
+cuatro fallas de comportamiento. Cada una tiene su caso, que fallaba antes
+del arreglo (salvo `semError94`, ver abajo):
+
+| Archivo | Qué prueba | Código | Etiqueta |
+|---|---|---|---|
+| `conErrores/semError90.java` | `void m(int a, )`: falta el tipo de un parámetro. Error sintáctico en un caso del semántico, porque la NPE salía en el control de declaraciones, que el tester sintáctico no corre (antes: `NullPointerException`, sin etiqueta) | sintáctico | `[Error:)\|10]` |
+| `conErrores/semError91.java` | `interface Bb extends Aa` redeclara `int m()` de `Aa` como `String m()` (antes: `[SinErrores]`) | `ERR_REDEFINICION_INCOMPATIBLE` | `[Error:m\|12]` (el `m` de `Bb`) |
+| `conErrores/semError92.java` | `Dd extends Bb, Cc`, con `Bb extends Aa<String>` y `Cc extends Aa<Object>` (antes: sin error) | `ERR_HERENCIA_ARGUMENTOS_DISTINTOS` | `[Error:Dd\|15]` |
+| `conErrores/semError93.java` | lo mismo con `Dd extends Cc, Bb`: el resultado no depende del orden | `ERR_HERENCIA_ARGUMENTOS_DISTINTOS` | `[Error:Dd\|15]` |
+| `conErrores/semError94.java` | `class Cc implements Ii` con `int toString()`, e `Ii` declara `String toString()`: se reporta una sola vez (antes salía dos veces) | `ERR_REDEFINICION_INCOMPATIBLE` | `[Error:toString\|13]` (el de `Cc`) |
+| `sinErrores/semCorrecto35.java` | gemelo sano de `semError92`: los dos caminos llegan a `Aa<String>`, y `Ee implements Dd` cumple con `String m()` | — | `[SinErrores]` |
+| `sinErrores/semCorrecto36.java` | gemelo sano de `semError91`: una interfaz redeclara un método heredado con la misma signatura, también instanciada (`Gg extends Ff<String>` con `String obtener()`) | — | `[SinErrores]` |
+
+`semError94` pasaba antes del arreglo: el tester sólo busca la etiqueta en
+la salida y no cuenta cuántas veces aparece. Que salga una sola vez se
+controló a mano, corriendo el jar sobre el caso.
+
+En `semError92`/`93`, si además una clase implementa `Dd`, su método `m`
+también da `ERR_REDEFINICION_INCOMPATIBLE`: el ancestro en conflicto queda
+sin instanciar (su `T` se conserva, D5), y ninguna signatura lo cumple. El
+caso deja la clase afuera para probar un solo error.
+
+Con estos casos, los testers de Etapas 1–3 dan 270 tests en verde.
 
 ## 6. Preguntas abiertas a resolver antes de escribir casos concretos
 
