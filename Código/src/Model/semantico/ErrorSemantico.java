@@ -75,6 +75,8 @@ public final class ErrorSemantico {
                     "el método " + x + " tiene la clave de un método heredado y uno de los dos es estático";
             case "ERR_METODO_INTERFAZ_NOIMPLEMENTADO" -> "el método " + x + " de la interfaz no está implementado";
             case "ERR_METODO_RETORNO_INCOMPATIBLE" -> "el método " + x + " se hereda con signaturas incompatibles";
+            case "ERR_HERENCIA_ARGUMENTOS_DISTINTOS" ->
+                    x + " hereda un mismo tipo genérico con argumentos distintos";
             case "ERR_HERENCIA_TIPO_INCORRECTO" ->
                     x + " no es " + (detalle != null ? detalle : "del tipo esperado en la relación");
             default -> codigo + " (" + x + ")";

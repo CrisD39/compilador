@@ -10,6 +10,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.UnaryOperator;
 
 public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTipo {
     private Token nombre;
@@ -44,11 +45,16 @@ public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTi
     // directa o no, el argumento con que esta interfaz la hereda, visto desde
     // acá. Con "interface I<T> extends J<T>" queda J -> T (el de I). Se arma
     // en consolidarHerencia() uniendo lo que compone cada padre
-    // (Tipo.componerInstanciacion()). Lo usan el conflicto entre padres
-    // (heredarMetodosDe()) y el contrato de una clase que la implementa
-    // (Clase.consolidarInterfaces()). Vacío antes de consolidar; en un ciclo
-    // queda con las ramas que se alcanzaron a recorrer.
+    // (Tipo.componerInstanciacion(), unirInstanciacion()). Lo usan la
+    // redefinición y el conflicto entre padres (heredarMetodosDe()) y el
+    // contrato de una clase que la implementa (Clase.consolidarInterfaces()).
+    // Vacío antes de consolidar; en un ciclo queda con las ramas que se
+    // alcanzaron a recorrer.
     private Map<OrigenParametroTipo, Tipo> instanciacion = new HashMap<>();
+    // Ancestros genéricos que llegan por dos caminos con argumentos
+    // distintos (ver unirInstanciacion()). No tienen entrada en
+    // 'instanciacion'.
+    private final Set<OrigenParametroTipo> ancestrosEnConflicto = new HashSet<>();
 
     public Interfaz(Token nombre, TablaSimbolos tablaSimbolos) {
         this.nombre = nombre;
@@ -187,10 +193,10 @@ public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTi
         // interfaz marcada enCiclo pasó antes por acá, en el camino).
         compararConObject();
 
-        // Métodos heredados de los padres ya recorridos, por clave -- sirve
-        // para comparar entre sí lo que llega de padres distintos (ver
-        // heredarMetodosDe()).
-        Map<String, Metodo> heredados = new HashMap<>();
+        // Padres resueltos, en orden de 'extends': sus métodos se heredan
+        // recién después del recorrido, cuando 'instanciacion' ya une todas
+        // las ramas (así ninguna comparación depende del orden del 'extends').
+        List<Interfaz> padresResueltos = new ArrayList<>();
         for (Tipo padreTipo : herencias) {
             EntidadDeclarada padreEntidad = tablaSimbolos.buscarInterfaz(padreTipo.getToken().getLexema());
             if (padreEntidad == null) {
@@ -231,14 +237,25 @@ public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTi
                             "ERR_HERENCIA_PERMITIDA_SIN_MODIFICADOR", nombre.getLinea(), nombre.getLexema()));
                 }
             }
-            // Antes de heredarMetodosDe(): el conflicto entre padres se
-            // compara con esta vista, que ya incluye la rama de 'padre'.
             // Mismo criterio que Clase.consolidarHerencia() para el argumento.
-            // Las ramas se unen sin chocar salvo que un mismo ancestro llegue
-            // por dos caminos con argumentos distintos (gana el último).
             Tipo argumento = padre.parametrosTipo.isEmpty() ? null : padreTipo.getArgumento();
-            instanciacion.putAll(Tipo.componerInstanciacion(padre.instanciacion, padre, argumento));
-            heredarMetodosDe(padre, heredados);
+            unirInstanciacion(Tipo.componerInstanciacion(padre.instanciacion, padre, argumento));
+            padresResueltos.add(padre);
+        }
+        if (!ancestrosEnConflicto.isEmpty()) {
+            tablaSimbolos.agregarError(new ErrorSemantico(
+                    "ERR_HERENCIA_ARGUMENTOS_DISTINTOS", nombre.getLinea(), nombre.getLexema()));
+        }
+        // Métodos propios, tal como los declaró esta interfaz (antes de
+        // copiar los heredados): un heredado con la misma clave lo redefinen.
+        Map<String, Metodo> propios = new HashMap<>(metodos);
+        // Métodos heredados de los padres ya recorridos, por clave -- sirve
+        // para comparar entre sí lo que llega de padres distintos (ver
+        // heredarMetodosDe()).
+        Map<String, Metodo> heredados = new HashMap<>();
+        Set<Metodo> redefinicionesReportadas = new HashSet<>();
+        for (Interfaz padre : padresResueltos) {
+            heredarMetodosDe(padre, propios, heredados, redefinicionesReportadas);
         }
         validarNonSealed();
         validarPermitidos();
@@ -246,34 +263,82 @@ public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTi
         camino.remove(this);
     }
 
+    // Une a 'instanciacion' el mapa que trae un padre (ya compuesto con el
+    // argumento de su 'extends'). Las ramas se unen sin chocar salvo que un
+    // mismo ancestro genérico llegue por dos caminos con argumentos
+    // distintos ("Dd extends Bb, Cc", con Bb extends Aa<String> y
+    // Cc extends Aa<Object>): Java no deja heredar dos parametrizaciones del
+    // mismo tipo, y no hay una que sea "la" vista de Aa desde Dd. El ancestro
+    // queda en 'ancestrosEnConflicto' (consolidarHerencia() reporta
+    // ERR_HERENCIA_ARGUMENTOS_DISTINTOS una vez, sobre esta interfaz) y sin
+    // entrada en el mapa, como si se heredara sin argumento: su parámetro se
+    // conserva (D5). Así el resultado no depende del orden del 'extends'
+    // (semError92, semError93); antes ganaba el último padre. Los argumentos
+    // se comparan con la igualdad de Tipo: Aa<String> por los dos lados no
+    // es conflicto (semCorrecto35). Un camino sin argumento no deja entrada,
+    // así que no choca con uno que sí lo tiene.
+    private void unirInstanciacion(Map<OrigenParametroTipo, Tipo> delPadre) {
+        for (Map.Entry<OrigenParametroTipo, Tipo> entrada : delPadre.entrySet()) {
+            OrigenParametroTipo ancestro = entrada.getKey();
+            if (ancestrosEnConflicto.contains(ancestro)) {
+                continue;
+            }
+            Tipo previo = instanciacion.putIfAbsent(ancestro, entrada.getValue());
+            if (previo != null && !previo.equals(entrada.getValue())) {
+                instanciacion.remove(ancestro);
+                ancestrosEnConflicto.add(ancestro);
+            }
+        }
+    }
+
     // Copia en esta interfaz los métodos de 'padre' (ya consolidado, así que
     // trae también los de sus propias superinterfaces), para que una clase
     // que la implementa vea el contrato completo (ADR 0005: la clase
     // implementa una sola interfaz, y la herencia múltiple se arma acá).
+    // Todo se compara instanciado desde acá, con 'instanciacion' ya completa
+    // (todas las ramas unidas), y los parámetros de tipo propios de cada
+    // método se emparejan por posición (D6; semCorrecto13, semCorrecto21).
     //
-    // Si dos padres traen la misma clave con distinta signatura, la interfaz
-    // hereda dos métodos incompatibles: ERR_METODO_RETORNO_INCOMPATIBLE
+    // Si esta interfaz declara un método con la clave del heredado, lo
+    // redefine y no se pisa. La signatura tiene que ser exactamente igual,
+    // con la regla de la redefinición de Clase (spec 0001, "Redefinición y
+    // estáticos"); si no, ERR_REDEFINICION_INCOMPATIBLE sobre el método de
+    // esta interfaz (semError91; semCorrecto36 redeclara con la misma
+    // signatura). Se reporta una vez por método propio aunque varios padres
+    // traigan la clave, y el propio oculta a los heredados: entre ellos ya
+    // no se comparan (como en Java). Los métodos de interfaz no son
+    // estáticos ni final, así que no hay otra regla que aplicar.
+    //
+    // Si no, y dos padres traen la misma clave con distinta signatura, la
+    // interfaz hereda dos métodos incompatibles: ERR_METODO_RETORNO_INCOMPATIBLE
     // ("se hereda con signaturas incompatibles"), sobre el método del padre
     // posterior en la lista de 'extends'. Se compara la signatura completa
     // (spec 0001, historia 61): distinto retorno (semError36, semError44) o
-    // distintos tipos de parámetros (semError62, m(int) contra m(char)). Se
-    // compara instanciada desde acá, así "extends A<int>, B<int>" con "T m()"
-    // en cada una no es conflicto, y los parámetros de tipo propios de cada
-    // método se emparejan por posición (D6; semCorrecto13, semCorrecto21).
-    // En un diamante llega el mismo Metodo por los dos lados y no se compara.
-    //
-    // Un método que esta interfaz declara con una clave heredada no se pisa.
-    // La comparación entre el propio y el heredado es la de la redefinición,
-    // que no se controla acá.
-    private void heredarMetodosDe(Interfaz padre, Map<String, Metodo> heredados) {
+    // distintos tipos de parámetros (semError62, m(int) contra m(char)). Por
+    // la vista, "extends A<int>, B<int>" con "T m()" en cada una no es
+    // conflicto. En un diamante llega el mismo Metodo por los dos lados y no
+    // se compara.
+    private void heredarMetodosDe(Interfaz padre, Map<String, Metodo> propios,
+                                  Map<String, Metodo> heredados, Set<Metodo> redefinicionesReportadas) {
+        UnaryOperator<Tipo> vista = tipo -> tipo.sustituir(instanciacion);
         for (Metodo metodoHeredado : padre.metodos.values()) {
             String clave = metodoHeredado.getClave();
+            Metodo propio = propios.get(clave);
+            if (propio != null) {
+                if (!redefinicionesReportadas.contains(propio)
+                        && !propio.mismaSignatura(metodoHeredado, vista)) {
+                    redefinicionesReportadas.add(propio);
+                    tablaSimbolos.agregarError(new ErrorSemantico(
+                            "ERR_REDEFINICION_INCOMPATIBLE",
+                            propio.getNombre().getLinea(), propio.getNombre().getLexema()));
+                }
+                continue;
+            }
             Metodo previo = heredados.get(clave);
             if (previo == null) {
                 heredados.put(clave, metodoHeredado);
-                metodos.putIfAbsent(clave, metodoHeredado);
-            } else if (previo != metodoHeredado
-                    && !previo.mismaSignatura(metodoHeredado, tipo -> tipo.sustituir(instanciacion))) {
+                metodos.put(clave, metodoHeredado);
+            } else if (previo != metodoHeredado && !previo.mismaSignatura(metodoHeredado, vista)) {
                 tablaSimbolos.agregarError(new ErrorSemantico(
                         "ERR_METODO_RETORNO_INCOMPATIBLE",
                         metodoHeredado.getNombre().getLinea(), metodoHeredado.getNombre().getLexema()));
