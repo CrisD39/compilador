@@ -70,43 +70,44 @@ al overridear un método heredado, o que los tipos referenciados efectivamente
 existan. Es lo que insinúa `Chequeable.estaBienDeclarado()` /
 `TablaSimbolos.consolidar()` en el código.
 
-**Estado actual (ya implementado, vía `estaBienDeclarado(TablaSimbolos, Set<String>)` en
-`Clase`/`Atributo`/`Metodo`/`Constructor`/`Interfaz`):** nombres repetidos
+**Estado actual (ya implementado, vía `estaBienDeclarado(TablaSimbolos,
+Map<String, OrigenParametroTipo>)` en
+`Clase`/`Atributo`/`Metodo`/`Constructor`/`Interfaz`/`Tipo`):** nombres repetidos
 (clase/atributo/método/constructor/parámetro, incluida la colisión de un
 atributo redeclarado por herencia en `Clase.consolidarConPadre`), herencia
 circular, y que el tipo de un atributo, parámetro o retorno (`idClase`)
 exista en la tabla — incluidos sus argumentos genéricos anidados (Logro 5,
-ver abajo). **Scope de `idGen` — implementado (sin jerarquía `Tipo`
-completa, ver abajo):** `Clase`/`Interfaz` guardan su parámetro de tipo
+ver abajo). Los supertipos de `extends`/`implements` se guardan como `Tipo`
+y se validan igual (D2), junto con su categoría (D1). **Scope de `idGen` —
+implementado (sin jerarquía `Tipo` completa, ver abajo):** `Clase`/`Interfaz`
+guardan su parámetro de tipo
 (`parametrosTipo`, 0 o 1 elemento: un único parámetro, `REQ-AS-010`) y
 `Metodo` el suyo propio (`parametrosTipoPropios`, mismo límite; soporta
 métodos genéricos como `<T> T metodo(T x)`, independientes del genérico de la
 clase — ver `casos-de-prueba.md` sección 5.3).
-`Chequeable.estaBienDeclarado` recibe el entorno de nombres de `idGen`
-vigente (`Set<String>`) en vez de depender de estado transitorio en
-`TablaSimbolos`: `Clase`/`Interfaz` construyen el suyo a partir de
-`parametrosTipo` y lo propagan a atributos/constructores/métodos; `Metodo`
-lo extiende con sus propios `parametrosTipoPropios` antes de chequear su
-tipo de retorno y delegar en cada `Parametro`. Un método puede redeclarar el
-mismo nombre que su clase/interfaz contenedora (shadowing) sin error — el
-entorno vigente es la unión de ambos, no se modela "cuál T es cuál". Un
-`idGen` que no está en el entorno vigente (tipo de atributo, parámetro o
-retorno) reporta `ERR_TIPO_GENERICO_NO_DECLARADO`. **Override de un método
-genérico heredado — implementado**: `Metodo.getFirma()`/`getRetornoCanonico()`
-canonicalizan por posición los `idGen` que son parámetro de tipo propio del
-método (`<T> T m(T x)` y `<U> U m(U x)` son la misma firma canónica), así que
-`Clase.consolidarConPadre()`/`consolidarInterfaces()` reconocen la
-redefinición y la compatibilidad de retorno aunque el nombre del parámetro
-de tipo propio cambie — sin necesitar sustitución real de tipos (ver
-limitación abajo). **Todavía pendiente:** chequeo de corrección propio de
-`Interfaz` más allá de lo de arriba, la jerarquía `Tipo` completa
+`Chequeable.estaBienDeclarado` recibe el entorno de `idGen` vigente en vez
+de depender de estado transitorio en `TablaSimbolos`: un mapa de cada nombre
+a la entidad que lo declara (`OrigenParametroTipo`, que implementan `Clase`,
+`Interfaz` y `Metodo`). `Clase`/`Interfaz` construyen el suyo a partir de
+`parametrosTipo` y lo propagan a supertipos/atributos/constructores/métodos;
+`Metodo` lo copia y le agrega sus propios `parametrosTipoPropios` antes de
+chequear su tipo de retorno y delegar en cada `Parametro`. Un método puede
+redeclarar el mismo nombre que su clase/interfaz contenedora (shadowing) sin
+error: el del método pisa al del contenedor, como en Java.
+`Tipo.estaBienDeclarado` le deja a cada `idGen` en alcance su **origen**
+(`Tipo.getOrigen()`), y así el `T` de una clase y el `T` de otra son tipos
+distintos. Un `idGen` que no está en el entorno vigente (tipo de atributo,
+parámetro, retorno o argumento de un supertipo) reporta
+`ERR_TIPO_GENERICO_NO_DECLARADO`. **Redefinición, contratos e instanciación
+genérica — implementados** (spec 0001): ver "Decisiones: tipos
+predefinidos, clave y redefinición", al final de este documento.
+**Todavía pendiente:** la jerarquía `Tipo` completa
 (`TipoPrimitivo`/`TipoReferencia`/`TipoGenerico`/`TipoArreglo` — hoy `Tipo`
-es una sola clase recursiva, sin dimensiones de arreglo) y la
-sustitución de tipos (`Lista<T>` → `Lista<Integer>`, y el caso de override
-cuando la subclase pasa un argumento de tipo distinto a una superclase
-genérica en `extends`/`implements`) — ver `casos-de-prueba.md`
-secciones 3.2/3.5/3.6/5.3 para el detalle de qué está cubierto por archivo
-de test.
+es una sola clase recursiva que guarda cabeza, argumento, dimensiones y
+origen) y la sustitución de tipos en usos concretos (`Lista<T>` →
+`Lista<Integer>` al chequear sentencias), que son de la Etapa 4 — ver
+`casos-de-prueba.md` secciones 3.2/3.5/3.6/5.3/5.6 para el detalle de qué
+está cubierto por archivo de test.
 
 ## Tabla de símbolos: por qué no usar Singleton
 
@@ -292,15 +293,24 @@ lo que se guarda en `Atributo`/`Metodo`/`Parametro` de ahí en más — no el
 `Token` original (que puede seguir guardándose aparte solo si hace falta para
 reportar la línea de un error).
 
-**Estado actual**: `Metodo` ya guarda `Tipo` (`tipoRetorno`). `Atributo` y
-`Parametro` siguen guardando el `Token` crudo — la jerarquía completa de
-`Tipo` para ellos sigue pendiente —, pero su `estaBienDeclarado(TablaSimbolos)`
-ya hace el chequeo más básico de esta sección sin necesitarla: si el token es
-`idClase`, resuelve el lexema contra `tabla.buscarClase(...)` y reporta
-`ERR_TIPO_NO_DECLARADO` si no existe. Los primitivos e `idGen` se dejan pasar
-sin chequear (`idGen` necesita resolver contra el scope de genéricos vigente,
-que todavía no existe en el modelo — ver "Estado actual" en "TODO — Chequeo
-de corrección").
+**Estado actual**: la jerarquía no existe todavía (queda para la Etapa 4).
+Hay una sola clase `Tipo`, recursiva, que guardan `Atributo`, `Parametro`,
+el retorno de `Metodo` y los supertipos de `Clase`/`Interfaz`. Guarda:
+- la cabeza (el `Token`: primitivo, `idClase` o `idGen`);
+- el argumento genérico, a su vez un `Tipo` (`<InstanciadoOParametrico>`);
+- las **dimensiones** (`int[][]` = 2): el parser ya no las descarta
+  (`tipo()` arma el tipo base y le aplica `conDimensiones()`). Sólo el tipo
+  de nivel superior las tiene;
+- en un `idGen`, su **origen**: la clase, interfaz o método que lo declara,
+  resuelto en el control de declaraciones (`getOrigen()`).
+
+`Tipo.estaBienDeclarado` valida cada nivel: `idClase` contra la tabla
+(`ERR_TIPO_NO_DECLARADO`, `ERR_TIPO_NO_GENERICO`) e `idGen` contra el
+entorno vigente (`ERR_TIPO_GENERICO_NO_DECLARADO`). `Tipo.equals()` compara
+cabeza, argumento (recursivo), dimensiones y origen (por identidad): es la
+igualdad que usa la comparación de signaturas. `sustituir()` y
+`reemplazarParametros()` devuelven vistas sin modificar el original (ver
+"Instanciación genérica al comparar").
 
 ### Reglas de compatibilidad que dependen de esto
 
@@ -392,9 +402,9 @@ miembros, tipos) no se procesa todavía en esta pasada.
             { <ListaMiembros>[tabla, entGen]
               { (atributos, metodos, constructores) := clasificar(ListaMiembros.miembros)
                 // clasificar separa por tipo dinámico (Atributo/Metodo/Constructor) y
-                // chequea nombres repetidos entre atributos y firmas repetidas entre
-                // métodos — regla exacta de sobrecarga: pendiente, igual que en
-                // "Chequear que toda declaración fue correctamente declarada"
+                // chequea nombres repetidos entre atributos y claves repetidas entre
+                // métodos — la clave es (nombre, aridad): ver "Clave y signatura"
+                // en "Decisiones: tipos predefinidos, clave y redefinición"
               ; c.atributos     := atributos
               ; c.metodos       := metodos
               ; c.constructores := constructores
@@ -458,7 +468,8 @@ miembros, tipos) no se procesa todavía en esta pasada.
                      { .decl := new Constructor(idClase, ArgsFormales.parametros)
                        // idClase se guarda en el propio Constructor — la
                        // comparación contra el nombre de la clase contenedora
-                       // queda diferida, ver "TODO — Chequeo de corrección"
+                       // la hace Clase.agregarConstructor() (D3, ver "Constructores"
+                       // en "Decisiones: tipos predefinidos, clave y redefinición")
                        // <Bloque> no se resuelve en esta etapa — ver "Chequeo de sentencias"
                      }
 
@@ -962,9 +973,9 @@ atributos/métodos resueltos) — igual que el resto de "Chequeo de corrección"
    de **dos vías** (`sealed`/`nonsealed`), no de tres.
 
    **Estado actual (`implements`):** wireado por primera vez — `herenciaOpcional()`
-   ahora captura el Token de la interfaz y llama
-   `Clase.agregarInterfaz(Token)` (antes era un `TODO` sin implementar;
-   `Clase.interfaces` se inicializaba pero nada lo poblaba). Con esto,
+   ahora captura la interfaz y la guarda en la clase (antes era un `TODO` sin
+   implementar; `Clase.interfaces` se inicializaba pero nada lo poblaba).
+   Hoy es `Clase.setInterfaz(Tipo)`, con una sola interfaz (ADR 0005). Con esto,
    `sealed` en una interfaz controla **ambos lados** por igual, como en Java
    real: a quién puede extenderla otra interfaz, y a qué clases puede
    implementarla — Java no distingue entre "subtipo por extends" y "subtipo
@@ -994,8 +1005,8 @@ atributos/métodos resueltos) — igual que el resto de "Chequeo de corrección"
    - Extender una clase `final` → `ERR_HERENCIA_CLASE_FINAL`, sin
      excepción (no hay `permits` que valga para una `final`; no aplica a
      interfaces porque `final interface` no existe).
-   - Redefinir (misma firma) un método heredado que era `final` →
-     `ERR_METODO_REDEFINE_FINAL`. Chequeo de **firmas**, en la fusión de
+   - Redefinir (misma clave) un método heredado que era `final` →
+     `ERR_METODO_REDEFINE_FINAL`. Chequeo de **declaraciones**, en la fusión de
      herencia — no toca cuerpos/sentencias de método (esa etapa sigue sin
      implementar y no hace falta para esto).
 
@@ -1032,10 +1043,11 @@ atributos/métodos resueltos) — igual que el resto de "Chequeo de corrección"
    interfaz (`Clase.interfaz`) y el control de interfaz repetida queda sólo
    en el `extends` de una interfaz. Al consolidarse, una interfaz copia los
    métodos de sus superinterfaces (`Interfaz.heredarMetodosDe()`) y reporta
-   `ERR_METODO_RETORNO_INCOMPATIBLE` si dos de ellas traen la misma firma
-   con distinto retorno; la clase compara su contrato contra esa vista
-   completa. Lo que sigue sobre la lista en `implements` describe el estado
-   anterior. Ver
+   `ERR_METODO_RETORNO_INCOMPATIBLE` si dos de ellas traen la misma clave
+   con distinta signatura; la clase compara su contrato contra esa vista
+   completa. Los párrafos "Estado actual" que siguen son el historial del
+   logro: lo que dicen sobre la lista en `implements`, la firma y el
+   conflicto de retorno describe el estado anterior a la spec 0001. Ver
    `Documentación/adr/0005-herencia-multiple-solo-entre-interfaces.md` y la
    sección "Decisiones: tipos predefinidos, clave y redefinición".
 
@@ -1058,22 +1070,23 @@ atributos/métodos resueltos) — igual que el resto de "Chequeo de corrección"
    todo; ahora arma el `Metodo` completo (sin placeholder: `<MetodoInterfaz>`
    no tiene cuerpo que parsear después, a diferencia de un método de clase)
    y lo registra con `Interfaz.agregarMetodo(Metodo)`, que chequea
-   duplicados por firma igual que `Clase.agregarMetodo`
-   (`ERR_METODO_DUPLICADO`). Esto activó, por fin,
+   duplicados igual que `Clase.agregarMetodo` (`ERR_METODO_DUPLICADO`, hoy
+   por clave). Esto activó, por fin,
    `ERR_METODO_INTERFAZ_NOIMPLEMENTADO` — existía como chequeo desde antes,
    pero nunca disparaba porque iteraba sobre una colección siempre vacía.
-   `implements A, A` / `extends A, A` (interfaz repetida) ya es error
-   (`ERR_INTERFAZ_DUPLICADA`, en `Clase.agregarInterfaz`/
-   `Interfaz.agregarHerencia`) — no se deduplica más en silencio.
+   `extends A, A` (interfaz repetida) ya es error
+   (`ERR_INTERFAZ_DUPLICADA`, en `Interfaz.agregarHerencia`) — no se
+   deduplica más en silencio. En una clase, `implements A, A` es hoy un
+   error sintáctico (ADR 0005).
 
-   **Estado actual (conflicto de retorno):** "mismo nombre, distinta
-   firma" entre interfaces se separa en dos casos — distintos parámetros
-   es sobrecarga (ya resuelto solo, `getFirma()` los distingue) y mismos
-   parámetros con distinto retorno **sí** es conflicto real de Java.
-   `Clase.consolidarInterfaces()` rastrea el tipo de retorno esperado por
-   firma (arrancando por los métodos propios de la clase) y reporta
-   `ERR_METODO_RETORNO_INCOMPATIBLE` si una interfaz (o la propia clase)
-   trae un retorno distinto para la misma firma.
+   **Estado actual (conflicto entre superinterfaces):** con la clave
+   (nombre, aridad), dos superinterfaces que traen la misma clave con
+   distinta signatura (otro retorno u otros tipos de parámetros) son un
+   conflicto: `Interfaz.heredarMetodosDe()` reporta
+   `ERR_METODO_RETORNO_INCOMPATIBLE` sobre el método de la superinterfaz
+   posterior. Que la clase declare la clave con otra signatura que la de su
+   interfaz ya no es este código: es `ERR_REDEFINICION_INCOMPATIBLE` (ver
+   "Interfaces" en "Decisiones: tipos predefinidos, clave y redefinición").
 
    **Arreglado — bug preexistente de sobrecarga real, encontrado de paso.**
    La sobrecarga real (mismo nombre, distintos parámetros) dentro de una
@@ -1085,13 +1098,21 @@ atributos/métodos resueltos) — igual que el resto de "Chequeo de corrección"
    registra nada — solo deja el placeholder como `metodoActual`; el
    registro real se movió a `TablaSimbolos.agregarMetodoActualAClaseActual()`,
    llamado después de `setParametrosAMetodoActual()` en los 3 call sites
-   del parser, cuando `getFirma()` ya ve los parámetros reales. Ver
+   del parser, cuando la clave (hoy `getClave()`) ya ve los parámetros
+   reales. Ver
    `casos-de-prueba.md` §5.2 y §6 punto 3 para el detalle y
    los casos de test.
 
 3. **Métodos genéricos (E3).** El compilador permite declarar métodos
    genéricos, como en Java. Las reglas de redefinición para estos métodos
    siguen las mismas que en Java.
+
+   **Estado actual — hecho.** Un método guarda su propio parámetro de tipo
+   (`Metodo.parametrosTipoPropios`), válido sólo en su signatura. Al
+   comparar dos signaturas (`Metodo.mismaSignatura()`), los parámetros de
+   tipo propios se emparejan por posición (D6): `<V> V id(V x)` redefine
+   `<U> U id(U x)`, y un método genérico y uno no genérico con la misma
+   clave tienen signaturas distintas. Ver `casos-de-prueba.md` §5.3.
 
 4. **Multi-detección de errores semánticos (E3).** El compilador no finaliza
    la ejecución ante el primer error semántico en una declaración, sino que
@@ -1138,15 +1159,20 @@ atributos/métodos resueltos) — igual que el resto de "Chequeo de corrección"
      Java. El argumento se recorre aunque la cabeza falle (multi-detección).
    - De paso, el retorno de un método ahora valida su propia cabeza
      `idClase` (antes solo atributos y parámetros lo hacían).
-   - La firma de método sigue mirando solo la cabeza del tipo de cada
-     parámetro: `m(Lista<A>)` y `m(Lista<B>)` tienen el mismo erasure.
+   - La clave de un método no mira los tipos (es nombre/aridad), así que
+     `m(Lista<A>)` y `m(Lista<B>)` en la misma clase son una declaración
+     repetida. La signatura sí compara el argumento: redefinir uno con el
+     otro es `ERR_REDEFINICION_INCOMPATIBLE`.
    - Diamante: válido solo en `new` (sintáctico, sin cambios); en una
      declaración de miembro, variable local o for-each es error sintáctico.
 
-   **Fuera de alcance:** argumentos genéricos en `extends`/`implements` (se
-   parsean, no se validan), sustitución de tipos, compatibilidad/invariancia
-   en inicializadores, inferencia del diamante (sentencias). Ver
-   `casos-de-prueba.md` §5.5.
+   Desde la spec 0001, los argumentos genéricos en `extends`/`implements`
+   también se validan (D2), y la sustitución se usa para comparar
+   signaturas heredadas (ver "Instanciación genérica al comparar").
+
+   **Fuera de alcance:** la sustitución de tipos en usos concretos,
+   compatibilidad/invariancia en inicializadores, inferencia del diamante
+   (sentencias). Ver `casos-de-prueba.md` §5.5.
 
 ## Aclaraciones:
 - Cuando el problema se da por un nombre repetido, el token es el que fue declarado
@@ -1194,21 +1220,26 @@ Los controles de variables locales deben realizarse en el chequeo de sentencais
 
 ## Decisiones: tipos predefinidos, clave y redefinición
 
-Diseño cerrado en una sesión de `/grill-me` (2026-10-17). **No está
-implementado.** Cierra tres desvíos respecto del enunciado (§4, §5, §6.2,
-§6.3 y §7): la clave de los métodos, los estáticos en la herencia y los
-tipos predefinidos. Los términos son los de `Documentación/GLOSARIO.md`
-(**Clave**, **Signatura**, **Redefinición**, **Contrato de interfaz**,
-**Tipo predefinido**, **Constructor por defecto**).
+Diseño cerrado en una sesión de `/grill-me` (2026-10-17). **Implementado**
+por la spec `Documentación/specs/0001-correccion-etapa3.md` (tickets 01–12,
+2026-10-20), con las decisiones D1–D7 de `plan-correccion-etapa3.md`. Cierra
+los desvíos respecto del enunciado (§3–§7 de la Parte I): la clave de los
+métodos, los estáticos en la herencia, los tipos predefinidos, la
+instanciación genérica al comparar y las relaciones mal formadas. Los
+términos son los de `Documentación/GLOSARIO.md` (**Clave**, **Signatura**,
+**Redefinición**, **Contrato de interfaz**, **Tipo predefinido**,
+**Constructor por defecto**). Lo que sigue describe lo que hace el código.
 
 ### Tipos predefinidos
 
 - `TablaSimbolos` registra `Object`, `String` y `System` en su constructor,
   con un método privado `registrarPredefinidas()`, antes de analizar el
-  programa. Son objetos `Clase` comunes con un flag `predefinida` y tokens
-  sintéticos (el lexema real, el `TokenType` que corresponde y línea 0).
-  Una subclase `ClasePredefinida` duplicaría lógica sin aportar nada:
-  `String` y `System` tienen que heredar de `Object` como cualquier clase.
+  programa. Son objetos `Clase` comunes con un flag `predefinida`
+  (`isPredefinida()`) y tokens sintéticos (el lexema real, el `TokenType`
+  que corresponde y línea 0). Una subclase `ClasePredefinida` duplicaría
+  lógica sin aportar nada: `String` y `System` tienen que heredar de
+  `Object` como cualquier clase. `TablaSimbolos.getObject()` devuelve la
+  `Object` predefinida (nunca es `null`).
 - Miembros, según el §7:
   - `Object`: `static void debugPrint(int i)` y `String toString()`.
   - `String`: hereda de `Object` y no declara métodos propios.
@@ -1240,122 +1271,209 @@ tipos predefinidos. Los términos son los de `Documentación/GLOSARIO.md`
 implementa una interfaz también es subtipo de `Object`. El campo
 `Clase.herencia` queda crudo (`null` si no hay `extends`), porque
 `esSubclaseDirecta` y la validación de `permits` lo leen así. El padre
-efectivo se resuelve en `consolidarHerencia`: si `herencia == null` y la
-clase no es `Object`, el padre es `Object`. Si el parser pusiera un token
-`Object` sintético, `class A` y `class A extends Object` quedarían
-indistinguibles para los chequeos de `sealed`.
+efectivo se resuelve en `consolidarHerencia` y queda en
+`Clase.getPadreEfectivo()`: si `herencia == null` y la clase no es `Object`,
+el padre es `Object`. Lo mismo pasa cuando la relación escrita se descarta
+porque nombra un tipo inexistente (D7) o una interfaz (D1). Si el parser
+pusiera un token `Object` sintético, `class A` y `class A extends Object`
+quedarían indistinguibles para los chequeos de `sealed`.
+`getPadreEfectivo()` es `null` sólo en `Object` y en las clases que están en
+un ciclo de herencia (o dependen de uno).
+
+### Relaciones entre tipos declarados
+
+- **Herencia como `Tipo` (D2).** `Clase.herencia`, `Clase.interfaz` y cada
+  entrada de `Interfaz.herencias` son un `Tipo` (cabeza más argumento
+  opcional), tal como se escribió. Se validan en el control de
+  declaraciones, en el entorno genérico de la clase o interfaz que declara
+  la relación, con la misma validación que cualquier tipo referencia:
+  `ERR_TIPO_NO_DECLARADO` (`extends Caja<Nada>`), `ERR_TIPO_NO_GENERICO`
+  (`extends Bb<Bb>` con `Bb` no genérica) y `ERR_TIPO_GENERICO_NO_DECLARADO`.
+  Heredar sin argumento de un tipo genérico es válido (§5).
+- **Supertipo inexistente (D7).** Se reporta una sola vez, como
+  `ERR_TIPO_NO_DECLARADO`, en el control de declaraciones. La consolidación
+  saltea la relación sin reportar. `ERR_INTERFAZ_NO_DECLARADA` **se retiró**:
+  ya no existe en el código.
+- **Relación con el tipo equivocado (D1).** `ERR_HERENCIA_TIPO_INCORRECTO`
+  cubre tres variantes: una clase que extiende una interfaz, una clase que
+  implementa una clase y una interfaz que extiende una clase. Lo reporta
+  `TablaSimbolos.chequearCategoriaSupertipo()`, llamado desde
+  `Clase/Interfaz.estaBienDeclarado()` (paso 1 de `consolidar()`), así sale
+  una sola vez aunque la entidad termine marcada en un ciclo. El lexema y la
+  línea son los del tipo nombrado; la descripción dice qué se esperaba
+  (`"Ii" no es una clase`, `"Aa" no es una interfaz`), con el campo
+  `detalle` de `ErrorSemantico`, que nunca va en la etiqueta. La
+  consolidación ignora la relación: la clase queda con `Object` como padre
+  efectivo y se sigue chequeando lo demás.
+- **Herencia múltiple sólo entre interfaces** (ADR 0005). Una clase
+  implementa como máximo una interfaz; `class X implements A, B` es un
+  error sintáctico.
 
 ### Clave y signatura
 
-- **Clave (nombre, aridad).** `getFirma()` pasa a llamarse `getClave()` en
-  `Metodo`, `Constructor` y `Atributo`, y devuelve `nombre/aridad` (en un
-  atributo, el nombre; en un constructor, la aridad). Los mapas de `Clase`
-  e `Interfaz` se indexan con ella. Dos métodos del mismo tipo declarado
-  con la misma clave son siempre una declaración repetida, aunque difieran
-  los tipos de los parámetros o el retorno: `imprimir(int)` +
+- **Clave (nombre, aridad).** `getClave()` (antes `getFirma()`) en
+  `Metodo`, `Constructor` y `Atributo` devuelve `nombre/aridad` en un
+  método, la aridad en un constructor y el nombre en un atributo. Los mapas
+  de `Clase` e `Interfaz` se indexan con ella. Dos métodos del mismo tipo
+  declarado con la misma clave son siempre una declaración repetida, aunque
+  difieran los tipos de los parámetros o el retorno: `imprimir(int)` +
   `imprimir(char)` da `ERR_METODO_DUPLICADO` sobre la segunda. Lo mismo
-  pasa con los constructores (`ERR_CONSTRUCTOR_DUPLICADO`).
-- **Signatura.** `Metodo.mismaSignatura(otro, sustitución)` compara la
-  cantidad de parámetros, sus tipos en orden y el retorno, después de
-  aplicar la sustitución. Los nombres de los parámetros no cuentan.
+  pasa con los constructores (`ERR_CONSTRUCTOR_DUPLICADO`). Las
+  descripciones hablan de "la misma cantidad de parámetros" (D4).
+- **Signatura.** `Metodo.mismaSignatura(otro, vista)` compara la cantidad de
+  parámetros, la cantidad de parámetros de tipo propios, los tipos de los
+  parámetros en orden y el retorno (`void` sólo es igual a `void`). Los
+  nombres de los parámetros no cuentan. `vista` se aplica a los tipos de
+  **los dos** métodos antes de comparar: es la instanciación genérica (ver
+  abajo). Hace falta en los dos lados porque ambos métodos pueden venir de
+  ancestros genéricos distintos: en `interface Lista<U> extends Fuente<U>,
+  Origen<U>`, el `T get()` de `Fuente` y el de `Origen` son la misma
+  signatura sólo si los dos pasan a `U`. `mismaSignatura(otro)` es la
+  versión sin vista.
 - **Igualdad de `Tipo`.** Dos tipos son iguales si coinciden la cabeza, el
-  argumento (recursivo) y las **dimensiones**. Hoy `Tipo` no guarda las
-  dimensiones (`dimensionesOpcionales()` las consume y las descarta), así
-  que `int[]` e `int` se ven iguales. Se agrega un `int dimensiones` a
-  `Tipo` y el parser las guarda. La jerarquía completa de `Tipo` (ver
-  "Diseño: jerarquía `Tipo`") queda fuera de este cambio.
+  argumento (recursivo), las **dimensiones** y, en un parámetro de tipo, el
+  origen. `Tipo` guarda las dimensiones (el parser ya no las descarta), así
+  que `int[]` e `int` son distintos. La jerarquía completa de `Tipo` (ver
+  "Diseño: jerarquía `Tipo`") queda para la Etapa 4.
 - **Parámetros de tipo por origen.** Un `Tipo` de parámetro de tipo
   (`ID_GEN`) guarda la entidad que lo declara (clase, interfaz o método),
   resuelta en el control de declaraciones, y la igualdad compara nombre y
   origen (§5.1: "conservar su declaración de origen, además del nombre").
   En `class D<T> extends Base`, el `T get()` heredado de `Base<T>` devuelve
   el `T` de `Base`, que no es el `T` de `D`.
+- **Parámetros de tipo de método (D6).** Son la excepción: al comparar dos
+  signaturas se emparejan por posición. Dentro de `mismaSignatura`, después
+  de la vista, cada `idGen` cuyo origen es `otro` se renombra al parámetro
+  de tipo de la misma posición en `this`. Así `<V> V id(V x)` y
+  `<U> U id(U x)` tienen la misma signatura, y un método genérico y uno no
+  genérico con la misma clave difieren.
 
 ### Redefinición y estáticos
 
-Se chequean en `consolidarConPadre`, que hoy sólo mira `final`:
+`Clase.consolidarConPadre()` recorre los métodos del padre (ya consolidado,
+así que trae también los de sus ancestros). Si la hija no tiene la clave, el
+método se copia, también si es estático: en la Etapa 4, `A.debugPrint(3)`
+tiene que encontrarlo en `A`. Si la tiene, `chequearRedefinicion()` aplica
+una sola regla por método, en este orden, y reporta sobre el método de la
+hija:
 
-- **Redefinición exacta.** Un método de instancia con la clave de un
-  método de instancia heredado lo redefine, y su signatura tiene que ser
-  exactamente igual. Si no lo es, sale `ERR_REDEFINICION_INCOMPATIBLE`
-  sobre el método de la hija. Por ejemplo, `int toString()` en cualquier
-  clase es un error.
-- **Estáticos.** Un código para las dos reglas del §6.2,
-  `ERR_REDEFINE_ESTATICO`, reportado sobre el método de la descendiente:
-  - si un ancestro declara un estático con clave `k`, ningún descendiente
-    declara otro método con `k`, sea estático o de instancia (así,
-    `void debugPrint(int x)` es un error en cualquier clase);
-  - un estático no puede tener la clave de un método de instancia heredado.
-
-  Los estáticos se siguen copiando a la hija, para que en Etapa 4 funcione
-  `A.debugPrint(3)`.
+1. **Estáticos** (`ERR_REDEFINE_ESTATICO`, §6.2): si el heredado es
+   estático, ningún descendiente declara otro método con su clave, sea
+   estático o de instancia (así, `void debugPrint(int x)` es un error en
+   cualquier clase); y un estático no puede tener la clave de un método de
+   instancia heredado.
+2. **Final** (`ERR_METODO_REDEFINE_FINAL`): si el heredado es `final`, no se
+   mira la signatura.
+3. **Redefinición exacta** (`ERR_REDEFINICION_INCOMPATIBLE`): si no, la
+   signatura del propio tiene que ser exactamente la del heredado, vista
+   con la instanciación de la hija. Por ejemplo, `int toString()` en
+   cualquier clase es un error.
 
 ### Instanciación genérica al comparar
 
-- `Tipo.sustituir(nombreParam, argumento)` se adelanta de Etapa 4 (decisión
-  Q18 de `etapa4-semantico2/requerimientos.md`) y en Etapa 3 se usa **sólo
-  para comparar** signaturas: en la redefinición y en los contratos de
-  interfaz. Los miembros copiados a la hija no se reescriben (§5.1: "estas
-  vistas no deben modificar las declaraciones originales").
-- **Composición en cadena.** Al consolidar, cada clase arma un mapa
-  `ancestro → argumento visto desde acá`, compuesto con el mapa de su
-  padre. Con `Base<T>`, `Intermedia<U> extends Base<U>` y
+- `Tipo.sustituir(Map<OrigenParametroTipo, Tipo> instanciacion)` se adelanta
+  de Etapa 4 (decisión Q18 de `etapa4-semantico2/requerimientos.md`) y en
+  Etapa 3 se usa **sólo para comparar** signaturas: en la redefinición, en
+  los contratos de interfaz y en el conflicto entre superinterfaces.
+  Devuelve una vista: cada `idGen` cuyo origen tiene entrada en el mapa se
+  reemplaza por el argumento (sumando dimensiones: `T[]` con `T := int` es
+  `int[]`), a cualquier profundidad. La clave del mapa es el origen (el tipo
+  que declara el parámetro), no el nombre: alcanza porque cada tipo declara
+  a lo sumo un parámetro. Los miembros copiados a la hija no se reescriben
+  (§5.1: "estas vistas no deben modificar las declaraciones originales").
+  Se apoya en `Tipo.reemplazarParametros()`, que también usa D6.
+- **Composición en cadena.** Al consolidar, cada clase arma su mapa
+  `ancestro → argumento visto desde acá` (`Clase.getInstanciacion()`) con
+  `Tipo.componerInstanciacion(mapaDelPadre, padre, argumento)`: agrega
+  `padre → argumento` y sustituye en cada entrada del mapa del padre. Con
+  `Base<T>`, `Intermedia<U> extends Base<U>` y
   `Final extends Intermedia<String>`, en `Final` queda
-  `{Intermedia → String, Base → String}`. Para ver un miembro heredado se
-  toma su tipo declarante (`miClase`) y se sustituye su único parámetro por
-  el argumento del mapa. Si el ancestro no tiene entrada (herencia sin
-  argumento), el parámetro se conserva, como pide el §5. Alcanza con un
-  mapa porque cada tipo declarado tiene como máximo un parámetro.
+  `{Intermedia → String, Base → String}`. El argumento sólo cuenta si el
+  padre resuelto es genérico.
+- Una interfaz arma el suyo igual (`Interfaz.getInstanciacion()`), uniendo
+  lo que compone cada superinterfaz. Si un mismo ancestro llega por dos
+  caminos con argumentos distintos, gana el último.
+- **Herencia sin argumento (D5).** Si el ancestro no tiene entrada, su
+  parámetro se conserva y no se reemplaza por `Object`, como pide el §5:
+  `Object get()` no redefine el `T get()` de `Base` heredado sin argumento.
 
 ### Interfaces
 
-- **Contrato.** Una clase cumple el método de una interfaz si tiene, propio
-  o heredado, un método de instancia con la misma clave y exactamente la
-  misma signatura (después de instanciar).
-  - Si la clave está pero la signatura difiere, da
-    `ERR_REDEFINICION_INCOMPATIBLE` sobre el método de la clase.
-  - Si la clave no está, o sólo hay un estático con esa clave, da
-    `ERR_METODO_INTERFAZ_NOIMPLEMENTADO`, como hoy.
-- **Conflicto entre interfaces.** `ERR_METODO_RETORNO_INCOMPATIBLE` pasa a
-  comparar la signatura completa, no sólo el retorno. Su descripción cambia
-  a "se hereda con signaturas incompatibles". Cubre
-  `interface X extends I1, I2` cuando `I1` e `I2` traen la misma clave con
-  otra signatura, y se reporta, como hoy, sobre el método de la segunda.
-- **Contra `Object`.** Los métodos de una interfaz se comparan con los
-  métodos **de instancia** de `Object` usando la regla de la redefinición:
-  `interface I { int toString(); }` es un error. `debugPrint` es estático y
-  no cuenta, como en Java. La interfaz no copia los miembros de `Object`.
-- **Herencia múltiple sólo entre interfaces.** Una clase implementa como
-  máximo una interfaz (ver el Logro 2 y el ADR 0005).
+- **Contrato** (`Clase.consolidarInterfaces()`). La vista es la del
+  argumento de `implements` compuesto con el mapa de la interfaz
+  (`componerInstanciacion(interfaz.getInstanciacion(), interfaz,
+  argumento)`), así cubre sus superinterfaces. No hace falta unirle el mapa
+  de la clase: la gramática no deja escribir `extends` e `implements`
+  juntos, así que una clase con interfaz tiene a `Object` de padre. Para
+  cada método de la interfaz (propios y heredados):
+  1. Si la clase no tiene la clave (propia o heredada), o sólo tiene un
+     estático con ella: `ERR_METODO_INTERFAZ_NOIMPLEMENTADO` sobre el
+     método de la interfaz. Un estático no cumple un contrato (§6.2).
+  2. Si el método que tiene la clase es el de `Object` (el `toString`
+     heredado), se saltea: esa comparación ya la hizo la interfaz contra
+     `Object` (abajo), y repetirla daría un segundo error sobre un token
+     sintético de la línea 0. Así `toString` heredado cumple
+     `String toString()`.
+  3. Si la signatura difiere: `ERR_REDEFINICION_INCOMPATIBLE` sobre el
+     método de la clase.
+- **Conflicto entre superinterfaces.** Al consolidarse, una interfaz copia
+  los métodos de sus superinterfaces (`Interfaz.heredarMetodosDe()`; un
+  método propio con la misma clave no se pisa).
+  `ERR_METODO_RETORNO_INCOMPATIBLE` compara la signatura completa, vista
+  con el mapa de la interfaz, y su descripción es "se hereda con
+  signaturas incompatibles". Cubre `interface X extends I1, I2` cuando `I1`
+  e `I2` traen la misma clave con otra signatura, y se reporta sobre el
+  método de la segunda. En un diamante llega el mismo método por los dos
+  lados y no se compara.
+- **Contra `Object`** (`Interfaz.compararConObject()`). Al empezar su
+  consolidación, con sólo los métodos propios, una interfaz compara cada
+  uno con el método **de instancia** de `Object` de la misma clave, con la
+  regla de la redefinición y sin vista: `interface I { int toString(); }`
+  da `ERR_REDEFINICION_INCOMPATIBLE` sobre el método de la interfaz.
+  `debugPrint` es estático y no cuenta, como en Java. La interfaz no copia
+  los miembros de `Object` (busca con `Clase.buscarMetodo(clave)`).
+- **Descripción.** `ERR_REDEFINICION_INCOMPATIBLE` dice "el método x
+  redefine o implementa un método con otra signatura": cubre la
+  redefinición, el contrato y la comparación contra `Object`.
 
-### Constructor por defecto
+### Constructores
 
-Si una clase del programa no declara constructores, al terminar de
-construirla se le agrega uno sin parámetros y con cuerpo vacío (§6.3). Su
-token es el del nombre de la clase. Hoy no se genera en ningún lado:
-`Clase.tieneConstructor` se setea, pero nadie lo lee.
+- **Nombre (D3).** Un constructor cuyo nombre no es el de su clase da
+  `ERR_CONSTRUCTOR_NOMBRE_INVALIDO` con su lexema y su línea (§6.3). Lo
+  reporta `Clase.agregarConstructor()` al parsearlo, y el constructor no se
+  registra: no entra al control de duplicados ni al de parámetros.
+- **Por defecto.** Si una clase del programa no tiene constructores
+  registrados, recibe uno sin parámetros y con cuerpo vacío (§6.3), con el
+  token del nombre de la clase (así la línea es la de su declaración):
+  `Clase.agregarConstructorPorDefectoSiFalta()`, llamado en el paso 1 de
+  `TablaSimbolos.consolidar()`, antes de su `estaBienDeclarado`. Un
+  constructor con nombre inválido no cuenta. `Object` y `String` lo
+  reciben al registrarse; `System` no. Los constructores no se heredan.
+  `Clase.getConstructores()` los expone, de sólo lectura, para la Etapa 4.
 
 ### Casos de prueba y verificación
 
-Los casos nuevos están listados en `casos-de-prueba.md`, en "Tipos
-predefinidos, clave y redefinición". Después de implementar se corren
-**todos** los testers. Si un caso existente cambia de resultado por una
-regla nueva (por ejemplo, uno que dependía de la sobrecarga por tipos), se
-corrige su etiqueta esperada, no el código, y el cambio se reporta.
+Los casos están listados en `casos-de-prueba.md`, en "Tipos predefinidos,
+clave y redefinición" (§5.6), y todos pasan. Al cerrar la spec, todos los
+testers de Etapas 1–3 dan 263 tests en verde. Los casos existentes que
+cambiaron de resultado por una regla de la Parte I se corrigieron en su
+etiqueta esperada, no en el código: `semCorrecto14`/`15` pasaron a
+`semError86`/`87` (clave por aridad) y `semError37` cambió de etiqueta
+(contrato con otra signatura).
 
 ## Desvíos respecto del glosario y el enunciado
 
 Lugares donde el código o los textos de diseño contradicen
 `Documentación/GLOSARIO.md` o el enunciado
 (`enunciados/MiniJava-Semantica-Completa-2026.pdf`). Quedan anotados para
-corregirlos después; ninguno está arreglado todavía. Las desviaciones
+corregirlos después. Las desviaciones
 **deliberadas** no van acá: tienen su ADR en `Documentación/adr/` (por
 ejemplo, `0001-tipos-raw-en-declaraciones.md`).
 
 Los desvíos de comportamiento que había anotados acá (clave de método,
-métodos estáticos y redefinición, tipos predefinidos) ya tienen diseño en
-"Decisiones: tipos predefinidos, clave y redefinición". Siguen en el código
-hasta que se implemente esa sección.
+métodos estáticos y redefinición, tipos predefinidos) se corrigieron con la
+spec 0001: ver "Decisiones: tipos predefinidos, clave y redefinición".
+Quedan sólo los de nombres y textos.
 
 **Nombres y textos:**
 

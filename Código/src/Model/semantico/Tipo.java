@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
 // Tipo usado en una declaración (atributo, parámetro o retorno). Recursivo:
 // el argumento genérico de "idClase<argumento>" es a su vez un Tipo (un idGen
@@ -147,15 +146,6 @@ public class Tipo implements Chequeable {
             compuesto.put(entrada.getKey(), entrada.getValue().sustituir(propio));
         }
         return compuesto;
-    }
-
-    // true si algún idGen de este tipo (a cualquier profundidad) cumple
-    // 'condicion'.
-    public boolean contieneParametro(Predicate<Tipo> condicion) {
-        if (esParametroDeTipo() && condicion.test(this)) {
-            return true;
-        }
-        return argumento != null && argumento.contieneParametro(condicion);
     }
 
     // Logro 5: cada nivel se valida contra la tabla (idClase) o contra el

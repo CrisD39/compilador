@@ -1,5 +1,13 @@
 # Plan: corrección del chequeo de declaraciones (Etapa 3)
 
+**Estado: implementado** por la spec
+`Documentación/specs/0001-correccion-etapa3.md` (tickets 01–12,
+2026-10-20). Lo que hace el código hoy está en `analizador-semantico.md`,
+"Decisiones: tipos predefinidos, clave y redefinición", y los casos en
+`casos-de-prueba.md` §5.6. Este plan queda como registro de las decisiones
+D1–D7; la columna "Hoy" de la tabla de huecos describe el código anterior a
+la spec.
+
 ## Objetivo y alcance
 
 Dejar el chequeo de declaraciones conforme a

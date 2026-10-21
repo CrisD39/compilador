@@ -22,14 +22,14 @@ Esto compila el proyecto y arma `Código/out/compilador.jar`.
 java -jar Código/out/compilador.jar <archivo-fuente>
 ```
 
-Corre la etapa 3 (léxico + sintáctico + semántico). `<archivo-fuente>` puede tener cualquier extensión. Si no hay errores se imprime `[SinErrores]`; si los hay, cada uno se imprime con una línea legible seguida de la etiqueta `[Error:<lexema>|<línea>]` (léxico/sintáctico) o `[ErrorSem:<código>|<línea>]` (semántico).
+Corre la etapa 3 (léxico + sintáctico + semántico). `<archivo-fuente>` puede tener cualquier extensión. Si no hay errores se imprime `[SinErrores]`; si los hay, cada uno se imprime con una línea legible seguida de la etiqueta `[Error:<lexema>|<línea>]`. La etiqueta es la misma para errores léxicos, sintácticos y semánticos; en un error semántico, el lexema es el nombre de la entidad que lo provoca y la línea es la de ese mismo token. Los códigos internos `ERR_*` sólo eligen la descripción y nunca se imprimen (ver `Documentación/etapa3-semantico/casos-de-prueba.md`).
 
 Ejemplo:
 
 ```bash
 $ java -jar Código/out/compilador.jar Código/resources/semantico/conErrores/semError15.java
-Error Semántico en línea 5: ERR_TIPO_NO_DECLARADO ("Foo").
-[ErrorSem:ERR_TIPO_NO_DECLARADO|5]
+Error Semántico en línea 5: el tipo "Foo" no está declarado.
+[Error:Foo|5]
 ```
 
 ### Correr los tests
