@@ -137,7 +137,7 @@ public class TablaSimbolos {
     public boolean insertarClase(EntidadDeclarada entidad) {
         String nombre = entidad.getName();
         EntidadDeclarada existente = clases.get(nombre);
-        if (existente instanceof Clase && ((Clase) existente).isPredefinida()) {
+        if (esPredefinida(existente)) {
             agregarError(new ErrorSemantico("ERR_CLASE_DUPLICADA", entidad.getLinea(), nombre));
             return false;
         }
@@ -170,20 +170,22 @@ public class TablaSimbolos {
     // declaraciones: la consolidación saltea la relación sin reportar (una
     // clase queda con Object como padre efectivo). Un supertipo que no
     // resuelve ya lo reportó Tipo.estaBienDeclarado() (D7), acá no se toca.
-    // Devuelve true si la relación es del tipo correcto (o no resuelve).
-    public boolean chequearCategoriaSupertipo(Tipo supertipo, boolean esperaClase) {
+    // Sólo reporta: la consolidación vuelve a mirar la categoría del tipo
+    // resuelto para decidir si ignora la relación.
+    public void chequearCategoriaSupertipo(Tipo supertipo, boolean esperaClase) {
         Token token = supertipo.getToken();
         EntidadDeclarada entidad = clases.get(token.getLexema());
-        if (entidad == null) {
-            return true;
+        if (entidad != null && (entidad instanceof Clase) != esperaClase) {
+            agregarError(new ErrorSemantico("ERR_HERENCIA_TIPO_INCORRECTO",
+                    token.getLinea(), token.getLexema(), esperaClase ? "una clase" : "una interfaz"));
         }
-        boolean esClase = entidad instanceof Clase;
-        if (esClase == esperaClase) {
-            return true;
-        }
-        agregarError(new ErrorSemantico("ERR_HERENCIA_TIPO_INCORRECTO",
-                token.getLinea(), token.getLexema(), esperaClase ? "una clase" : "una interfaz"));
-        return false;
+    }
+
+    // Object, String o System (ADR 0004), que tienen reglas propias: no se
+    // descartan si el programa las redeclara y no pasan por el control de
+    // declaraciones.
+    private static boolean esPredefinida(EntidadDeclarada entidad) {
+        return entidad instanceof Clase && ((Clase) entidad).isPredefinida();
     }
     // Parchean el placeholder dejado por crearMetodo() (Estrategia A de
     // transición, ver "Estrategia de construcción" en analizador-semantico.md)
@@ -229,7 +231,7 @@ public class TablaSimbolos {
         // Las predefinidas no pasan por este control: las armó la tabla, no
         // el usuario, y no hay nada que reportarle sobre ellas.
         for (EntidadDeclarada entidad : clases.values()) {
-            if (entidad instanceof Clase && ((Clase) entidad).isPredefinida()) {
+            if (esPredefinida(entidad)) {
                 continue;
             }
             // Constructor por defecto (§6.3): recién acá, con el parseo
