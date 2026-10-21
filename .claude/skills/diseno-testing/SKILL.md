@@ -61,13 +61,10 @@ Siempre desde `Código/` (los paths de las carpetas son relativos):
 
 ```bash
 cd Código
-./build.sh
-CP="out/classes:lib/junit-4.13.2.jar:lib/hamcrest-core-1.3.jar"
-javac -cp "$CP" -d out/test-classes $(find src/test -name "*.java")
-java -cp "$CP:out/test-classes" org.junit.runner.JUnitCore \
-  test.java.TesterSemanticoDeCasosSinErrores test.java.TesterSemanticoDeCasosConErrores
+./test.sh          # compila y corre todos los testers de Etapas 1-3 (léxico, sintáctico, semántico)
+./test.sh sem2     # sólo Sem2; `./test.sh todo` corre ambos
 ```
 
 Un único caso: `java -jar out/compilador.jar resources/semantico/conErrores/semError15.java` y comparar con su primera línea.
 
-Al terminar, correr también los testers de etapas anteriores (léxico y sintáctico) para descartar regresiones, y reportar los resultados tal cual (cuántos pasan / fallan y cuáles).
+`./test.sh` ya incluye los testers de las etapas anteriores. Reportar los resultados tal cual (cuántos pasan / fallan y cuáles).

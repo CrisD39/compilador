@@ -11,12 +11,11 @@ All commands run from `Código/` — testers resolve case folders with relative 
 ```bash
 ./build.sh                                     # compiles src/Model, src/Controller, src/View into out/classes and builds out/compilador.jar (main: View.ModuloPrincipalET3)
 java -jar out/compilador.jar <archivo-fuente>  # run lexer + parser + semantic checks on one file
-
-# Tests (JUnit 4 in lib/); build.sh must run first, since tests compile against out/classes
-CP="out/classes:lib/junit-4.13.2.jar:lib/hamcrest-core-1.3.jar"
-javac -cp "$CP" -d out/test-classes $(find src/test -name "*.java")
-java -cp "$CP:out/test-classes" org.junit.runner.JUnitCore test.java.TesterSemanticoDeCasosConErrores
+./test.sh                                      # build + run every Stage 1-3 tester, one line each (failures listed); exit 1 if any fails
+./test.sh sem2                                 # only the Sem2 testers (error cases fail until the checker exists); `todo` = both
 ```
+
+The `.githooks/pre-commit` hook runs `./test.sh` on every commit that touches `Código/`. Enable it once per clone with `git config core.hooksPath .githooks`.
 
 Test classes (package `test.java`): `TesterDeCasos{Sin,Con}Errores` (lexer), `TesterSintacticoDeCasos{Sin,Con}Errores` and `TesterSintacticoModoPanico` (parser), `TesterSemanticoDeCasos{Sin,Con}Errores` (semantic, declarations), `Tester{Sin,Con}ErroresSem2` (semantic, statements: Sem2). To check a single case, run the jar directly on its file and compare against the file's first line.
 
