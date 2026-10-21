@@ -22,7 +22,14 @@ public class Parametro implements Chequeable{
     }
 
     @Override
+    // 'tipo' es null si faltaba el tipo y hubo un error sintáctico ("int a, )"):
+    // tipo() devuelve null en ese caso, y consolidar() corre igual aunque
+    // haya errores sintácticos. No hay nada que validar, y el error ya se
+    // reportó (semError90). Mismo criterio que Tipo con un argumento null.
     public void estaBienDeclarado(TablaSimbolos tabla, Map<String, OrigenParametroTipo> entornoGenerico){
+        if (tipo == null) {
+            return;
+        }
         tipo.estaBienDeclarado(tabla, entornoGenerico);
     }
 }

@@ -941,6 +941,8 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     }
 
     // <ArgFormal> ::= <Tipo> idMetVar
+    // Tras un error sintáctico en <Tipo>, el Parametro queda con tipo null
+    // (tipo() devuelve null); Parametro.estaBienDeclarado() lo saltea.
     private Parametro argFormal() {
         Tipo tipo = tipo();
         Token nombre = tokenActual;
