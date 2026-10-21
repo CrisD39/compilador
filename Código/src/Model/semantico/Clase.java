@@ -400,15 +400,21 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
                 interfazResuelta.getInstanciacion(), interfazResuelta, argumentoDeLaInterfaz);
         for (Metodo metodo : interfazResuelta.getMetodos()) {
             Metodo propio = metodos.get(metodo.getClave());
+            Metodo deObject = tablaSimbolos.getObject().buscarMetodo(metodo.getClave());
             if (propio == null || propio.isEstatico()) {
                 tablaSimbolos.agregarError(new ErrorSemantico(
                         "ERR_METODO_INTERFAZ_NOIMPLEMENTADO", metodo.getNombre().getLinea(), metodo.getNombre().getLexema()));
-            } else if (propio == tablaSimbolos.getObject().buscarMetodo(propio.getClave())) {
-                // Cumple (o no) un método de Object: esa comparación ya la
-                // hizo la interfaz contra Object (Interfaz.compararConObject(),
-                // historia 62), con el error sobre el método de la interfaz.
-                // Repetirla acá daría un segundo error sobre el toString de
-                // Object, en la línea 0 de un token sintético.
+            } else if (deObject != null && !deObject.isEstatico()) {
+                // La clave es la de un método de instancia de Object
+                // (toString). El contrato ya quedó decidido por las otras dos
+                // comparaciones: la interfaz contra Object
+                // (Interfaz.compararConObject(), historia 62, error sobre el
+                // método de la interfaz) y la clase contra Object, su padre
+                // efectivo (chequearRedefinicion(), error sobre el método de
+                // la clase). Repetirla acá daba un segundo error idéntico
+                // sobre el método de la clase (semError94), o uno sobre el
+                // toString de Object, en la línea 0 de un token sintético,
+                // si la clase lo heredaba sin redefinirlo.
                 continue;
             } else if (!propio.mismaSignatura(metodo, tipo -> tipo.sustituir(vistaContrato))) {
                 tablaSimbolos.agregarError(new ErrorSemantico(
