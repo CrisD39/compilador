@@ -236,6 +236,16 @@ interfaz o método que lo declara, y `Tipo.estaBienDeclarado` le deja ese
   clase en el entorno vigente para su signatura, como en Java: esos `T`
   tienen origen `metodo`. Ver
   `resources/semantico/sinErrores/semCorrecto17.java`.
+- **Negativo (ADR 0006, §10.4)**: el parámetro de tipo de la clase no
+  puede aparecer en el encabezado de un método estático. La firma del
+  estático se valida sin el entorno de la clase, así que el error es
+  `ERR_TIPO_GENERICO_NO_DECLARADO` sobre `T`. Cada aparición es un error
+  aparte (`semError95` da dos en la línea 8). Casos:
+  `semError95.java` (`static T identidad(T valor)`, `[Error:T|8]`),
+  `semError96.java` (`static void poner(Caja<T> c)`, `[Error:T|7]`) y
+  `semError97.java` (`static T[] vacio()`, `[Error:T|6]`). El gemelo sano es
+  `semCorrecto37.java`: un método de instancia con `T` y un estático con su
+  propio `<T>` (shadowing) en `Caja<T>`.
 
 ### 3.4 Jerarquía `Tipo` — compatibilidad
 
@@ -1043,6 +1053,12 @@ sin instanciar (su `T` se conserva, D5), y ninguna signatura lo cumple. El
 caso deja la clase afuera para probar un solo error.
 
 Con estos casos, los testers de Etapas 1–3 dan 270 tests en verde.
+
+**Parámetro de tipo de la clase en estáticos (ticket 13, ADR 0006,
+hecho).** `semError95`–`97` daban `[SinErrores]` antes del arreglo; ahora
+dan `ERR_TIPO_GENERICO_NO_DECLARADO` sobre `T` (ver §3.3). `semCorrecto37`
+y `semCorrecto19` siguen sin errores. Con ellos, los testers de Etapas 1–3
+dan 274 tests en verde.
 
 ## 6. Preguntas abiertas a resolver antes de escribir casos concretos
 

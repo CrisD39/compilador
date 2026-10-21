@@ -254,9 +254,14 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
             interfaz.estaBienDeclarado(tabla, entornoClase);
             tabla.chequearCategoriaSupertipo(interfaz, false);
         }
+        // ADR 0006 (§10.4): la firma de un estático no ve los parámetros de
+        // tipo de la clase, sólo los propios del método (que agrega
+        // Metodo.estaBienDeclarado()). Un T de la clase queda fuera de
+        // alcance y se reporta como ERR_TIPO_GENERICO_NO_DECLARADO.
+        Map<String, OrigenParametroTipo> entornoEstatico = new HashMap<>();
         for(Metodo metodo: metodos.values())
         {
-           metodo.estaBienDeclarado(tabla, entornoClase);
+           metodo.estaBienDeclarado(tabla, metodo.isEstatico() ? entornoEstatico : entornoClase);
         }
         for(Atributo atributo: atributos.values())
         {

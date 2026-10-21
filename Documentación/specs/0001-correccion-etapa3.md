@@ -232,6 +232,11 @@ los testers de Etapas 1–3 en verde.
 54. Como programador MiniJava, quiero que los estáticos heredados sigan
     visibles en los descendientes, para escribir `A.debugPrint(3)` en la
     Etapa 4.
+73. Como programador MiniJava, quiero que un método estático no pueda usar
+    el parámetro de tipo de su clase en el encabezado, ni directo, ni en un
+    arreglo, ni como argumento genérico (documento completo, §10.4). Se
+    agregó después de cerrar la spec (ver `0001-correccion-etapa3/revision.md`,
+    §2.1).
 
 **Contratos de interfaz**
 
@@ -396,6 +401,13 @@ una interfaz se mantiene.
 - Los estáticos se siguen copiando a los descendientes.
 - Se mantiene `ERR_METODO_REDEFINE_FINAL`.
 
+**Parámetro de tipo de la clase en estáticos (ADR 0006).**
+- La firma de un método estático se valida en un entorno de genéricos sin
+  los parámetros de la clase. Sólo quedan los propios del método.
+- Un `T` de la clase en el encabezado queda fuera de alcance y da
+  `ERR_TIPO_GENERICO_NO_DECLARADO` sobre ese `T`. No hay código nuevo.
+- Un estático con su propio `<T>` es válido aunque la clase declare `T`.
+
 **Contratos e interfaces.**
 - Una clase cumple un método de su interfaz con un método de instancia,
   propio o heredado, de la misma clave y la misma signatura instanciada.
@@ -456,6 +468,9 @@ de diseño interno, y son la misma clase de prueba que corre la cátedra.
 - Con errores, `semError71`: implementar sin argumento una interfaz
   genérica, con `Object obtener()` contra `T obtener()`.
 - Un caso sintáctico de `implements A, B`.
+- Con errores, `semError95`–`97` (ADR 0006): `T` de la clase en el
+  encabezado de un estático, directo, como argumento genérico y en un
+  arreglo. Sin errores, `semCorrecto37` es el gemelo sano.
 
 El detalle de cada caso, con su código y su etiqueta, está en el
 documento de casos de prueba de la Etapa 3, sección 5.6, y en el plan de
@@ -485,7 +500,9 @@ parametrizados, y la guía de testers del proyecto.
   - los testers Sem2 y sus logros;
   - el boceto de `Entorno`;
   - la jerarquía completa de `Tipo`;
-  - `new System()` como error, que se detecta en la Etapa 4.
+  - `new System()` como error, que se detecta en la Etapa 4;
+  - el parámetro de tipo de la clase en el **cuerpo** de un estático
+    (`semIIError32`). El ADR 0006 sólo cubre el encabezado.
 
   El módulo principal de la Etapa 3 sigue siendo el main del jar.
 - Los tipos raw en declaraciones (ADR 0001). No cambian: la Parte I §3 los
@@ -511,6 +528,9 @@ parametrizados, y la guía de testers del proyecto.
 - Decisiones registradas:
   - ADR 0004: las predefinidas siguen a Java.
   - ADR 0005: la herencia múltiple es sólo entre interfaces.
+  - ADR 0006: el parámetro de tipo de la clase no se usa en encabezados
+    estáticos. La regla viene del documento completo (§10.4), no de la
+    Parte I.
   - D1–D7 del plan de corrección de la Etapa 3.
   - La sección "Decisiones: tipos predefinidos, clave y redefinición" del
     diseño de la Etapa 3.
@@ -541,5 +561,7 @@ ninguno de los que ya pasaban.
 | 10 | Instanciación genérica en la redefinición | 03, 09 | hecho |
 | 11 | Contratos de interfaz e interfaz contra `Object` | 10 | hecho |
 | 12 | Cierre de documentación | 02–11 | hecho |
+| 13 | Parámetro de tipo de la clase en encabezados estáticos (ADR 0006) | 08 | hecho |
 
-Todos los tickets están hechos.
+El ticket 13 se agregó después de cerrar la spec, a partir de la revisión
+(`0001-correccion-etapa3/revision.md`, §2.1). Están todos hechos.
