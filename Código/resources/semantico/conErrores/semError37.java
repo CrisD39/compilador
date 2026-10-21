@@ -1,7 +1,7 @@
-///[Error:getValor|6]
-// Gama declara su propio getValor() devolviendo char, pero Alfa exige
-// que devuelva int -- no alcanza con tener la misma firma (nombre +
-// parametros), el tipo de retorno tambien tiene que coincidir.
+///[Error:getValor|10]
+// ERR_REDEFINICION_INCOMPATIBLE: Alfa exige "int getValor()" y Gama declara
+// "char getValor()". Misma clave getValor/0, otra signatura: no cumple el
+// contrato. Se reporta sobre el metodo de Gama (como semError64).
 interface Alfa {
     int getValor();
 }

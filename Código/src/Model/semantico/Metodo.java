@@ -1,7 +1,6 @@
 package Model.semantico;
 
 import Model.lexico.Token;
-import Model.lexico.TokenType;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -89,22 +88,6 @@ public class Metodo implements Chequeable, OrigenParametroTipo {
         return -1;
     }
 
-    // Para el retorno: un idGen que es parametro de tipo PROPIO de este
-    // metodo se identifica por posicion, no por el nombre elegido -- "<T> T
-    // m(T x)" y "<U> U m(U x)" tienen el MISMO retorno (D6), igual que en
-    // Java real donde el nombre del type variable propio no importa. Todo
-    // lo demas (primitivos, idClase, idGen de la clase/interfaz
-    // contenedora) sigue comparandose por lexema crudo.
-    private String tipoCanonico(Token tipoToken) {
-        if (tipoToken.getTipo() == TokenType.ID_GEN) {
-            int indice = indiceEnPropios(tipoToken.getLexema());
-            if (indice >= 0) {
-                return "#" + indice;
-            }
-        }
-        return tipoToken.getLexema();
-    }
-
     /**
      * Clave del método (glosario: Clave): "nombre/aridad". La Parte I sólo
      * admite sobrecarga por cantidad de parámetros (D4), así que
@@ -132,14 +115,21 @@ public class Metodo implements Chequeable, OrigenParametroTipo {
      * es igual a void), con la igualdad estructural de Tipo (cabeza,
      * argumento, dimensiones y origen de los parámetros de tipo). Los nombres
      * de los parámetros no cuentan. Se usa en la redefinición
-     * (Clase.consolidarConPadre(), ticket 09); el contrato de interfaz
-     * (ticket 11) la reutiliza.
+     * (Clase.chequearRedefinicion()), en el contrato de interfaz
+     * (Clase.consolidarInterfaces()), en el conflicto entre superinterfaces
+     * (Interfaz.heredarMetodosDe()) y en la comparación de una interfaz con
+     * Object (Interfaz.compararConObject()).
      *
-     * 'vistaDelOtro' transforma cada tipo de 'otro' antes de comparar: es
-     * cómo se ve 'otro' desde el tipo que compara. En la redefinición es la
-     * instanciación genérica: el parámetro de cada ancestro reemplazado por
-     * el argumento de la herencia (Tipo.sustituir() con el mapa de
-     * Clase.getInstanciacion()). No modifica a 'otro'.
+     * 'vista' transforma cada tipo de los DOS métodos antes de comparar: es
+     * cómo se ven desde el tipo que compara. Es la instanciación genérica:
+     * el parámetro de cada ancestro reemplazado por el argumento con que se
+     * lo hereda (Tipo.sustituir() con el mapa de instanciación). Se aplica a
+     * los dos lados porque ambos pueden venir de ancestros genéricos: en
+     * "interface Lista<U> extends Fuente<U>, Origen<U>", el "T get()" de
+     * Fuente y el de Origen nombran T distintos, y son la misma signatura
+     * sólo si los dos pasan a U (semCorrecto34). Para un método declarado en
+     * el tipo que compara la vista no cambia nada (el mapa sólo tiene
+     * ancestros). No modifica a ninguno.
      *
      * Los parámetros de tipo PROPIOS de cada método se emparejan por
      * posición (D6): "<T> T m(T x)" y "<U> U m(U x)" tienen la misma
@@ -150,7 +140,7 @@ public class Metodo implements Chequeable, OrigenParametroTipo {
      * las signaturas difieren ("<T> T id(T x)" contra "Object id(Object x)",
      * semError80).
      */
-    public boolean mismaSignatura(Metodo otro, UnaryOperator<Tipo> vistaDelOtro) {
+    public boolean mismaSignatura(Metodo otro, UnaryOperator<Tipo> vista) {
         if (parametros.size() != otro.parametros.size()
                 || parametrosTipoPropios.size() != otro.parametrosTipoPropios.size()) {
             return false;
@@ -162,13 +152,13 @@ public class Metodo implements Chequeable, OrigenParametroTipo {
             int indice = otro.indiceEnPropios(parametro.getToken().getLexema());
             return indice < 0 ? null : Tipo.parametroDeTipo(parametrosTipoPropios.get(indice), this);
         };
-        UnaryOperator<Tipo> verDesdeAca =
-                tipo -> vistaDelOtro.apply(tipo).reemplazarParametros(renombrarPropiosDelOtro);
-        if (!mismoTipo(tipoRetorno, otro.tipoRetorno, verDesdeAca)) {
+        UnaryOperator<Tipo> verElOtro =
+                tipo -> vista.apply(tipo).reemplazarParametros(renombrarPropiosDelOtro);
+        if (!mismoTipo(tipoRetorno, otro.tipoRetorno, vista, verElOtro)) {
             return false;
         }
         for (int i = 0; i < parametros.size(); i++) {
-            if (!mismoTipo(parametros.get(i).getTipo(), otro.parametros.get(i).getTipo(), verDesdeAca)) {
+            if (!mismoTipo(parametros.get(i).getTipo(), otro.parametros.get(i).getTipo(), vista, verElOtro)) {
                 return false;
             }
         }
@@ -176,21 +166,12 @@ public class Metodo implements Chequeable, OrigenParametroTipo {
     }
 
     // null es void (ver tipoRetorno): sólo es igual a otro void.
-    private static boolean mismoTipo(Tipo propio, Tipo delOtro, UnaryOperator<Tipo> verDesdeAca) {
+    private static boolean mismoTipo(Tipo propio, Tipo delOtro,
+                                     UnaryOperator<Tipo> verEste, UnaryOperator<Tipo> verElOtro) {
         if (propio == null || delOtro == null) {
             return propio == delOtro;
         }
-        return propio.equals(verDesdeAca.apply(delOtro));
-    }
-
-    // Retorno canonicalizado, usado para comparar compatibilidad de retorno
-    // entre métodos con la misma clave (Clase.consolidarInterfaces(),
-    // Interfaz.heredarMetodosDe()). null representa "void", igual que
-    // tipoRetorno. Compara por lexema, no por origen: el ticket 11 lo
-    // reemplaza por mismaSignatura() con la vista instanciada (sin ella, el
-    // T de una interfaz genérica nunca sería igual al de la clase).
-    public String getRetornoCanonico() {
-        return tipoRetorno == null ? null : tipoCanonico(tipoRetorno.getToken());
+        return verEste.apply(propio).equals(verElOtro.apply(delOtro));
     }
 
     @Override

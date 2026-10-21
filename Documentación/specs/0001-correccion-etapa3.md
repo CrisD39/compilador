@@ -539,7 +539,7 @@ ninguno de los que ya pasaban.
 | 08 | Prefactor de `Tipo` | 01 | hecho |
 | 09 | Redefinición exacta y estáticos | 04, 06, 08 | hecho |
 | 10 | Instanciación genérica en la redefinición | 03, 09 | hecho |
-| 11 | Contratos de interfaz e interfaz contra `Object` | 10 | ready-for-agent |
+| 11 | Contratos de interfaz e interfaz contra `Object` | 10 | hecho |
 | 12 | Cierre de documentación | 02–11 | ready-for-agent |
 
 Se pueden empezar ya: 02, 04, 06 y 08.

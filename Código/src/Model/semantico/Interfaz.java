@@ -3,12 +3,12 @@ package Model.semantico;
 import Model.lexico.Token;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTipo {
@@ -39,6 +39,16 @@ public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTi
     // sealed real -- mismo rol que Clase.tieneSupertipoSellado, pero acá solo
     // hay un lado (extends; las interfaces no 'implements').
     private boolean tieneSupertipoSellado = false;
+    // Instanciación genérica, igual que Clase.instanciacion pero sobre los
+    // 'extends' de la interfaz (varios): para cada superinterfaz genérica,
+    // directa o no, el argumento con que esta interfaz la hereda, visto desde
+    // acá. Con "interface I<T> extends J<T>" queda J -> T (el de I). Se arma
+    // en consolidarHerencia() uniendo lo que compone cada padre
+    // (Tipo.componerInstanciacion()). Lo usan el conflicto entre padres
+    // (heredarMetodosDe()) y el contrato de una clase que la implementa
+    // (Clase.consolidarInterfaces()). Vacío antes de consolidar; en un ciclo
+    // queda con las ramas que se alcanzaron a recorrer.
+    private Map<OrigenParametroTipo, Tipo> instanciacion = new HashMap<>();
 
     public Interfaz(Token nombre, TablaSimbolos tablaSimbolos) {
         this.nombre = nombre;
@@ -148,6 +158,10 @@ public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTi
         return metodos.values();
     }
 
+    public Map<OrigenParametroTipo, Tipo> getInstanciacion() {
+        return Collections.unmodifiableMap(instanciacion);
+    }
+
     // Único punto de entrada público, igual que Clase.consolidar(): construye
     // su propio camino de recursión para no depender de quien lo llama.
     public void consolidar() {
@@ -167,6 +181,11 @@ public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTi
             return;
         }
         camino.add(this);
+        // Antes de heredar: en este punto 'metodos' tiene sólo los propios,
+        // y los heredados ya los comparó con Object la interfaz que los
+        // declara. Pasa una sola vez por interfaz, también en un ciclo (toda
+        // interfaz marcada enCiclo pasó antes por acá, en el camino).
+        compararConObject();
 
         // Métodos heredados de los padres ya recorridos, por clave -- sirve
         // para comparar entre sí lo que llega de padres distintos (ver
@@ -212,6 +231,13 @@ public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTi
                             "ERR_HERENCIA_PERMITIDA_SIN_MODIFICADOR", nombre.getLinea(), nombre.getLexema()));
                 }
             }
+            // Antes de heredarMetodosDe(): el conflicto entre padres se
+            // compara con esta vista, que ya incluye la rama de 'padre'.
+            // Mismo criterio que Clase.consolidarHerencia() para el argumento.
+            // Las ramas se unen sin chocar salvo que un mismo ancestro llegue
+            // por dos caminos con argumentos distintos (gana el último).
+            Tipo argumento = padre.parametrosTipo.isEmpty() ? null : padreTipo.getArgumento();
+            instanciacion.putAll(Tipo.componerInstanciacion(padre.instanciacion, padre, argumento));
             heredarMetodosDe(padre, heredados);
         }
         validarNonSealed();
@@ -225,14 +251,16 @@ public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTi
     // que la implementa vea el contrato completo (ADR 0005: la clase
     // implementa una sola interfaz, y la herencia múltiple se arma acá).
     //
-    // Si dos padres traen la misma clave con distinto retorno, es el
-    // conflicto real de Java entre métodos "override-equivalentes" de
-    // retorno incompatible (semError36, semError44). Se reporta sobre el
-    // método del padre posterior en la lista de 'extends'. La misma clave
-    // con el mismo retorno no es conflicto (semCorrecto13, semCorrecto21:
-    // los parámetros de tipo propios se comparan por posición, ver
-    // Metodo.tipoCanonico()), y en un diamante llega el mismo Metodo por
-    // los dos lados.
+    // Si dos padres traen la misma clave con distinta signatura, la interfaz
+    // hereda dos métodos incompatibles: ERR_METODO_RETORNO_INCOMPATIBLE
+    // ("se hereda con signaturas incompatibles"), sobre el método del padre
+    // posterior en la lista de 'extends'. Se compara la signatura completa
+    // (spec 0001, historia 61): distinto retorno (semError36, semError44) o
+    // distintos tipos de parámetros (semError62, m(int) contra m(char)). Se
+    // compara instanciada desde acá, así "extends A<int>, B<int>" con "T m()"
+    // en cada una no es conflicto, y los parámetros de tipo propios de cada
+    // método se emparejan por posición (D6; semCorrecto13, semCorrecto21).
+    // En un diamante llega el mismo Metodo por los dos lados y no se compara.
     //
     // Un método que esta interfaz declara con una clave heredada no se pisa.
     // La comparación entre el propio y el heredado es la de la redefinición,
@@ -245,10 +273,30 @@ public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTi
                 heredados.put(clave, metodoHeredado);
                 metodos.putIfAbsent(clave, metodoHeredado);
             } else if (previo != metodoHeredado
-                    && !Objects.equals(previo.getRetornoCanonico(), metodoHeredado.getRetornoCanonico())) {
+                    && !previo.mismaSignatura(metodoHeredado, tipo -> tipo.sustituir(instanciacion))) {
                 tablaSimbolos.agregarError(new ErrorSemantico(
                         "ERR_METODO_RETORNO_INCOMPATIBLE",
                         metodoHeredado.getNombre().getLinea(), metodoHeredado.getNombre().getLexema()));
+            }
+        }
+    }
+
+    // Los métodos propios de una interfaz se comparan con los métodos de
+    // instancia de Object con la regla de la redefinición (spec 0001,
+    // "Contratos e interfaces"; historias 62 y 63): misma clave y otra
+    // signatura da ERR_REDEFINICION_INCOMPATIBLE sobre el método de la
+    // interfaz ("int toString()", semError63). Los estáticos de Object no
+    // cuentan: "void debugPrint(int nivel)" en una interfaz es válido
+    // (semCorrecto32). La interfaz no copia los miembros de Object. No hay
+    // vista: Object no es genérico, y un parámetro de tipo de la interfaz
+    // nunca iguala a String ("T toString()" también es error, como en Java).
+    private void compararConObject() {
+        Clase object = tablaSimbolos.getObject();
+        for (Metodo propio : metodos.values()) {
+            Metodo deObject = object.buscarMetodo(propio.getClave());
+            if (deObject != null && !deObject.isEstatico() && !propio.mismaSignatura(deObject)) {
+                tablaSimbolos.agregarError(new ErrorSemantico(
+                        "ERR_REDEFINICION_INCOMPATIBLE", propio.getNombre().getLinea(), propio.getNombre().getLexema()));
             }
         }
     }

@@ -955,6 +955,23 @@ reescrito (mismas líneas):
 
 Además, con la clave pasan `semError56`, `semError76` y `semError77`.
 
+**Casos que cambian y casos nuevos con los contratos (ticket 11, hecho):**
+`semError37` (`char getValor()` en una clase contra `int getValor()` de su
+interfaz) daba `ERR_METODO_RETORNO_INCOMPATIBLE` sobre el método de la
+interfaz (`[Error:getValor|6]`). Con la regla del contrato es
+`ERR_REDEFINICION_INCOMPATIBLE` sobre el método de la clase, como
+`semError64`: etiqueta corregida a `[Error:getValor|10]`, mismo código y
+comentario reescrito con las mismas líneas. `semError87` imprime además
+`[Error:mover|11]` (el conflicto entre `Volador.mover(int)` y
+`Nadador.mover(char)` en `Anfibio`); su etiqueta `|22` sigue apareciendo.
+Casos nuevos, por la instanciación a través del `extends` de una interfaz:
+
+| Archivo | Qué prueba | Código | Etiqueta | Hist. |
+|---|---|---|---|---|
+| `sinErrores/semCorrecto34.java` | `Lista<U> extends Fuente<U>, Origen<U>` (las dos con `T get()`) no da conflicto, y `Caja implements Lista<String>` la cumple con `String get()` y `poner(String)` | — | `[SinErrores]` | 59, 61 |
+| `conErrores/semError88.java` | `Caja implements Lista<String>`, con `Lista<U> extends Fuente<U>`, declara `Object get()` contra el `T get()` de `Fuente` | `ERR_REDEFINICION_INCOMPATIBLE` | `[Error:get\|15]` (el `get` de `Caja`) | 56, 59 |
+| `conErrores/semError89.java` | `Mixta extends Fuente<String>, Origen<Object>`, las dos con `T get()` | `ERR_METODO_RETORNO_INCOMPATIBLE` | `[Error:get\|12]` (el `get` de `Origen`) | 61 |
+
 Después de implementar se corren todos los testers. Un caso existente que
 cambie de resultado por una regla nueva (por ejemplo, uno que dependía de la
 sobrecarga por tipos) se corrige en su etiqueta esperada, no en el código,

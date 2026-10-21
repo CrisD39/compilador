@@ -72,6 +72,13 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
         return Collections.unmodifiableMap(instanciacion);
     }
 
+    // Método con esa clave (nombre/aridad), propio o ya copiado de un
+    // ancestro; null si no hay. Lo usa Interfaz.compararConObject() para
+    // buscar en Object.
+    public Metodo buscarMetodo(String clave) {
+        return metodos.get(clave);
+    }
+
     public void setSealed(boolean sealed) {
         this.sealed = sealed;
     }
@@ -333,10 +340,24 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
     // superinterfaces, y los conflictos entre ellos los reporta ella misma
     // (Interfaz.consolidarHerencia()). Acá sólo se compara la clase -- sus
     // métodos propios y los heredados de su padre, ya copiados por
-    // consolidarHerencia() -- contra cada método de la interfaz: si falta la
-    // clave, el método no está implementado; si está con otro retorno, es
-    // el conflicto "override-equivalente" de Java (misma clave, retorno
-    // incompatible).
+    // consolidarHerencia() -- contra cada método de la interfaz (spec 0001,
+    // "Contratos e interfaces"; historias 55-60, 64):
+    // - Falta la clave, o sólo hay un estático con ella (un estático no
+    //   cumple un contrato, §6.2; semError83): ERR_METODO_INTERFAZ_NOIMPLEMENTADO
+    //   sobre el método de la interfaz (semError32).
+    // - Está la clave con otra signatura: ERR_REDEFINICION_INCOMPATIBLE sobre
+    //   el método de la clase (semError64), como en la redefinición.
+    // El método que cumple puede ser heredado: el toString de Object cumple
+    // "String toString()" (semCorrecto30).
+    // La signatura se compara instanciada desde esta clase: el argumento de
+    // 'implements' compuesto con el mapa de la propia interfaz, que cubre sus
+    // superinterfaces. Así "implements Proveedor<String>" pide
+    // "String obtener()" (semCorrecto31), también a través de
+    // "Lista<U> extends Fuente<U>" (semCorrecto34, semError88), y sin
+    // argumento el T de la interfaz se conserva y no lo cumple Object
+    // (semError71, D5). No hace falta unirle 'instanciacion': la gramática no
+    // deja escribir 'extends' e 'implements' juntos, así que una clase con
+    // interfaz tiene a Object (no genérico) como padre.
     private void consolidarInterfaces(){
         if (interfaz == null) {
             return;
@@ -370,14 +391,28 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
                         "ERR_HERENCIA_PERMITIDA_SIN_MODIFICADOR", nombre.getLinea(), nombre.getLexema()));
             }
         }
+        // Mismo criterio que el argumento de 'extends' (consolidarHerencia()):
+        // sólo cuenta si la interfaz es genérica; si no, ERR_TIPO_NO_GENERICO
+        // ya salió y no hay parámetro que reemplazar.
+        Tipo argumentoDeLaInterfaz =
+                interfazResuelta.getParametrosTipo().isEmpty() ? null : interfaz.getArgumento();
+        Map<OrigenParametroTipo, Tipo> vistaContrato = Tipo.componerInstanciacion(
+                interfazResuelta.getInstanciacion(), interfazResuelta, argumentoDeLaInterfaz);
         for (Metodo metodo : interfazResuelta.getMetodos()) {
             Metodo propio = metodos.get(metodo.getClave());
-            if (propio == null) {
+            if (propio == null || propio.isEstatico()) {
                 tablaSimbolos.agregarError(new ErrorSemantico(
                         "ERR_METODO_INTERFAZ_NOIMPLEMENTADO", metodo.getNombre().getLinea(), metodo.getNombre().getLexema()));
-            } else if (!Objects.equals(propio.getRetornoCanonico(), metodo.getRetornoCanonico())) {
+            } else if (propio == tablaSimbolos.getObject().buscarMetodo(propio.getClave())) {
+                // Cumple (o no) un método de Object: esa comparación ya la
+                // hizo la interfaz contra Object (Interfaz.compararConObject(),
+                // historia 62), con el error sobre el método de la interfaz.
+                // Repetirla acá daría un segundo error sobre el toString de
+                // Object, en la línea 0 de un token sintético.
+                continue;
+            } else if (!propio.mismaSignatura(metodo, tipo -> tipo.sustituir(vistaContrato))) {
                 tablaSimbolos.agregarError(new ErrorSemantico(
-                        "ERR_METODO_RETORNO_INCOMPATIBLE", metodo.getNombre().getLinea(), metodo.getNombre().getLexema()));
+                        "ERR_REDEFINICION_INCOMPATIBLE", propio.getNombre().getLinea(), propio.getNombre().getLexema()));
             }
         }
     }

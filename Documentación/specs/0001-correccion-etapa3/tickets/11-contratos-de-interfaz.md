@@ -1,6 +1,6 @@
 ---
 titulo: Contratos de interfaz e interfaz contra Object
-estado: ready-for-agent
+estado: hecho
 spec: ../../0001-correccion-etapa3.md
 ---
 
@@ -16,15 +16,20 @@ instancia de `Object`.
 
 **Historias:** 55, 56, 57, 58, 59, 60, 61, 62, 63, 64.
 
-- [ ] Pasan `semCorrecto30` (`toString` heredado cumple el contrato) y
+- [x] Pasan `semCorrecto30` (`toString` heredado cumple el contrato) y
       `semCorrecto31` (`implements Proveedor<String>`).
-- [ ] Clave presente con otra signatura: `ERR_REDEFINICION_INCOMPATIBLE`
+- [x] Clave presente con otra signatura: `ERR_REDEFINICION_INCOMPATIBLE`
       sobre el método de la clase. Pasan `semError64` y `semError71`
       (D5 por `implements`).
-- [ ] Un estático no cumple el contrato: pasa `semError83`.
-- [ ] `ERR_METODO_RETORNO_INCOMPATIBLE` compara la signatura completa, con
+- [x] Un estático no cumple el contrato: pasa `semError83`.
+- [x] `ERR_METODO_RETORNO_INCOMPATIBLE` compara la signatura completa, con
       la descripción "se hereda con signaturas incompatibles": pasa
       `semError62`.
-- [ ] Interfaz contra `Object`: pasa `semError63`, y `semCorrecto32`
+- [x] Interfaz contra `Object`: pasa `semError63`, y `semCorrecto32`
       (`debugPrint` en una interfaz) sigue en verde.
-- [ ] Ningún caso que pasaba deja de pasar.
+- [x] Ningún caso que pasaba deja de pasar.
+      `semError37` cambió de resultado por la regla del contrato (error
+      sobre el método de la clase, como `semError64`): se corrigió su
+      etiqueta a `[Error:getValor|10]`, no el código (ver
+      casos-de-prueba.md). Casos nuevos: `semCorrecto34`, `semError88`,
+      `semError89`.
