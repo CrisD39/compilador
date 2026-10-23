@@ -3,12 +3,7 @@ package Model.semantico;
 import Model.lexico.Token;
 import Model.lexico.TokenType;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 // No implementa Chequeable: no es una declaración que se chequea, es el
 // contexto/sumidero de errores que las declaraciones usan para reportar
@@ -24,11 +19,12 @@ public class TablaSimbolos {
     // -- "resucitando" un nombre que el logro pide descartar para siempre
     // en cuanto se detecta la repetición, sin importar cuántas veces más
     // se repita.
-    private final Set<String> nombresInvalidados = new HashSet<>();
 
+    private Alcance scopeActual;
     public TablaSimbolos() {
         this.clases = new LinkedHashMap<>();
         registrarPredefinidas();
+        scopeActual = null;
     }
 
     // Tipos predefinidos (Parte I §7, ADR 0004): Object, String y System
@@ -259,6 +255,35 @@ public class TablaSimbolos {
             } else if (entidad instanceof Interfaz) {
                 ((Interfaz) entidad).consolidar();
             }
+        }
+    }
+
+    //Chequeo de los AST.
+    public void chequearSentencias(){
+
+    }
+
+    //Toda la parte de creación y cierre de scope, buscar e insertar atributos.
+
+    public void abrirScope(){
+        if (scopeActual != null)
+            scopeActual.setAlcancePadre(scopeActual);
+        scopeActual = new Alcance();
+    }
+
+    public  void cerrarScope(){
+        if(scopeActual.getScopePadre()!=null)
+            scopeActual = scopeActual.getScopePadre();
+    }
+
+    public void añadirAtributoScope(Atributo atributoNuevo){
+        scopeActual.insertarAtributo(atributoNuevo);
+    }
+    public Atributo buscarAtributo(String atributoBuscado) {
+        if (scopeActual != null)
+            return scopeActual.buscarAtributo(atributoBuscado);
+        else {
+            //TODO:ERROR buscar cuando no existe scope.
         }
     }
 }

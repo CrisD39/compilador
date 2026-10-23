@@ -3,14 +3,7 @@ package Model.sintactico;
 import Model.lexico.AnalizadorLexico;
 import Model.lexico.Token;
 import Model.lexico.TokenType;
-import Model.semantico.Atributo;
-import Model.semantico.Clase;
-import Model.semantico.Constructor;
-import Model.semantico.Interfaz;
-import Model.semantico.Metodo;
-import Model.semantico.Parametro;
-import Model.semantico.TablaSimbolos;
-import Model.semantico.Tipo;
+import Model.semantico.*;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -638,6 +631,7 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
             match(TokenType.ID_MET_VAR);
             crearMetodo(nombreMetodo, false, esFinal);
             List<Parametro> params = argsFormales();
+            Alcance alcanceParametro
             tablaSimbolo.setParametrosAMetodoActual(params);
             tablaSimbolo.agregarMetodoActualAClaseActual();
             bloque();
@@ -977,6 +971,8 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     //             |  <While>
     //             |  <Bloque>
     //             |  <Expresion> ;                       (sólo si el lookahead ∈ FIRST(<Expresion>) \ { idClase })
+
+    //sem2 el nodo sentencia debería retornar el nodoSentencia
     private void sentencia() {
         if (actualEs(TokenType.PUNTO_COMA)) {
             match(TokenType.PUNTO_COMA);
@@ -1018,10 +1014,17 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
 
     // <VarLocal> ::= var idMetVar = <ExpresionCompuesta>
     private void varLocal() {
+        //NodoAsingacion nodoVarLocal = new NodoAsignacion(tablaSimbolos);
         match(TokenType.PR_VAR);
+        //nodoVarLocal.setLadoIzquierdo();
         match(TokenType.ID_MET_VAR);
+        //Ver que onda lo del nodo asignable.
+        //NodoAsignable nodoAsignable = NodoAsignable(tokenActual);
+
         match(TokenType.OP_ASIGN);
-        expresionCompuesta();
+        //NodoExpresionCompuesta nodoExpresion = expresionCompuesta();
+        //nodoVarLocal.setIzquierdo(nodoAsignable);
+        //nodoVarLocal.setDerecho(nodoExpresion);
     }
 
     // <SentIdClase> ::= <TipoGenericoOpcional> <RestoDeclLocal>

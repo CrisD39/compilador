@@ -28,8 +28,6 @@ skinparam package {
 }
 hide empty members
 
-package Model {
-
   ' ================= Interfaces =================
 
   interface Chequeable <<interface>> {
@@ -310,7 +308,7 @@ package Model {
     PR_BOOLEAN
     (resto de los tokens del léxico)
   }
-}
+
 
 ' ================= Realizaciones =================
 ' Interfaces arriba: todas las realizaciones apuntan hacia arriba.
