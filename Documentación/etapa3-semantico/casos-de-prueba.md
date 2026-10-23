@@ -202,6 +202,10 @@ MiniJava mínimos, no archivos completos.
   confirmar que `Caja` existe. **Hecho** con el Logro 5 (`Tipo` recursivo,
   ver 5.5): `conErrores/semError48.java`. Desde la spec 0001 (D2) vale
   también para el argumento de `extends`/`implements` (`semError68.java`).
+- **Negativo — tipo raw**: `class A{ Caja c; }` con `Caja<T>` genérica.
+  **Hecho** (spec 0002, ADR 0007): `ERR_TIPO_SIN_ARGUMENTO` sobre `Caja`, en
+  todas las posiciones salvo la cabeza de `extends`/`implements`
+  (`semError98`–`104`, ver 5.6).
 
 ### 3.3 Tipo genérico (`idGen`) y su scope — **Hecho**
 
@@ -850,8 +854,9 @@ nivel se valida en atributos, parámetros y retorno:
   `sinErrores/semCorrecto18.java`.
 - Positivo: `idGen` como argumento anidado resuelto contra el entorno
   vigente (el `T` de la clase en un atributo, el `U` propio de un método en
-  su retorno/parámetro), y raw type (`Lista cruda;`) aceptado.
-  `sinErrores/semCorrecto22.java`.
+  su retorno/parámetro). `sinErrores/semCorrecto22.java`. Hasta la spec
+  0002 también aceptaba un tipo raw (`Lista cruda;`); ahora es error (ADR
+  0007, ver 5.6).
 - Negativo: `Caja<Foo>` con `Foo` no declarada → `ERR_TIPO_NO_DECLARADO`
   sobre `Foo`. `conErrores/semError48.java` (atributo),
   `semError53.java` (parámetro).
@@ -1059,6 +1064,39 @@ hecho).** `semError95`–`97` daban `[SinErrores]` antes del arreglo; ahora
 dan `ERR_TIPO_GENERICO_NO_DECLARADO` sobre `T` (ver §3.3). `semCorrecto37`
 y `semCorrecto19` siguen sin errores. Con ellos, los testers de Etapas 1–3
 dan 274 tests en verde.
+
+**Spec 0002: corrección según el enunciado completo (hecho).** El
+documento completo (§1) define los controles de las Etapas 3 y 4, y agrega
+dos reglas que la Parte I no tenía:
+
+- **Sin tipos raw** (ADR 0007, §3, §5.2, §8). Código nuevo:
+
+| Código | Cuándo | Lexema | Descripción |
+|---|---|---|---|
+| `ERR_TIPO_SIN_ARGUMENTO` | Una entidad genérica se usa sin argumento fuera de la cabeza de `extends`/`implements`: atributo, parámetro, retorno, tipo base de arreglo o argumento genérico (también el de una herencia). | nombre del tipo | `el tipo genérico "Caja" necesita un argumento de tipo` |
+
+- **Las interfaces contienen los métodos de instancia de `Object`**
+  (§10.2, Java). La interfaz los incorpora al consolidar; los estáticos no.
+  Ningún error existente cambia: `semError63`, `semError94` y
+  `semCorrecto32` dan lo mismo que antes, y se controló a mano que una
+  interfaz con `int toString()` que extiende otra, o una clase con
+  `static String toString()` que implementa una interfaz, reportan un solo
+  error y ninguno en la línea 0.
+
+| Archivo | Qué prueba | Código | Etiqueta |
+|---|---|---|---|
+| `conErrores/semError98.java` | atributo `Caja dato;` | `ERR_TIPO_SIN_ARGUMENTO` | `[Error:Caja\|7]` |
+| `conErrores/semError99.java` | retorno `Caja obtener()` | `ERR_TIPO_SIN_ARGUMENTO` | `[Error:Caja\|7]` |
+| `conErrores/semError100.java` | parámetro de un método estático `poner(Caja c)` | `ERR_TIPO_SIN_ARGUMENTO` | `[Error:Caja\|7]` |
+| `conErrores/semError101.java` | parámetro de constructor `Uso(int n, Caja c)` | `ERR_TIPO_SIN_ARGUMENTO` | `[Error:Caja\|7]` |
+| `conErrores/semError102.java` | tipo base de arreglo `Caja[] cajas;` | `ERR_TIPO_SIN_ARGUMENTO` | `[Error:Caja\|7]` |
+| `conErrores/semError103.java` | argumento genérico `Lista<Caja>` | `ERR_TIPO_SIN_ARGUMENTO` | `[Error:Caja\|10]` |
+| `conErrores/semError104.java` | argumento de la herencia `extends Caja<Lista>` | `ERR_TIPO_SIN_ARGUMENTO` | `[Error:Lista\|9]` |
+| `sinErrores/semCorrecto38.java` | herencia sin argumento en `extends`, `implements` y extensión de interfaces; usos con argumento en todas las posiciones | — | `[SinErrores]` |
+| `sinErrores/semCorrecto39.java` | interfaces con el `toString` de `Object`: incorporado, redeclarado igual, llegado por dos superinterfaces; clase que implementa sin declararlo; `debugPrint(int)` de instancia en una interfaz | — | `[SinErrores]` |
+
+`semCorrecto22` dejó de declarar `Lista cruda;`. Con estos casos, los
+testers de Etapas 1–3 dan 283 tests en verde.
 
 ## 6. Preguntas abiertas a resolver antes de escribir casos concretos
 

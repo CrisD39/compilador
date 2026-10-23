@@ -1,5 +1,8 @@
 # Tipos raw aceptados en declaraciones
 
+**Estado:** reemplazado por el ADR 0007 (`0007-sin-tipos-raw.md`). El
+enunciado completo extiende §5.2 a la Etapa 3.
+
 El enunciado (§5.2) prohíbe usar un tipo declarado genérico sin argumento
 fuera de una herencia. Igual se decidió aceptar `Caja dato;` en los tipos de
 atributos, parámetros y retornos, como en Java, porque la Etapa 3 ya lo

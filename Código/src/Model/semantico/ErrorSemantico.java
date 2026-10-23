@@ -59,6 +59,7 @@ public final class ErrorSemantico {
             case "ERR_TIPO_NO_DECLARADO" -> "el tipo " + x + " no está declarado";
             case "ERR_TIPO_GENERICO_NO_DECLARADO" -> "el parámetro de tipo " + x + " no está declarado en este alcance";
             case "ERR_TIPO_NO_GENERICO" -> "el tipo " + x + " no es genérico y no admite argumentos de tipo";
+            case "ERR_TIPO_SIN_ARGUMENTO" -> "el tipo genérico " + x + " necesita un argumento de tipo";
             case "ERR_HERENCIA_CICLICA" -> x + " forma parte de un ciclo de herencia";
             case "ERR_HERENCIA_CLASE_FINAL" -> x + " no puede extender una clase final";
             case "ERR_HERENCIA_NO_PERMITIDA" -> x + " no figura en el permits de su supertipo sealed";

@@ -195,6 +195,55 @@ donde está el detalle.
 - Las ambigüedades ⚠1–⚠13 de la sección NODOS están resueltas en
   "Decisiones sobre los nodos".
 
+## Revisión contra el enunciado completo (2026-10-23)
+
+Se comparó este diseño con el enunciado completo
+(`MiniJava-Semantica-Completa-2026.pdf`). Lo que toca la Etapa 3 se corrige
+en la spec `specs/0002-correccion-etapa3-enunciado-completo.md`. Lo de
+abajo es de la Etapa 4: queda decidido, pero no se implementa hasta
+encarar esta etapa.
+
+- **Receptor de tipo interfaz.** Una interfaz contiene implícitamente los
+  métodos de instancia de `Object`, así que `i.toString()` es válido
+  (§10.2, Java). Desde la spec 0002 la consolidación de la Etapa 3 ya los
+  copia al mapa de métodos de la interfaz, así que `NodoLlamadaEncadenada`
+  los encuentra sin un caso especial.
+- **Receptor arreglo.** Además de `length` (⚠10), un arreglo tiene los
+  métodos de instancia de `Object`: sólo `toString()`, sin parámetros y con
+  retorno `String` (§11.8, §13). `datos.clone()` u otro método da error
+  (`semIIError74`). `NodoLlamadaEncadenada` busca el método en `Object`
+  cuando `tipoIzquierdo` es un arreglo, y descarta los estáticos. Con tipo
+  estático `Object`, un arreglo no permite indexar ni `length`
+  (`semIIError72`, `73`).
+- **Receptor parámetro de tipo.** Un receptor de tipo `T` sin instanciar no
+  permite seleccionar atributos ni métodos, tampoco `toString()`: los
+  parámetros de tipo no tienen cotas (§10.1, §10.2, §11.8). En Java sí se
+  puede. Si el receptor es `Caja<T>`, o una vista donde `T` ya se sustituyó
+  por un tipo concreto, se resuelve normalmente.
+- **Tipos raw** (ADR 0007). Se rechazan también en las declaraciones de
+  locales clásicas, en los tipos de `for`/`foreach` y en `new Caja()`
+  (`semIIError24`), con el mismo `ERR_TIPO_SIN_ARGUMENTO` sobre el nombre
+  del tipo.
+- **Pendiente: logros que cambian el resultado de casos base.** Hay dos
+  logros que contradicen al documento base, y los casos base esperan el
+  comportamiento base:
+  - *Todos los caminos llevan al retorno* contra §12.5 (no se exige retorno
+    en todos los caminos y el código inalcanzable se acepta):
+    `semIICorrecto31`, `semIIError104`.
+  - *Floats y coerción* contra §9.1 y §11.2 (sin conversiones `char`↔`int`):
+    `semIIError33`, `34`, `52`, `59`, `70`.
+
+  Antes de implementarlos hay que decidir, idealmente con la cátedra, si el
+  logro reemplaza a la regla base (y se ajustan esos casos) o si las dos
+  conviven de algún modo.
+- **Prerrequisito: `Metodo.miClase` nunca se setea.** "Solo miembros
+  propios" compara `m.getMiClase() == this`, pero hoy el campo queda en
+  `null`. Hay que setearlo al registrar el método, igual que la clase
+  declarante de `Atributo` y `Constructor`.
+- Quedan como están los ejemplos de atributos `static` de "Atributos
+  inicializados" (la gramática sólo admite `static` en métodos, §6.1) y
+  los nodos de inicializadores de arreglo (⚠11, ⚠12).
+
 # Cadena de llamadas
 
 ## Orden de chequeo de semantica

@@ -1291,7 +1291,14 @@ un ciclo de herencia (o dependen de uno).
   la relación, con la misma validación que cualquier tipo referencia:
   `ERR_TIPO_NO_DECLARADO` (`extends Caja<Nada>`), `ERR_TIPO_NO_GENERICO`
   (`extends Bb<Bb>` con `Bb` no genérica) y `ERR_TIPO_GENERICO_NO_DECLARADO`.
-  Heredar sin argumento de un tipo genérico es válido (§5).
+  Heredar sin argumento de un tipo genérico es válido (§5): es la única
+  posición que admite un genérico sin argumento
+  (`Tipo.estaBienDeclaradoComoSupertipo()`), y sólo en la cabeza.
+- **Sin tipos raw (spec 0002, ADR 0007).** En cualquier otra posición
+  (atributo, parámetro, retorno, tipo base de arreglo, argumento genérico,
+  también el de una herencia), una entidad genérica sin argumento da
+  `ERR_TIPO_SIN_ARGUMENTO` sobre el nombre del tipo. Reemplaza al ADR 0001,
+  que los aceptaba en las declaraciones.
 - **Supertipo inexistente (D7).** Se reporta una sola vez, como
   `ERR_TIPO_NO_DECLARADO`, en el control de declaraciones. La consolidación
   saltea la relación sin reportar. `ERR_INTERFAZ_NO_DECLARADA` **se retiró**:
@@ -1446,13 +1453,18 @@ hija:
   (`semError91`). Se reporta una vez por método aunque varios padres
   traigan la clave. El propio oculta a los heredados: entre ellos ya no se
   comparan, como en Java.
-- **Contra `Object`** (`Interfaz.compararConObject()`). Al empezar su
-  consolidación, con sólo los métodos propios, una interfaz compara cada
-  uno con el método **de instancia** de `Object` de la misma clave, con la
+- **Contra `Object`** (`Interfaz.heredarDeObject()`, spec 0002). Como en
+  Java, una interfaz contiene los métodos **de instancia** de `Object`.
+  Al final de su consolidación, después de heredar de sus superinterfaces,
+  copia los que no tiene (el mismo objeto `Metodo` de `Object`, así que un
+  diamante no es conflicto). Un propio con esa clave lo redefine, con la
   regla de la redefinición y sin vista: `interface I { int toString(); }`
-  da `ERR_REDEFINICION_INCOMPATIBLE` sobre el método de la interfaz.
-  `debugPrint` es estático y no cuenta, como en Java. La interfaz no copia
-  los miembros de `Object` (busca con `Clase.buscarMetodo(clave)`).
+  da `ERR_REDEFINICION_INCOMPATIBLE` sobre el método de la interfaz, una
+  sola vez aunque un padre ya traiga el `toString` de `Object`.
+  `debugPrint` es estático y no pasa, como en Java. El contrato de una
+  clase saltea los métodos copiados de `Object`: la clase siempre los
+  tiene por su padre efectivo. Hasta la spec 0002 la interfaz sólo
+  comparaba y no copiaba.
 - **Descripción.** `ERR_REDEFINICION_INCOMPATIBLE` dice "el método x
   redefine o implementa un método con otra signatura": cubre la
   redefinición, el contrato y la comparación contra `Object`.

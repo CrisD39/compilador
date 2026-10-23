@@ -419,7 +419,8 @@ una interfaz se mantiene.
   descripción pasa a "se hereda con signaturas incompatibles".
 - Los métodos de una interfaz se comparan con los métodos de instancia de
   `Object` usando la regla de la redefinición. La interfaz no copia los
-  miembros de `Object`.
+  miembros de `Object`. **Reemplazado** por la spec 0002: ahora los copia,
+  como en Java.
 
 **Contrato de salida.** No cambia:
 - éxito: `[SinErrores]`;
@@ -506,7 +507,8 @@ parametrizados, y la guía de testers del proyecto.
 
   El módulo principal de la Etapa 3 sigue siendo el main del jar.
 - Los tipos raw en declaraciones (ADR 0001). No cambian: la Parte I §3 los
-  admite.
+  admite. **Reemplazado** por la spec 0002 y el ADR 0007: el documento
+  completo los prohíbe y ahora son error.
 - Mover la detección de parámetros repetidos a la construcción de la
   tabla. La Parte I la ubica en la primera pasada, pero el resultado
   observable no cambia.
