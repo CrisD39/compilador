@@ -1,0 +1,31 @@
+package Model.semantico.ast;
+
+import Model.semantico.TablaSimbolos;
+import Model.semantico.Tipo;
+
+// ( <Expresion> ) <ReferenciaResto> (⚠3). Conserva el tipo de adentro pero
+// corta esAsignable() y esLlamable(), aun con encadenado: (x) = 3;,
+// (m()); y (p1).m2(); no son válidos (§11.4, semIIError82).
+public class NodoExpParentizada extends NodoPrimario {
+    private final NodoExpresion expresion;
+
+    public NodoExpParentizada(NodoExpresion expresion) {
+        this.expresion = expresion;
+    }
+
+    @Override
+    public boolean esAsignable() {
+        return false;
+    }
+
+    @Override
+    public boolean esLlamable() {
+        return false;
+    }
+
+    @Override
+    public Tipo chequear(TablaSimbolos tabla) {
+        expresion.chequear(tabla);
+        return chequearEncadenado(tabla, null);
+    }
+}

@@ -18,6 +18,13 @@ public class ExcepcionSemantica extends RuntimeException {
         this.codigo = codigo;
     }
 
+    // Lo lanzan los nodos de logro que todavía no se chequean (spec 0003,
+    // D11), en vez de aceptar la construcción en silencio. El token es el de
+    // la tabla de D11 (for, ?, ->, new, el nombre de la local, ...).
+    public static ExcepcionSemantica noSoportado(Token token) {
+        return new ExcepcionSemantica(token, "ERR_NO_SOPORTADO");
+    }
+
     public Token getToken() {
         return token;
     }

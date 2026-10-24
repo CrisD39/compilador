@@ -47,6 +47,13 @@ public class Atributo implements Chequeable, Variable {
         this.inicializador = inicializador;
     }
 
+    // Logro Atributos inicializados: todavía no soportado (spec 0003, D11),
+    // se reporta sobre el nombre del atributo. Quien llama atrapa el error,
+    // porque el inicializador no pasa por un NodoBloque.
+    public void chequearInicializador(TablaSimbolos tabla) {
+        throw ExcepcionSemantica.noSoportado(nombre);
+    }
+
     // Clave del atributo: el nombre (los atributos no se sobrecargan).
     public String getClave() {
         return nombre.getLexema();

@@ -11,6 +11,7 @@ import Model.semantico.Metodo;
 import Model.semantico.Parametro;
 import Model.semantico.TablaSimbolos;
 import Model.semantico.Tipo;
+import Model.semantico.ast.*;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -486,10 +487,13 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     // metodo.parametros después no reindexa el HashMap. Resultado: dos
     // sobrecargas legítimas por aridad (ej. mostrar() y mostrar(int n))
     // colisionaban como si fueran el mismo método.
-    private void crearMetodo(Token nombre, boolean estatico, boolean esFinal) {
+    // Devuelve el método para que quien lo crea le enganche el cuerpo al
+    // terminar de parsear el <Bloque>.
+    private Metodo crearMetodo(Token nombre, boolean estatico, boolean esFinal) {
         Metodo metodo = new Metodo(nombre, null, estatico, new ArrayList<>());
         metodo.setFinal(esFinal);
         tablaSimbolo.setMetodoActual(metodo);
+        return metodo;
     }
 
     // <GenericidadOpcional> ::= < idGen > | ϵ
@@ -636,11 +640,11 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
             match(TokenType.PR_VOID);
             Token nombreMetodo = tokenActual;
             match(TokenType.ID_MET_VAR);
-            crearMetodo(nombreMetodo, false, esFinal);
+            Metodo metodo = crearMetodo(nombreMetodo, false, esFinal);
             List<Parametro> params = argsFormales();
             tablaSimbolo.setParametrosAMetodoActual(params);
             tablaSimbolo.agregarMetodoActualAClaseActual();
-            bloque();
+            metodo.setCuerpo(bloque());
         } else if (actualEn(PRIMEROS_TIPO_PRIMITIVO)) {
             Token tipoTok = tipoPrimitivo();
             int dimensiones = dimensionesOpcionales();
@@ -670,13 +674,13 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
         Tipo tipoRetorno = tipoMetodo();
         Token nombreMetodo = tokenActual;
         match(TokenType.ID_MET_VAR);
-        crearMetodo(nombreMetodo, estatico, esFinal);
+        Metodo metodo = crearMetodo(nombreMetodo, estatico, esFinal);
         List<Parametro> params = argsFormales();
         tablaSimbolo.setTipoRetornoAMetodoActual(tipoRetorno);
         tablaSimbolo.setParametrosAMetodoActual(params);
         tablaSimbolo.setParametrosTipoAMetodoActual(parametrosTipoMetodo);
         tablaSimbolo.agregarMetodoActualAClaseActual();
-        bloque();
+        metodo.setCuerpo(bloque());
     }
 
     // <TrasIdClaseMiembro> ::= <ArgsFormales> <Bloque>
@@ -695,10 +699,11 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
                 return;
             }
             List<Parametro> params = argsFormales();
-            bloque();
+            Constructor constructor = new Constructor(idClassToken, params);
+            constructor.setCuerpo(bloque());
             // D3: el nombre se controla al registrarlo, mientras se parsea
             // (Clase.agregarConstructor()); uno con otro nombre no se registra.
-            tablaSimbolo.getClaseActual().agregarConstructor(new Constructor(idClassToken, params));
+            tablaSimbolo.getClaseActual().agregarConstructor(constructor);
         } else {
             Tipo argumento = tipoGenericoOpcional();
             Tipo tipo = new Tipo(idClassToken, argumento, dimensionesOpcionales());
@@ -730,21 +735,23 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
             match(TokenType.PUNTO_COMA);
             tablaSimbolo.getClaseActual().agregarAtributo(new Atributo(nombreMiembro, tipo));
         } else if (actualEs(TokenType.PAR_A)) {
-            crearMetodo(nombreMiembro, false, esFinal);
+            Metodo metodo = crearMetodo(nombreMiembro, false, esFinal);
             List<Parametro> params = argsFormales();
             tablaSimbolo.setParametrosAMetodoActual(params);
             tablaSimbolo.setTipoRetornoAMetodoActual(tipo);
             tablaSimbolo.agregarMetodoActualAClaseActual();
-            bloque();
+            metodo.setCuerpo(bloque());
         } else if (actualEs(TokenType.OP_ASIGN)) {
             if (esFinal) {
                 error("un método (\"final\" no se puede aplicar a un atributo)");
                 return;
             }
             operadorAsignacion();
-            expresionCompuesta();
+            NodoExpresion inicializador = expresionCompuesta();
             matchCierre(TokenType.PUNTO_COMA);
-            tablaSimbolo.getClaseActual().agregarAtributo(new Atributo(nombreMiembro, tipo));
+            Atributo atributo = new Atributo(nombreMiembro, tipo);
+            atributo.setInicializador(inicializador);
+            tablaSimbolo.getClaseActual().agregarAtributo(atributo);
         } else {
             error("\";\", \"=\" (atributo) o \"(\" (método)");
         }
@@ -860,23 +867,25 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     // el diamante sólo es válido al instanciar (new Foo<>()), nunca en una
     // declaración de tipo — esas siguen usando tipoGenericoOpcional() sin
     // tocar, así que "Foo<> x;" sigue siendo error sintáctico.
-    private void tipoGenericoOpcionalNew() {
+    // Devuelve el argumento, o null sin "<...>" y con diamante: restoNew()
+    // los distingue mirando si había "<".
+    private Tipo tipoGenericoOpcionalNew() {
         if (actualEs(TokenType.OP_MENOR)) {
             match(TokenType.OP_MENOR);
-            diamanteOTipo();
+            Tipo argumento = diamanteOTipo();
             match(TokenType.OP_MAYOR);
-        } else {
-            // ϵ — no hace nada
+            return argumento;
         }
+        return null;
     }
 
     // <DiamanteOTipo> ::= <InstanciadoOParametrico> | ϵ      (ϵ = "<>")
-    private void diamanteOTipo() {
+    private Tipo diamanteOTipo() {
         if (actualEs(TokenType.ID_GEN) || actualEs(TokenType.ID_CLASE)) {
-            instanciadoOParametrico();
-        } else {
-            // ϵ — no hace nada (notación diamante: new Foo<>())
+            return instanciadoOParametrico();
         }
+        // ϵ (notación diamante: new Foo<>())
+        return null;
     }
 
     // <InstanciadoOParametrico> ::= idGen | idClase <TipoGenericoOpcional>
@@ -951,17 +960,27 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     }
 
     // <Bloque> ::= { <ListaSentencias> }
-    private void bloque() {
+    // Cada método de cuerpos devuelve su nodo a quien lo contiene (estrategia
+    // B, un único punto de attach): el NodoBloque de un método o constructor
+    // lo engancha quien llamó a bloque(), y uno anidado queda como sentencia.
+    private NodoBloque bloque() {
         match(TokenType.LLAVE_A);
-        listaSentencias();
+        NodoBloque nodo = new NodoBloque();
+        listaSentencias(nodo);
         match(TokenType.LLAVE_C);
+        return nodo;
     }
 
     // <ListaSentencias> ::= <Sentencia> <ListaSentencias> | ϵ
-    private void listaSentencias() {
+    // Una sentencia con error sintáctico no tiene nodo (sentencia() devuelve
+    // null) y no se agrega: con errores sintácticos el AST no se chequea (D8).
+    private void listaSentencias(NodoBloque bloque) {
         if (actualEn(PRIMEROS_SENTENCIA)) {
-            sentencia();
-            listaSentencias();
+            NodoSentencia sentencia = sentencia();
+            if (sentencia != null) {
+                bloque.agregarSentencia(sentencia);
+            }
+            listaSentencias(bloque);
         } else {
             // ϵ — no hace nada
         }
@@ -975,163 +994,209 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     //             |  <Return> ;
     //             |  <If>
     //             |  <While>
+    //             |  <For>
     //             |  <Bloque>
     //             |  <Expresion> ;                       (sólo si el lookahead ∈ FIRST(<Expresion>) \ { idClase })
-    private void sentencia() {
+    private NodoSentencia sentencia() {
         if (actualEs(TokenType.PUNTO_COMA)) {
             match(TokenType.PUNTO_COMA);
+            return new NodoSentenciaVacia();
         } else if (actualEs(TokenType.PR_VAR)) {
-            varLocal();
+            NodoVarLocal nodo = varLocal();
             matchCierre(TokenType.PUNTO_COMA);
+            return nodo;
         } else if (actualEn(PRIMEROS_TIPO_PRIMITIVO)) {
-            tipoPrimitivo();
-            restoDeclLocal();
+            return restoDeclLocal(new Tipo(tipoPrimitivo()));
         } else if (actualEs(TokenType.ID_GEN)) {
+            Token tipoTok = tokenActual;
             match(TokenType.ID_GEN);
-            restoDeclLocal();
+            return restoDeclLocal(new Tipo(tipoTok));
         } else if (actualEs(TokenType.ID_CLASE)) {
             // idClase se intercepta acá: puede abrir una declaración local
             // (<Tipo> idMetVar ...) o una expresión (idClase . idMetVar (...)).
             // Un token más lo decide, en sentIdClase().
+            Token idClase = tokenActual;
             match(TokenType.ID_CLASE);
-            sentIdClase();
+            return sentIdClase(idClase);
         } else if (actualEs(TokenType.PR_RETURN)) {
-            sentenciaReturn();
+            NodoReturn nodo = sentenciaReturn();
             matchCierre(TokenType.PUNTO_COMA);
+            return nodo;
         } else if (actualEs(TokenType.PR_IF)) {
-            sentenciaIf();
+            return sentenciaIf();
         } else if (actualEs(TokenType.PR_WHILE)) {
-            sentenciaWhile();
+            return sentenciaWhile();
         } else if (actualEs(TokenType.PR_FOR)) {
-            sentenciaFor();
+            return sentenciaFor();
         } else if (actualEs(TokenType.LLAVE_A)) {
-            bloque();
+            return bloque();
         } else if (actualEn(PRIMEROS_EXPRESION)) {
             // idClase ya quedó tomado por la rama de arriba; acá sólo entra el
             // resto de FIRST(<Expresion>).
-            expresion();
-            matchCierre(TokenType.PUNTO_COMA);
+            return cerrarSentenciaExpresion(expresion());
         } else {
             error("una sentencia");
+            return null;
         }
+    }
+
+    // El ";" que cierra una <Expresion> usada como sentencia (en <Sentencia>,
+    // en la rama "." de <SentIdClase> y en la inicialización del for). Se
+    // guarda porque es el lexema de ERR_SENTENCIA_INVALIDA.
+    private NodoSentenciaExpresion cerrarSentenciaExpresion(NodoExpresion expresion) {
+        Token puntoYComa = tokenActual;
+        matchCierre(TokenType.PUNTO_COMA);
+        return new NodoSentenciaExpresion(expresion, puntoYComa);
     }
 
     // <VarLocal> ::= var idMetVar = <ExpresionCompuesta>
-    private void varLocal() {
+    private NodoVarLocal varLocal() {
+        Token var = tokenActual;
         match(TokenType.PR_VAR);
+        Token nombre = tokenActual;
         match(TokenType.ID_MET_VAR);
         match(TokenType.OP_ASIGN);
-        expresionCompuesta();
+        return new NodoVarLocal(var, nombre, expresionCompuesta());
     }
 
     // <SentIdClase> ::= <TipoGenericoOpcional> <RestoDeclLocal>
-    //               |  . idMetVar <ArgsActuales> <ReferenciaResto> <ExpresionCompuestaResto> <RestoAsignacion> ;
+    //               |  . idMetVar <ArgsActuales> <ReferenciaResto> <PostfijoOpcional> <ExpresionCompuestaResto>
+    //                  <TernarioOpcional> <RestoAsignacion> ;
     // El "idClase" ya fue consumido por sentencia(). Si sigue ".", era una
     // llamada a método estático (expresión); si no, es una declaración local
     // con tipo clase (`Foo x;`, `Foo<Bar> x = ...;`). La rama "." reconstruye
-    // la cola de <Expresion> que arrancaba en idClase . idMetVar <ArgsActuales>.
-    private void sentIdClase() {
+    // la cola de <Expresion> que arrancaba en idClase . idMetVar <ArgsActuales>,
+    // con el postfijo y el ternario incluidos (⚠13): tiene que dar el mismo
+    // árbol que el camino normal, y sin ellos A1.m().x++; era error sintáctico.
+    private NodoSentencia sentIdClase(Token idClase) {
         if (actualEs(TokenType.PUNTO)) {
             match(TokenType.PUNTO);
+            Token nombre = tokenActual;
             match(TokenType.ID_MET_VAR);
-            argsActuales();
-            referenciaResto();
-            expresionCompuestaResto();
-            restoAsignacion();
-            matchCierre(TokenType.PUNTO_COMA);
+            NodoLlamadaEstatica llamada = new NodoLlamadaEstatica(idClase, nombre, argsActuales());
+            return cerrarSentenciaExpresion(colaDeExpresion(conReferenciaResto(llamada)));
         } else {
-            tipoGenericoOpcional();
-            restoDeclLocal();
+            return restoDeclLocal(new Tipo(idClase, tipoGenericoOpcional()));
         }
+    }
+
+    // Cola de <Expresion> después de un operando ya armado:
+    // <PostfijoOpcional> <ExpresionCompuestaResto> <TernarioOpcional> <RestoAsignacion>.
+    // La usan los caminos factorizados que consumieron el prefijo para
+    // decidir (<SentIdClase>, <TrasIdClaseFor>, <TrasParenId>), en el mismo
+    // orden que expresion() -> expresionCompuesta() -> expresionBasica().
+    private NodoExpresion colaDeExpresion(NodoExpresion operando) {
+        NodoExpresion expresion = postfijoOpcional(operando);
+        expresion = expresionCompuestaResto(expresion);
+        expresion = ternarioOpcional(expresion);
+        return restoAsignacion(expresion);
     }
 
     // <RestoDeclLocal> ::= idMetVar <MasIdsLocal> <InitLocalOpc> ;
     // Cola de una declaración local clásica, después del tipo base. Un único
-    // "= <ExpresionCompuesta>" al final vale para toda la lista de nombres
-    // (`int x, y, z = 10;`); a qué variables les aplica el valor es semántico.
-    private void restoDeclLocal() {
+    // "= <ExpresionCompuesta>" al final vale sólo para el último nombre, como
+    // en Java (`int x, y, z = 10;`, ⚠7).
+    private NodoVarLocalClasica restoDeclLocal(Tipo tipo) {
+        Token primero = tokenActual;
         match(TokenType.ID_MET_VAR);
-        masIdsLocal();
-        initLocalOpc();
+        List<Token> nombres = masIdsLocal();
+        nombres.add(0, primero);
+        NodoExpresion inicializador = initLocalOpc();
         matchCierre(TokenType.PUNTO_COMA);
+        return new NodoVarLocalClasica(tipo, nombres, inicializador);
     }
 
     // <MasIdsLocal> ::= , idMetVar <MasIdsLocal> | ϵ
-    private void masIdsLocal() {
+    private List<Token> masIdsLocal() {
         if (actualEs(TokenType.COMA)) {
             match(TokenType.COMA);
+            Token nombre = tokenActual;
             match(TokenType.ID_MET_VAR);
-            masIdsLocal();
-        } else {
-            // ϵ — no hace nada
+            List<Token> resto = masIdsLocal();
+            resto.add(0, nombre);
+            return resto;
         }
+        return new ArrayList<>();
     }
 
     // <InitLocalOpc> ::= = <ExpresionCompuesta> | ϵ
-    private void initLocalOpc() {
+    // null si no hay inicializador.
+    private NodoExpresion initLocalOpc() {
         if (actualEs(TokenType.OP_ASIGN)) {
             match(TokenType.OP_ASIGN);
-            expresionCompuesta();
-        } else {
-            // ϵ — no hace nada
+            return expresionCompuesta();
         }
+        return null;
     }
 
     // <Return> ::= return <ExpresionOpcional>
-    private void sentenciaReturn() {
+    private NodoReturn sentenciaReturn() {
+        Token tokenReturn = tokenActual;
         match(TokenType.PR_RETURN);
-        expresionOpcional();
+        return new NodoReturn(tokenReturn, expresionOpcional());
     }
 
     // <ExpresionOpcional> ::= <Expresion> | ϵ
-    private void expresionOpcional() {
+    // null en "return;".
+    private NodoExpresion expresionOpcional() {
         if (actualEn(PRIMEROS_EXPRESION)) {
-            expresion();
-        } else {
-            // ϵ — no hace nada
+            return expresion();
         }
+        return null;
     }
 
     // <If> ::= if ( <Expresion> ) <Sentencia> <ElseOpcional>
-    private void sentenciaIf() {
+    private NodoIf sentenciaIf() {
+        Token tokenIf = tokenActual;
         match(TokenType.PR_IF);
         match(TokenType.PAR_A);
-        expresion();
+        NodoExpresion condicion = expresion();
         match(TokenType.PAR_C);
-        sentencia();
-        elseOpcional();
+        NodoSentencia entonces = sentencia();
+        return new NodoIf(tokenIf, condicion, entonces, elseOpcional());
     }
 
     // <ElseOpcional> ::= else <Sentencia> | ϵ
     // Conflicto FIRST/FOLLOW deliberado sobre "else" (else colgante): con lookahead
     // "else" se toma siempre la rama else -> el else liga con el if más cercano.
-    private void elseOpcional() {
+    // null sin else (⚠8).
+    private NodoSentencia elseOpcional() {
         if (actualEs(TokenType.PR_ELSE)) {
             match(TokenType.PR_ELSE);
-            sentencia();
-        } else {
-            // ϵ — no hace nada (reduce por ϵ; el "else" liga con el if más cercano)
+            return sentencia();
         }
+        // ϵ (reduce por ϵ; el "else" liga con el if más cercano)
+        return null;
     }
 
     // <While> ::= while ( <Expresion> ) <Sentencia>
-    private void sentenciaWhile() {
+    private NodoWhile sentenciaWhile() {
+        Token tokenWhile = tokenActual;
         match(TokenType.PR_WHILE);
         match(TokenType.PAR_A);
-        expresion();
+        NodoExpresion condicion = expresion();
         match(TokenType.PAR_C);
-        sentencia();
+        return new NodoWhile(tokenWhile, condicion, sentencia());
     }
 
     // <For> ::= for ( <ClausulasFor> ) <Sentencia>
     // El cuerpo es <Sentencia> (no <Bloque>), igual que <If>/<While>: admite
     // tanto una sentencia simple sin llaves como un bloque.
-    private void sentenciaFor() {
+    // <ClausulasFor> decide si es un for clásico o un for-each, así que el
+    // nodo sale de ahí y el cuerpo se le setea después de leerlo.
+    private NodoSentencia sentenciaFor() {
+        Token tokenFor = tokenActual;
         match(TokenType.PR_FOR);
         match(TokenType.PAR_A);
-        clausulasFor();
+        NodoSentencia nodo = clausulasFor(tokenFor);
         match(TokenType.PAR_C);
-        sentencia();
+        NodoSentencia cuerpo = sentencia();
+        if (nodo instanceof NodoFor nodoFor) {
+            nodoFor.setCuerpo(cuerpo);
+        } else if (nodo instanceof NodoForEach nodoForEach) {
+            nodoForEach.setCuerpo(cuerpo);
+        }
+        return nodo;
     }
 
     // <ClausulasFor> ::= ; <CondFor> ; <ActFor>
@@ -1144,137 +1209,148 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     // tipo (declaración clásica o for-each) o el resto de una llamada estática
     // (expresión de inicialización, p. ej. Fabrica.reset()); un token más lo
     // decide en trasIdClaseFor().
-    private void clausulasFor() {
+    // Devuelve un NodoFor o un NodoForEach todavía sin cuerpo.
+    private NodoSentencia clausulasFor(Token tokenFor) {
         if (actualEs(TokenType.PUNTO_COMA)) {
             match(TokenType.PUNTO_COMA);
-            condFor();
-            matchCierre(TokenType.PUNTO_COMA);
-            actFor();
+            return restoForClasico(tokenFor, null);
         } else if (actualEn(PRIMEROS_TIPO_PRIMITIVO)) {
-            tipoPrimitivo();
+            Tipo tipo = new Tipo(tipoPrimitivo());
+            Token nombre = tokenActual;
             match(TokenType.ID_MET_VAR);
-            trasIdForTipo();
+            return trasIdForTipo(tokenFor, tipo, nombre);
         } else if (actualEs(TokenType.ID_GEN)) {
+            Tipo tipo = new Tipo(tokenActual);
             match(TokenType.ID_GEN);
+            Token nombre = tokenActual;
             match(TokenType.ID_MET_VAR);
-            trasIdForTipo();
+            return trasIdForTipo(tokenFor, tipo, nombre);
         } else if (actualEs(TokenType.ID_CLASE)) {
+            Token idClase = tokenActual;
             match(TokenType.ID_CLASE);
-            trasIdClaseFor();
+            return trasIdClaseFor(tokenFor, idClase);
         } else if (actualEn(PRIMEROS_EXPRESION)) {
-            expresion();
-            matchCierre(TokenType.PUNTO_COMA);
-            condFor();
-            matchCierre(TokenType.PUNTO_COMA);
-            actFor();
+            return restoForClasico(tokenFor, cerrarSentenciaExpresion(expresion()));
         } else {
             error("\";\", un tipo o una expresión (inicialización del \"for\")");
+            return null;
         }
+    }
+
+    // <CondFor> ; <ActFor>: lo que sigue a la inicialización (ya cerrada con
+    // su ";") en todas las formas del for clásico.
+    private NodoFor restoForClasico(Token tokenFor, NodoSentencia inicializacion) {
+        NodoExpresion condicion = condFor();
+        matchCierre(TokenType.PUNTO_COMA);
+        return new NodoFor(tokenFor, inicializacion, condicion, actFor());
     }
 
     // <TrasIdForTipo> ::= : <Expresion>                          (for-each)
     //                  |  <InitLocalOpc> ; <CondFor> ; <ActFor>  (for clásico con declaración)
-    private void trasIdForTipo() {
+    // La declaración del for clásico es una local clásica de un solo nombre
+    // (⚠9).
+    private NodoSentencia trasIdForTipo(Token tokenFor, Tipo tipo, Token nombre) {
         if (actualEs(TokenType.DOS_PUNTOS)) {
             match(TokenType.DOS_PUNTOS);
-            expresion();
+            return new NodoForEach(tokenFor, tipo, nombre, expresion());
         } else {
-            initLocalOpc();
+            NodoExpresion inicializador = initLocalOpc();
             matchCierre(TokenType.PUNTO_COMA);
-            condFor();
-            matchCierre(TokenType.PUNTO_COMA);
-            actFor();
+            NodoVarLocalClasica declaracion = new NodoVarLocalClasica(tipo, List.of(nombre), inicializador);
+            return restoForClasico(tokenFor, declaracion);
         }
     }
 
     // <TrasIdClaseFor> ::= <TipoGenericoOpcional> idMetVar <TrasIdForTipo>
-    //                   |  . idMetVar <ArgsActuales> <ReferenciaResto> <ExpresionCompuestaResto> <RestoAsignacion> ; <CondFor> ; <ActFor>
+    //                   |  . idMetVar <ArgsActuales> <ReferenciaResto> <PostfijoOpcional> <ExpresionCompuestaResto>
+    //                      <TernarioOpcional> <RestoAsignacion> ; <CondFor> ; <ActFor>
     // "." => era una llamada estática como expresión de inicialización; misma
-    // reconstrucción de cola de <Expresion> que usa <SentIdClase>. Cualquier
-    // otra cosa => era un tipo clase (declaración o for-each).
-    private void trasIdClaseFor() {
+    // reconstrucción de cola de <Expresion> que usa <SentIdClase> (⚠13).
+    // Cualquier otra cosa => era un tipo clase (declaración o for-each).
+    private NodoSentencia trasIdClaseFor(Token tokenFor, Token idClase) {
         if (actualEs(TokenType.PUNTO)) {
             match(TokenType.PUNTO);
+            Token nombre = tokenActual;
             match(TokenType.ID_MET_VAR);
-            argsActuales();
-            referenciaResto();
-            expresionCompuestaResto();
-            restoAsignacion();
-            matchCierre(TokenType.PUNTO_COMA);
-            condFor();
-            matchCierre(TokenType.PUNTO_COMA);
-            actFor();
+            NodoLlamadaEstatica llamada = new NodoLlamadaEstatica(idClase, nombre, argsActuales());
+            NodoSentencia inicializacion = cerrarSentenciaExpresion(colaDeExpresion(conReferenciaResto(llamada)));
+            return restoForClasico(tokenFor, inicializacion);
         } else {
-            tipoGenericoOpcional();
+            Tipo tipo = new Tipo(idClase, tipoGenericoOpcional());
+            Token nombre = tokenActual;
             match(TokenType.ID_MET_VAR);
-            trasIdForTipo();
+            return trasIdForTipo(tokenFor, tipo, nombre);
         }
     }
 
     // <CondFor> ::= <Expresion> | ϵ
-    private void condFor() {
+    // null en la cláusula vacía: for (init;;act).
+    private NodoExpresion condFor() {
         if (actualEn(PRIMEROS_EXPRESION)) {
-            expresion();
-        } else {
-            // ϵ — no hace nada (cláusula vacía: for (init;;act))
+            return expresion();
         }
+        return null;
     }
 
     // <ActFor> ::= <Expresion> | ϵ
-    private void actFor() {
+    // null en la cláusula vacía: for (init;cond;).
+    private NodoExpresion actFor() {
         if (actualEn(PRIMEROS_EXPRESION)) {
-            expresion();
-        } else {
-            // ϵ — no hace nada (cláusula vacía: for (init;cond;))
+            return expresion();
         }
+        return null;
     }
 
     // <Expresion> ::= <ExpresionCompuesta> <RestoAsignacion>
-    private void expresion() {
-        expresionCompuesta();
-        restoAsignacion();
+    private NodoExpresion expresion() {
+        return restoAsignacion(expresionCompuesta());
     }
 
     // <RestoAsignacion> ::= <OperadorAsignacion> <ExpresionCompuesta> | ϵ
-    private void restoAsignacion() {
+    // Recibe el lado izquierdo ya parseado: con "=" arma la asignación, y si
+    // no, la expresión queda como estaba.
+    private NodoExpresion restoAsignacion(NodoExpresion ladoIzq) {
         if (actualEs(TokenType.OP_ASIGN)) {
-            operadorAsignacion();
-            expresionCompuesta();
-        } else {
-            // ϵ — no hace nada
+            Token operador = operadorAsignacion();
+            return new NodoExpAsignacion(ladoIzq, operador, expresionCompuesta());
         }
+        return ladoIzq;
     }
 
     // <OperadorAsignacion> ::= =
-    private void operadorAsignacion() {
+    private Token operadorAsignacion() {
+        Token operador = tokenActual;
         match(TokenType.OP_ASIGN);
+        return operador;
     }
 
-    // <ExpresionCompuesta> ::= <ExpresionBasica> <ExpresionCompuestaResto>
-    private void expresionCompuesta() {
-        expresionBasica();
-        expresionCompuestaResto();
-        ternarioOpcional();
+    // <ExpresionCompuesta> ::= <ExpresionBasica> <ExpresionCompuestaResto> <TernarioOpcional>
+    private NodoExpresion expresionCompuesta() {
+        return ternarioOpcional(expresionCompuestaResto(expresionBasica()));
     }
 
     // <ExpresionCompuestaResto> ::= <OperadorBinario> <ExpresionBasica> <ExpresionCompuestaResto> | ϵ
-    private void expresionCompuestaResto() {
+    // Arrastra a derecha lo ya armado como lado izquierdo, así la cadena
+    // queda asociativa a izquierda y sin precedencia (política de Etapa 2):
+    // 2+4*b es (2+4)*b.
+    private NodoExpresion expresionCompuestaResto(NodoExpresion ladoIzq) {
         if (actualEn(PRIMEROS_OP_BINARIO)) {
-            operadorBinario();
-            expresionBasica();
-            expresionCompuestaResto();
-        } else {
-            // ϵ — no hace nada
+            Token operador = operadorBinario();
+            NodoExpBinaria binaria = new NodoExpBinaria(ladoIzq, operador, expresionBasica());
+            return expresionCompuestaResto(binaria);
         }
+        return ladoIzq;
     }
 
     // <OperadorBinario> ::= || | && | == | != | < | > | <= | >= | + | - | * | / | %
-    private void operadorBinario() {
+    private Token operadorBinario() {
+        Token operador = tokenActual;
         if (actualEn(PRIMEROS_OP_BINARIO)) {
             avanzar();
         } else {
             error("un operador binario");
         }
+        return operador;
     }
 
     // <TernarioOpcional> ::= ? <ExpresionCompuesta> : <ExpresionCompuesta> | ϵ
@@ -1284,28 +1360,28 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     // El <valorFalse> es <ExpresionCompuesta>, que ya termina en su propio ternarioOpcional(): un
     // ternario anidado ahí (a ? b : c ? d : e) se resuelve solo, sin repetir la llamada acá, y da
     // asociatividad a derecha (a ? b : (c ? d : e)).
-    private void ternarioOpcional() {
+    private NodoExpresion ternarioOpcional(NodoExpresion condicion) {
         if (actualEs(TokenType.INTERROGACION)) {
+            Token operador = tokenActual;
             match(TokenType.INTERROGACION);
-            expresionCompuesta();
+            NodoExpresion ladoIzq = expresionCompuesta();
             match(TokenType.DOS_PUNTOS);
-            expresionCompuesta();
-        } else {
-            // ϵ — no hace nada
+            return new NodoExpTernaria(condicion, operador, ladoIzq, expresionCompuesta());
         }
+        return condicion;
     }
 
     // <ExpresionBasica> ::= <OperadorUnario> <Operando> <PostfijoOpcional> | <Operando> <PostfijoOpcional>
-    private void expresionBasica() {
+    // El postfijo liga primero al operando (⚠5): -a++ es Unaria(-, Postfija(a, ++)).
+    private NodoExpresion expresionBasica() {
         if (actualEn(PRIMEROS_OP_UNARIO)) {
-            operadorUnario();
-            operando();
-            postfijoOpcional();
+            Token operador = operadorUnario();
+            return new NodoExpUnaria(operador, postfijoOpcional(operando()));
         } else if (actualEn(PRIMEROS_OPERANDO)) {
-            operando();
-            postfijoOpcional();
+            return postfijoOpcional(operando());
         } else {
             error("una expresión");
+            return null;
         }
     }
 
@@ -1318,22 +1394,25 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     // Java también es recursiva ahí (PostIncrementExpression/PostDecrementExpression toman como
     // operando otro PostfixExpression) y sólo lo rechaza en el chequeo de tipos ("a++" da un valor,
     // no una variable) — acá, igual que con "1++" o "1 = 2;", esa distinción queda para semántica.
-    private void postfijoOpcional() {
+    // Cada operador envuelve lo anterior: a++-- es Postfija(Postfija(a, ++), --).
+    private NodoExpresion postfijoOpcional(NodoExpresion ladoIzq) {
         if (actualEs(TokenType.OP_INCREMENTO) || actualEs(TokenType.OP_DECREMENTO)) {
+            Token operador = tokenActual;
             avanzar();
-            postfijoOpcional();
-        } else {
-            // ϵ — no hace nada
+            return postfijoOpcional(new NodoExpPostfija(ladoIzq, operador));
         }
+        return ladoIzq;
     }
 
     // <OperadorUnario> ::= + | - | !
-    private void operadorUnario() {
+    private Token operadorUnario() {
+        Token operador = tokenActual;
         if (actualEn(PRIMEROS_OP_UNARIO)) {
             avanzar();
         } else {
             error("\"+\", \"-\" o \"!\"");
         }
+        return operador;
     }
 
     // <Operando> ::= <Primitivo>
@@ -1348,42 +1427,60 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     // (expresión parentizada vs. lambda) e "idMetVar" (variable vs. lambda de 1
     // parámetro sin paréntesis). Decisión con un solo token; ARROW no está en
     // ningún FIRST, es siempre marcador infijo de lambda.
-    private void operando() {
+    private NodoExpresion operando() {
         if (actualEn(PRIMEROS_PRIMITIVO)) {
-            primitivo();
+            return primitivo();
         } else if (actualEs(TokenType.PR_THIS)) {
+            NodoThis nodo = new NodoThis(tokenActual);
             match(TokenType.PR_THIS);
-            referenciaResto();
+            return conReferenciaResto(nodo);
         } else if (actualEs(TokenType.LIT_STRING)) {
+            NodoLiteralString nodo = new NodoLiteralString(tokenActual);
             match(TokenType.LIT_STRING);
-            referenciaResto();
+            return conReferenciaResto(nodo);
         } else if (actualEs(TokenType.PR_NEW)) {
+            Token tokenNew = tokenActual;
             match(TokenType.PR_NEW);
-            restoNew();
-            referenciaResto();
+            return conReferenciaResto(restoNew(tokenNew));
         } else if (actualEs(TokenType.ID_CLASE)) {
-            llamadaMetodoEstatico();
-            referenciaResto();
+            return conReferenciaResto(llamadaMetodoEstatico());
         } else if (actualEs(TokenType.ID_MET_VAR)) {
+            Token id = tokenActual;
             match(TokenType.ID_MET_VAR);
-            trasId();
+            return trasId(id);
         } else if (actualEs(TokenType.PAR_A)) {
             match(TokenType.PAR_A);
-            trasParen();
+            return trasParen();
         } else {
             error("un operando");
+            return null;
         }
+    }
+
+    // Parsea <ReferenciaResto> y lo engancha como encadenado del primario.
+    // El primario es null si su producción tuvo un error sintáctico: igual
+    // se parsea el resto, para no cambiar la recuperación (D8).
+    private NodoPrimario conReferenciaResto(NodoPrimario primario) {
+        NodoEncadenado encadenado = referenciaResto();
+        if (primario != null) {
+            primario.setEncadenado(encadenado);
+        }
+        return primario;
     }
 
     // <TrasId> ::= -> <Expresion>                    (lambda de 1 parámetro: x -> e)
     //          |  <ArgsActualesOpcional> <ReferenciaResto>   (variable o llamada: x | x(a) | x.f ...)
-    private void trasId() {
+    private NodoExpresion trasId(Token id) {
         if (actualEs(TokenType.ARROW)) {
+            Token flecha = tokenActual;
             match(TokenType.ARROW);
-            expresion();
+            return new NodoLambda(List.of(id), flecha, expresion());
         } else {
-            argsActualesOpcional();
-            referenciaResto();
+            List<NodoExpresion> argumentos = argsActualesOpcional();
+            NodoPrimario primario = argumentos == null
+                    ? new NodoAccesoVar(id)
+                    : new NodoLlamadaMetodo(id, argumentos);
+            return conReferenciaResto(primario);
         }
     }
 
@@ -1391,159 +1488,190 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     //             |  idMetVar <TrasParenId>         (posible parámetro: hay que ver qué sigue)
     //             |  <Expresion> ) <ReferenciaResto> (cualquier otro arranque: nunca es lambda,
     //                                                  un parámetro siempre es "idMetVar" o "()")
-    private void trasParen() {
+    private NodoExpresion trasParen() {
         if (actualEs(TokenType.PAR_C)) {
             match(TokenType.PAR_C);
+            Token flecha = tokenActual;
             match(TokenType.ARROW);
-            expresion();
+            return new NodoLambda(List.of(), flecha, expresion());
         } else if (actualEs(TokenType.ID_MET_VAR)) {
+            Token id = tokenActual;
             match(TokenType.ID_MET_VAR);
-            trasParenId();
+            return trasParenId(id);
         } else if (actualEn(PRIMEROS_EXPRESION)) {
-            expresion();
+            NodoExpresion expresion = expresion();
             match(TokenType.PAR_C);
-            referenciaResto();
+            return conReferenciaResto(new NodoExpParentizada(expresion));
         } else {
             error("\")\" (lambda sin parámetros) o una expresión");
+            return null;
         }
     }
 
     // <TrasParenId> ::= , <ListaIdLambda> ) -> <Expresion>   (lambda de >=2 parámetros)
     //               |  ) <DecidirTrasCierre>                  (un solo idMetVar: caso ambiguo real)
-    //               |  <TrasId> <ExpresionCompuestaResto> <RestoAsignacion> ) <ReferenciaResto>
+    //               |  <TrasId> <PostfijoOpcional> <ExpresionCompuestaResto> <TernarioOpcional>
+    //                  <RestoAsignacion> ) <ReferenciaResto>
     //                  (el idMetVar era el comienzo de una expresión más grande —operador, ".",
     //                  "[", "(", "=", o incluso un "->" de lambda anidada vía <TrasId>—: se sigue
     //                  como expresión normal y, al cerrar, ya no se vuelve a ofrecer "->").
-    // Reusa <TrasId>/<ExpresionCompuestaResto>/<RestoAsignacion>/<ReferenciaResto> para no
+    // Reusa <TrasId> y la cola de <Expresion> (colaDeExpresion()) para no
     // duplicar la jerarquía de precedencia de <Expresion>.
-    private void trasParenId() {
+    private NodoExpresion trasParenId(Token id) {
         if (actualEs(TokenType.COMA)) {
             match(TokenType.COMA);
-            listaIdLambda();
+            List<Token> parametros = listaIdLambda();
+            parametros.add(0, id);
             match(TokenType.PAR_C);
+            Token flecha = tokenActual;
             match(TokenType.ARROW);
-            expresion();
+            return new NodoLambda(parametros, flecha, expresion());
         } else if (actualEs(TokenType.PAR_C)) {
             match(TokenType.PAR_C);
-            decidirTrasCierre();
+            return decidirTrasCierre(id);
         } else {
-            trasId();
-            postfijoOpcional();
-            expresionCompuestaResto();
-            ternarioOpcional();
-            restoAsignacion();
+            NodoExpresion expresion = colaDeExpresion(trasId(id));
             match(TokenType.PAR_C);
-            referenciaResto();
+            return conReferenciaResto(new NodoExpParentizada(expresion));
         }
     }
 
     // <DecidirTrasCierre> ::= -> <Expresion>        (era ( x ) -> e : lambda de 1 parámetro)
     //                      |  <ReferenciaResto>      (era ( x ) : expresión parentizada)
-    private void decidirTrasCierre() {
+    private NodoExpresion decidirTrasCierre(Token id) {
         if (actualEs(TokenType.ARROW)) {
+            Token flecha = tokenActual;
             match(TokenType.ARROW);
-            expresion();
+            return new NodoLambda(List.of(id), flecha, expresion());
         } else {
-            referenciaResto();
+            return conReferenciaResto(new NodoExpParentizada(new NodoAccesoVar(id)));
         }
     }
 
     // <ListaIdLambda> ::= idMetVar <RestoListaIdLambda>
-    private void listaIdLambda() {
+    private List<Token> listaIdLambda() {
+        Token primero = tokenActual;
         match(TokenType.ID_MET_VAR);
-        restoListaIdLambda();
+        List<Token> resto = restoListaIdLambda();
+        resto.add(0, primero);
+        return resto;
     }
 
     // <RestoListaIdLambda> ::= , idMetVar <RestoListaIdLambda> | ϵ
-    private void restoListaIdLambda() {
+    private List<Token> restoListaIdLambda() {
         if (actualEs(TokenType.COMA)) {
             match(TokenType.COMA);
+            Token parametro = tokenActual;
             match(TokenType.ID_MET_VAR);
-            restoListaIdLambda();
-        } else {
-            // ϵ — no hace nada
+            List<Token> resto = restoListaIdLambda();
+            resto.add(0, parametro);
+            return resto;
         }
+        return new ArrayList<>();
     }
 
     // <Primitivo> ::= true | false | intLiteral | charLiteral | null
-    private void primitivo() {
+    // Un nodo por tipo de literal (⚠4).
+    private NodoLiteral primitivo() {
+        Token literal = tokenActual;
         if (actualEn(PRIMEROS_PRIMITIVO)) {
             avanzar();
-        } else {
-            error("un literal (true, false, intLiteral, charLiteral, null)");
+            return switch (literal.getTipo()) {
+                case LIT_INT -> new NodoLiteralEntero(literal);
+                case LIT_CHAR -> new NodoLiteralCaracter(literal);
+                case PR_NULL -> new NodoLiteralNull(literal);
+                default -> new NodoLiteralBooleano(literal);
+            };
         }
+        error("un literal (true, false, intLiteral, charLiteral, null)");
+        return null;
     }
 
     // <ReferenciaResto> ::= . idMetVar <ArgsActualesOpcional> <ReferenciaResto>
     //                    |  [ <Expresion> ] <ReferenciaResto>
     //                    |  ϵ
-    private void referenciaResto() {
+    // Devuelve el primer eslabón de la lista enlazada (⚠2), o null si no hay.
+    private NodoEncadenado referenciaResto() {
         if (actualEs(TokenType.PUNTO)) {
             match(TokenType.PUNTO);
+            Token nombre = tokenActual;
             match(TokenType.ID_MET_VAR);
-            argsActualesOpcional();
-            referenciaResto();
+            List<NodoExpresion> argumentos = argsActualesOpcional();
+            NodoEncadenado siguiente = referenciaResto();
+            return argumentos == null
+                    ? new NodoVarEncadenada(nombre, siguiente)
+                    : new NodoLlamadaEncadenada(nombre, argumentos, siguiente);
         } else if (actualEs(TokenType.CORCHETE_A)) {
+            Token corchete = tokenActual;
             match(TokenType.CORCHETE_A);
-            expresion();
+            NodoExpresion indice = expresion();
             match(TokenType.CORCHETE_C);
-            referenciaResto();
-        } else {
-            // ϵ — no hace nada
+            return new NodoAccesoArregloEncadenado(corchete, indice, referenciaResto());
         }
+        // ϵ
+        return null;
     }
 
     // <ArgsActualesOpcional> ::= <ArgsActuales> | ϵ
-    private void argsActualesOpcional() {
+    // null sin paréntesis: distingue x de x() (variable o llamada).
+    private List<NodoExpresion> argsActualesOpcional() {
         if (actualEs(TokenType.PAR_A)) {
-            argsActuales();
-        } else {
-            // ϵ — no hace nada
+            return argsActuales();
         }
+        return null;
     }
 
     // <RestoNew> ::= <TipoPrimitivo> <DimensionesNew>
     //            |  idGen <DimensionesNew>
     //            |  idClase <TipoGenericoOpcionalNew> <RestoNewIdClase>
-    private void restoNew() {
+    // "<" seguido de un argumento vacío es el diamante (new C<>()).
+    private NodoPrimario restoNew(Token tokenNew) {
         if (actualEn(PRIMEROS_TIPO_PRIMITIVO)) {
-            tipoPrimitivo();
-            dimensionesNew();
+            Tipo tipoBase = new Tipo(tipoPrimitivo());
+            return dimensionesNew(tokenNew, tipoBase);
         } else if (actualEs(TokenType.ID_GEN)) {
+            Tipo tipoBase = new Tipo(tokenActual);
             match(TokenType.ID_GEN);
-            dimensionesNew();
+            return dimensionesNew(tokenNew, tipoBase);
         } else if (actualEs(TokenType.ID_CLASE)) {
+            Token idClase = tokenActual;
             match(TokenType.ID_CLASE);
-            tipoGenericoOpcionalNew();
-            restoNewIdClase();
+            boolean conAngulos = actualEs(TokenType.OP_MENOR);
+            Tipo argumento = tipoGenericoOpcionalNew();
+            return restoNewIdClase(tokenNew, new Tipo(idClase, argumento), conAngulos && argumento == null);
         } else {
             error("un tipo después de \"new\"");
+            return null;
         }
     }
 
     // <RestoNewIdClase> ::= <DimensionesNew> | <ArgsActuales>
-    private void restoNewIdClase() {
+    private NodoPrimario restoNewIdClase(Token tokenNew, Tipo tipo, boolean esDiamante) {
         if (actualEs(TokenType.CORCHETE_A)) {
-            dimensionesNew();
+            return dimensionesNew(tokenNew, tipo);
         } else if (actualEs(TokenType.PAR_A)) {
-            argsActuales();
+            return new NodoCreacionObjeto(tipo, esDiamante, argsActuales());
         } else {
             error("\"[\" (arreglo) o \"(\" (constructor)");
+            return null;
         }
     }
 
     // <LlamadaMetodoEstatico> ::= idClase . idMetVar <ArgsActuales>
-    private void llamadaMetodoEstatico() {
+    private NodoLlamadaEstatica llamadaMetodoEstatico() {
+        Token idClase = tokenActual;
         match(TokenType.ID_CLASE);
         match(TokenType.PUNTO);
+        Token nombre = tokenActual;
         match(TokenType.ID_MET_VAR);
-        argsActuales();
+        return new NodoLlamadaEstatica(idClase, nombre, argsActuales());
     }
 
     // <DimensionesNew> ::= [ <TrasCorcheteNew>
-    private void dimensionesNew() {
+    private NodoPrimario dimensionesNew(Token tokenNew, Tipo tipoBase) {
+        Token corchete = tokenActual;
         match(TokenType.CORCHETE_A);
-        trasCorcheteNew();
+        return trasCorcheteNew(tokenNew, tipoBase, corchete);
     }
 
     // <TrasCorcheteNew> ::= ] <MasCorchetesVaciosNew> <InicializadorArreglo>
@@ -1551,73 +1679,84 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     // "]" inmediato (REQ-AS-012): todos los corchetes de esta creación van
     // vacíos y viene un inicializador obligatorio ({1,2,3}) — no se puede
     // mezclar tamaño e inicializador, igual que en Java. Cualquier otra cosa:
-    // sigue la forma de tamaño de siempre, sin cambios.
-    private void trasCorcheteNew() {
+    // sigue la forma de tamaño de siempre, sin cambios. Cada forma tiene su
+    // nodo (⚠11).
+    private NodoPrimario trasCorcheteNew(Token tokenNew, Tipo tipoBase, Token corchete) {
         if (actualEs(TokenType.CORCHETE_C)) {
             match(TokenType.CORCHETE_C);
-            masCorchetesVaciosNew();
-            inicializadorArreglo();
+            int dimensiones = 1 + masCorchetesVaciosNew();
+            return new NodoCreacionArregloConInicializador(tokenNew, tipoBase, dimensiones, inicializadorArreglo());
         } else {
-            expresion();
+            List<Token> corchetes = new ArrayList<>();
+            List<NodoExpresion> tamanios = new ArrayList<>();
+            corchetes.add(corchete);
+            tamanios.add(expresion());
             match(TokenType.CORCHETE_C);
-            dimensionesConTamanioOpc();
+            dimensionesConTamanioOpc(corchetes, tamanios);
+            return new NodoCreacionArregloConTamanio(tipoBase, corchetes, tamanios);
         }
     }
 
     // <MasCorchetesVaciosNew> ::= [ ] <MasCorchetesVaciosNew> | ϵ
-    private void masCorchetesVaciosNew() {
+    // Devuelve cuántos "[]" consumió.
+    private int masCorchetesVaciosNew() {
         if (actualEs(TokenType.CORCHETE_A)) {
             match(TokenType.CORCHETE_A);
             match(TokenType.CORCHETE_C);
-            masCorchetesVaciosNew();
-        } else {
-            // ϵ — no hace nada
+            return 1 + masCorchetesVaciosNew();
         }
+        // ϵ
+        return 0;
     }
 
     // <InicializadorArreglo> ::= { <ListaValoresArregloOpcional> }
-    private void inicializadorArreglo() {
+    private NodoInicializadorArreglo inicializadorArreglo() {
         match(TokenType.LLAVE_A);
-        listaValoresArregloOpcional();
+        List<ValorArreglo> valores = listaValoresArregloOpcional();
         match(TokenType.LLAVE_C);
+        return new NodoInicializadorArreglo(valores);
     }
 
     // <ListaValoresArregloOpcional> ::= <ListaValoresArreglo> | ϵ
-    private void listaValoresArregloOpcional() {
+    private List<ValorArreglo> listaValoresArregloOpcional() {
         if (actualEs(TokenType.LLAVE_A) || actualEn(PRIMEROS_EXPRESION)) {
-            listaValoresArreglo();
-        } else {
-            // ϵ — no hace nada ("{ }" vacío también es válido)
+            return listaValoresArreglo();
         }
+        // ϵ ("{ }" vacío también es válido)
+        return new ArrayList<>();
     }
 
     // <ListaValoresArreglo> ::= <ValorArreglo> <RestoValoresArreglo>
-    private void listaValoresArreglo() {
-        valorArreglo();
-        restoValoresArreglo();
+    private List<ValorArreglo> listaValoresArreglo() {
+        ValorArreglo primero = valorArreglo();
+        List<ValorArreglo> resto = restoValoresArreglo();
+        resto.add(0, primero);
+        return resto;
     }
 
     // <RestoValoresArreglo> ::= , <ValorArreglo> <RestoValoresArreglo> | ϵ
-    private void restoValoresArreglo() {
+    private List<ValorArreglo> restoValoresArreglo() {
         if (actualEs(TokenType.COMA)) {
             match(TokenType.COMA);
-            valorArreglo();
-            restoValoresArreglo();
-        } else {
-            // ϵ — no hace nada
+            ValorArreglo valor = valorArreglo();
+            List<ValorArreglo> resto = restoValoresArreglo();
+            resto.add(0, valor);
+            return resto;
         }
+        return new ArrayList<>();
     }
 
     // <ValorArreglo> ::= <ExpresionCompuesta> | <InicializadorArreglo>
     // Anidado habilita arreglos multidimensionales con inicializador
     // (new int[][]{{1,2},{3,4}}) sin costo de factorización adicional.
-    private void valorArreglo() {
+    private ValorArreglo valorArreglo() {
         if (actualEs(TokenType.LLAVE_A)) {
-            inicializadorArreglo();
+            return inicializadorArreglo();
         } else if (actualEn(PRIMEROS_EXPRESION)) {
-            expresionCompuesta();
+            return expresionCompuesta();
         } else {
             error("un valor (expresión o \"{ ... }\" anidado)");
+            return null;
         }
     }
 
@@ -1625,48 +1764,53 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     // Conflicto FIRST/FOLLOW deliberado sobre "[": con lookahead "[" se siguen
     // consumiendo dimensiones (new int[2][3] = arreglo 2D, no (new int[2])[3]).
     // El "[" de acceso a arreglo recién se toma en <ReferenciaResto>.
-    private void dimensionesConTamanioOpc() {
+    // Acumula cada tamaño con su "[" (lexema de ERR_INDICE_NO_ENTERO).
+    private void dimensionesConTamanioOpc(List<Token> corchetes, List<NodoExpresion> tamanios) {
         if (actualEs(TokenType.CORCHETE_A)) {
+            corchetes.add(tokenActual);
             match(TokenType.CORCHETE_A);
-            expresion();
+            tamanios.add(expresion());
             match(TokenType.CORCHETE_C);
-            dimensionesConTamanioOpc();
+            dimensionesConTamanioOpc(corchetes, tamanios);
         } else {
             // ϵ — no hace nada (reduce por ϵ; el "[" restante lo toma <ReferenciaResto>)
         }
     }
 
     // <ArgsActuales> ::= ( <ListaExpsOpcional> )
-    private void argsActuales() {
+    private List<NodoExpresion> argsActuales() {
         match(TokenType.PAR_A);
-        listaExpsOpcional();
+        List<NodoExpresion> argumentos = listaExpsOpcional();
         match(TokenType.PAR_C);
+        return argumentos;
     }
 
     // <ListaExpsOpcional> ::= <ListaExps> | ϵ
-    private void listaExpsOpcional() {
+    private List<NodoExpresion> listaExpsOpcional() {
         if (actualEn(PRIMEROS_EXPRESION)) {
-            listaExps();
-        } else {
-            // ϵ — no hace nada
+            return listaExps();
         }
+        return new ArrayList<>();
     }
 
     // <ListaExps> ::= <Expresion> <RestoListaExps>
-    private void listaExps() {
-        expresion();
-        restoListaExps();
+    private List<NodoExpresion> listaExps() {
+        NodoExpresion primera = expresion();
+        List<NodoExpresion> resto = restoListaExps();
+        resto.add(0, primera);
+        return resto;
     }
 
     // <RestoListaExps> ::= , <Expresion> <RestoListaExps> | ϵ
-    private void restoListaExps() {
+    private List<NodoExpresion> restoListaExps() {
         if (actualEs(TokenType.COMA)) {
             match(TokenType.COMA);
-            expresion();
-            restoListaExps();
-        } else {
-            // ϵ — no hace nada
+            NodoExpresion expresion = expresion();
+            List<NodoExpresion> resto = restoListaExps();
+            resto.add(0, expresion);
+            return resto;
         }
+        return new ArrayList<>();
     }
 
 }

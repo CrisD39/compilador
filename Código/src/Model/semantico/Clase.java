@@ -482,7 +482,7 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
             }
             tabla.setUnidadActual(null, null, atributo);
             try {
-                atributo.getInicializador().chequear(tabla);
+                atributo.chequearInicializador(tabla);
             } catch (ExcepcionSemantica e) {
                 tabla.agregarError(e.comoError());
             }

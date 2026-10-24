@@ -1157,6 +1157,11 @@ Estos comentarios de `AnalizadorSintacticoImpl.java` no lo reflejan:
 | `<TrasParenId>`, tercera rama | `<TrasId> <ExpresionCompuestaResto> <RestoAsignacion> ) <ReferenciaResto>` | además llama a `postfijoOpcional()` y `ternarioOpcional()` |
 | `<SentIdClase>` / `<TrasIdClaseFor>`, rama `.` | sin postfijo ni ternario | **tampoco** los llama: es un hueco real del parser, no sólo del comentario. Se corrige al agregar el AST (decisión ⚠13) |
 
+Las cuatro se corrigieron al agregar el AST (spec 0003, ticket 02): los
+comentarios de producción ya reflejan el código, y la rama `.` de
+`<SentIdClase>` y de `<TrasIdClaseFor>` llama a `postfijoOpcional()` y
+`ternarioOpcional()` (caso `sintactico/sinErrores/sintCorrecto38.java`).
+
 ## Relación con lo existente
 
 - Este diseño reemplaza al stub `Código/src/Model/semantico/NodoSentencia.java` (interfaz vacía), que se mueve a `Model.semantico.ast`, y al boceto de `etapa3-semantico/analizador-semantico.md` ("Hace falta un AST de `Sentencia`/`Bloque`"), que usaba otros nombres.

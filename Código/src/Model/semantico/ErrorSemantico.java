@@ -80,6 +80,7 @@ public final class ErrorSemantico {
                     x + " hereda un mismo tipo genérico con argumentos distintos";
             case "ERR_HERENCIA_TIPO_INCORRECTO" ->
                     x + " no es " + (detalle != null ? detalle : "del tipo esperado en la relación");
+            case "ERR_NO_SOPORTADO" -> "la construcción en " + x + " es de un logro que todavía no se soporta";
             default -> codigo + " (" + x + ")";
         };
     }

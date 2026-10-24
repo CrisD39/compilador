@@ -1053,7 +1053,7 @@ una `IOException` del `SourceManager` se re-lanza envuelta en
 # mirando el token que sigue (ver "Factorización de <Sentencia>").
 
 <SentIdClase> ::= <TipoGenericoOpcional> <RestoDeclLocal>
-<SentIdClase> ::= . idMetVar <ArgsActuales> <ReferenciaResto> <ExpresionCompuestaResto> <RestoAsignacion> ;
+<SentIdClase> ::= . idMetVar <ArgsActuales> <ReferenciaResto> <PostfijoOpcional> <ExpresionCompuestaResto> <TernarioOpcional> <RestoAsignacion> ;
 
 <RestoDeclLocal> ::= idMetVar <MasIdsLocal> <InitLocalOpc> ;
 
@@ -1080,7 +1080,7 @@ una `IOException` del `SourceManager` se re-lanza envuelta en
 <TrasIdForTipo> ::= <InitLocalOpc> ; <CondFor> ; <ActFor>
 
 <TrasIdClaseFor> ::= <TipoGenericoOpcional> idMetVar <TrasIdForTipo>
-<TrasIdClaseFor> ::= . idMetVar <ArgsActuales> <ReferenciaResto> <ExpresionCompuestaResto> <RestoAsignacion> ; <CondFor> ; <ActFor>
+<TrasIdClaseFor> ::= . idMetVar <ArgsActuales> <ReferenciaResto> <PostfijoOpcional> <ExpresionCompuestaResto> <TernarioOpcional> <RestoAsignacion> ; <CondFor> ; <ActFor>
 
 <CondFor> ::= <Expresion> | ϵ
 <ActFor>  ::= <Expresion> | ϵ
@@ -1420,12 +1420,18 @@ están en `FIRST(<Expresion>)`, así que `int x, y, z = 10;` no choca con nada.
 <Sentencia> ::= ... | idClase <SentIdClase> | ... | <Expresion> ;
 
 <SentIdClase> ::= <TipoGenericoOpcional> <RestoDeclLocal>          # decl: Foo x;  Foo<Bar> x = ...;
-              |  . idMetVar <ArgsActuales> <ReferenciaResto> <ExpresionCompuestaResto> <RestoAsignacion> ;   # expr: Foo.m()...;
+              |  . idMetVar <ArgsActuales> <ReferenciaResto> <PostfijoOpcional> <ExpresionCompuestaResto> <TernarioOpcional> <RestoAsignacion> ;   # expr: Foo.m()...;
 ```
 
 - Lookahead `.` ⇒ era una expresión; la rama reconstruye la cola de
   `<Expresion>` que arrancaba en `idClase . idMetVar <ArgsActuales>` (los mismos
   no terminales que recorrería `expresion()`), así no se pierde lenguaje.
+  `<PostfijoOpcional>` y `<TernarioOpcional>` faltaban en esta rama y en la de
+  `<TrasIdClaseFor>`, así que `A1.m().x++;` y `A1.m().b ? 1 : 2;` daban error
+  sintáctico. Se agregaron con el AST (Etapa 4, ⚠13 de
+  `etapa4-semantico2/requerimientos.md`; caso `sintCorrecto38`). Sigue siendo
+  LL(1): `++`/`--` y `?` no están en `FIRST` de lo que sigue (`<OperadorBinario>`,
+  `=` o `;`).
 - Cualquier otro token ⇒ declaración local.
 - FIRST disjuntos: rama-1 = `{ <, idMetVar }` (vía `<TipoGenericoOpcional>` y
   `<RestoDeclLocal>` anulables hasta `idMetVar`) vs. rama-2 = `{ . }`.
@@ -1542,7 +1548,7 @@ más en cada punto, igual que en los casos anteriores:
                   |  <InitLocalOpc> ; <CondFor> ; <ActFor>           # for clásico con declaración
 
 <TrasIdClaseFor> ::= <TipoGenericoOpcional> idMetVar <TrasIdForTipo>                                                    # era tipo clase
-                   |  . idMetVar <ArgsActuales> <ReferenciaResto> <ExpresionCompuestaResto> <RestoAsignacion> ; <CondFor> ; <ActFor>  # era llamada estática
+                   |  . idMetVar <ArgsActuales> <ReferenciaResto> <PostfijoOpcional> <ExpresionCompuestaResto> <TernarioOpcional> <RestoAsignacion> ; <CondFor> ; <ActFor>  # era llamada estática
 
 <CondFor> ::= <Expresion> | ϵ
 <ActFor>  ::= <Expresion> | ϵ
@@ -1583,8 +1589,8 @@ de implementar):
 
 **Reuso.** Nada nuevo salvo la factorización en sí: `<Expresion>`,
 `<InitLocalOpc>`, `<TipoGenericoOpcional>`, y la misma reconstrucción de cola
-de `<SentIdClase>` (`<ArgsActuales> <ReferenciaResto> <ExpresionCompuestaResto>
-<RestoAsignacion>`) para la rama de llamada estática como inicialización.
+de `<SentIdClase>` (`<ArgsActuales> <ReferenciaResto> <PostfijoOpcional>
+<ExpresionCompuestaResto> <TernarioOpcional> <RestoAsignacion>`) para la rama de llamada estática como inicialización.
 
 **Token nuevo en el léxico.** `for` no era palabra clave. Se agregó `PR_FOR` a
 `TokenType` y a `TablaPalabrasClave` (mismo tipo de cambio que `PR_PRIVATE`

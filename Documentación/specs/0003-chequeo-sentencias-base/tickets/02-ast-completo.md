@@ -1,6 +1,6 @@
 ---
 titulo: AST completo
-estado: pendiente
+estado: hecho
 spec: ../../0003-chequeo-sentencias-base.md
 ---
 
@@ -40,12 +40,28 @@ errores sintácticos) y D11 (tokens de "no soportado").
   propia captura.
 
 **Criterios:**
-- [ ] `./test.sh` (Etapas 1–3) en verde: construir el AST no cambia
+- [x] `./test.sh` (Etapas 1–3) en verde: construir el AST no cambia
       ningún resultado sintáctico ni de declaraciones, tampoco en modo
       pánico.
-- [ ] Caso sintáctico nuevo en `resources/sintactico/sinErrores/` con
+- [x] Caso sintáctico nuevo en `resources/sintactico/sinErrores/` con
       `A1.m().x++;` y `A1.m().b ? 1 : 2;`, que hoy da error sintáctico.
-- [ ] En ET4, un método con un `for` da `ERR_NO_SOPORTADO` sobre `for`. Un
+- [x] En ET4, un método con un `for` da `ERR_NO_SOPORTADO` sobre `for`. Un
       caso de cada fila de D11 da su lexema (verificado a mano).
-- [ ] Ningún cuerpo parseado queda sin nodo: todo `<Sentencia>` aceptado
+- [x] Ningún cuerpo parseado queda sin nodo: todo `<Sentencia>` aceptado
       termina en la lista de algún `NodoBloque`.
+
+**Notas de implementación:**
+- Mientras no existan los chequeos base (03–06), los nodos base sólo
+  recorren a sus hijos y no reportan nada. Sólo los nodos de logro lanzan
+  `ERR_NO_SOPORTADO` (`ExcepcionSemantica.noSoportado`). Así un nodo de
+  logro anidado en una expresión (ternario, lambda, diamante) también llega a
+  reportar su token de D11, y los casos `semIICorrecto` siguen en
+  `[SinErrores]`.
+- La fila "llamada a un método genérico" de D11 necesita resolver el
+  método, así que queda para el ticket 06. Las demás filas se verificaron a
+  mano: `for` (también for-each), `?`, la primera local clásica, el nombre
+  del atributo inicializado, `->`, `new` y el nombre de la clase con
+  diamante.
+- El atributo inicializado se reporta en `Atributo.chequearInicializador`,
+  y `Clase.chequearSentencias` atrapa el error.
+- Caso sintáctico nuevo: `sintCorrecto38.java`.
