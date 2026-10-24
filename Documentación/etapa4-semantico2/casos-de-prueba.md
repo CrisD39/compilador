@@ -4,11 +4,12 @@ Casos de `Código/resources/semantico2/{conErrores,sinErrores}/` para el funcion
 
 - `semIIError01..05` y `semIICorrecto01..05` son los de referencia de la cátedra (sin modificar).
 - Los demás se escribieron sin usar sintaxis de logros (sin for, ternario, lambda, float, instanceof, super, `++`/`--`, locales clásicas `Tipo x = e;`, atributos inicializados).
+- `semIIError105..171` y `semIICorrecto35..94` vienen de un segundo juego de casos (comentarios `CN-SII-*`/`CP-SII-*`) que se agregó después. A 17 de ellos se les reescribió la etiqueta para que sigan la convención de abajo, y a `semIICorrecto56` se le corrigió la llamada `crear()` por `Persona.crear()`. Algunos (p. ej. herencia circular o un método de interfaz sin implementar) prueban errores de la Etapa 3, no del chequeo de sentencias.
 - Cada caso con error tiene **un** error; el resto del programa es válido. Todos pasan el sintáctico (`ModuloPrincipalET2`) y el chequeo de declaraciones (`ModuloPrincipalET3`); el error aparece recién en el chequeo de sentencias (`ModuloPrincipalET4`).
 
 ## Convención de lexema en `[Error:<lexema>|<línea>]`
 
-Es el contrato de la spec 0003 (D7): los 104 casos con error lo cumplen. El código `ERR_*` sólo elige la descripción (`ErrorSemantico.getDescripcion()`) y nunca se imprime en la etiqueta.
+Es el contrato de la spec 0003 (D7): los 171 casos con error lo cumplen. El código `ERR_*` sólo elige la descripción (`ErrorSemantico.getDescripcion()`) y nunca se imprime en la etiqueta.
 
 | Error | Lexema | Código `ERR_*` |
 |---|---|---|
@@ -149,6 +150,73 @@ Extiende la de los casos de referencia (no declarada → nombre; asignación →
 | `semIIError102` | 12.5 | `return` | En un constructor no se permite return e;. |
 | `semIIError103` | 12.5 | `return` | Un return con expresion void es incorrecto incluso en un metodo void. |
 | `semIIError104` | 12.5 | `z` | El codigo inalcanzable igual se chequea: variable no declarada despues de un return. |
+| `semIIError105` | 12.3 | `x` | var no se infiere el tipo con null |
+| `semIIError106` | 12.3 | `x` | var no se infiere el tipo con una llamada void |
+| `semIIError107` | 12.3 | `dato` | var no puede coincidir con un parametro de la unidad |
+| `semIIError108` | 12.3 | `x` | var no puede coincidir con una local visible de un contenedor |
+| `semIIError109` | 12.3 | `var` | declaracion local prohibida como cuerpo directo de if |
+| `semIIError110` | 12.3 | `var` | declaracion local prohibida como cuerpo directo de while |
+| `semIIError111` | 10.4 | `this` | this prohibido en contexto estatico |
+| `semIIError112` | 10.4 | `this` | this prohibido dentro de una expresion parentizada en contexto estatico |
+| `semIIError113` | — | `edad` | acceso implicito a un atributo prohibido en contexto estatico (S10.1/S10.4) |
+| `semIIError114` | 10.4 | `m1` | invocacion de metodo no estatico prohibido en contexto estatico |
+| `semIIError115` | 12.1 | `=` | la parte izquierda de una asignacion no debe ser un primitivo ni una expresion de operacion |
+| `semIIError116` | 12.1 | `=` | asginacion a la izquierda de una variable no declarada en el alcance |
+| `semIIError117` | 12.1 | `=` | this no se puede modificar (es una referencia, no es ligable) |
+| `semIIError118` | 12.1 | `=` | no se puede asignar a la longitud de un arreglo |
+| `semIIError119` | 12.1 | `=` | no se puede asignar un int a un boolean |
+| `semIIError120` | 12.1 | `=` | no se puede asignar un String a un int |
+| `semIIError121` | 12.1 | `=` | invariancia de arreglos: no se asigna un arreglo de un tipo a un arreglo de otro |
+| `semIIError122` | 12.1 | `=` | invariancia de genericos: no se asigna una instancia de un tipo generico a otra instanciacion |
+| `semIIError123` | 13.1 | `return` | un tipo base no conforma con un tipo derivado (la herencia es hacia arriba) |
+| `semIIError124` | 12.1 | `=` | no se asigna un Object a una variable de un tipo derivado sin cast |
+| `semIIError125` | 12.1 | `==` | igualdad prohibida entre tipos primitivos de distinta naturaleza |
+| `semIIError126` | 12.1 | `+` | caso no previsto de + (concatenacion de literales) |
+| `semIIError127` | 12.1 | `!` | ! solo se aplica a boolean |
+| `semIIError128` | 12.1 | `<` | operadores relacionales solo sobre int |
+| `semIIError129` | 12.1 | `&&` | operadores logicos solo sobre boolean |
+| `semIIError130` | 12.1 | `if` | la condicion de if debe ser boolean |
+| `semIIError131` | 12.1 | `while` | la condicion de while debe ser boolean |
+| `semIIError132` | 12.1 | `[` | el indice de un arreglo debe ser int |
+| `semIIError133` | 12.1 | `[` | el tamano de un arreglo nuevo debe ser int |
+| `semIIError134` | 12.1 | `[` | no se puede indexar una variable que no es arreglo |
+| `semIIError135` | 12.1 | `[` | no se puede indexar una variable de tipo Object |
+| `semIIError136` | 12.1 | `length` | length solo se aplica a arreglos |
+| `semIIError137` | 12.1 | `return` | solo las expresiones con valor pueden acompanar a return |
+| `semIIError138` | 12.2 | `return` | prohibido return acompanado de expresion en un constructor |
+| `semIIError139` | 12.1 | `return` | el valor de return debe conformar con el tipo declarado del metodo |
+| `semIIError140` | 12.1 | `return` | prohibido que return devuelva el resultado de una llamada a un metodo void |
+| `semIIError141` | 11.1 | `hacer` | invocacion a un metodo no declarado en la clase (sin receptor implicito) |
+| `semIIError142` | 11.1 | `hacer` | invocacion a un metodo no declarado en la clase del receptor |
+| `semIIError143` | 11.1 | `nombre` | acceso a un atributo no declarado en la clase del receptor |
+| `semIIError144` | 11.1 | `obtenerEdad` | los metodos se invocan solo sobre instancias, no sobre la clase |
+| `semIIError145` | 11.1 | `sumar` | argumento que no conforma con el tipo del parametro del metodo |
+| `semIIError146` | 11.1 | `imprimir` | argumento que es el resultado de una llamada void |
+| `semIIError147` | 14.1 | `Figura` | prohibido instanciar una interfaz |
+| `semIIError148` | 9 | `;` | prohibida una sentencia formada por una expresion de operacion |
+| `semIIError149` | 9 | `;` | prohibida una sentencia formada por el acceso a un atributo |
+| `semIIError150` | 9 | `;` | prohibida una sentencia formada por el acceso a un indice |
+| `semIIError151` | 9 | `;` | prohibida una sentencia formada por la creacion de un arreglo nuevo |
+| `semIIError152` | 9 | `;` | prohibida una sentencia formada por una expresion parentizada con asignacion |
+| `semIIError153` | 9 | `;` | prohibida una sentencia formada por una expresion parentizada con llamada a metodo |
+| `semIIError154` | 9 | `;` | prohibida una sentencia formada por una expresion parentizada con receptor this |
+| `semIIError155` | 12.1 | `=` | la escritura en un elemento de un arreglo usa un valor que no conforma con el tipo del arreglo |
+| `semIIError156` | 12.1 | `==` | igualdad prohibida entre tipos primitivos de distinta naturaleza |
+| `semIIError157` | 10.1 | `Base` | herencia circular A extends B, B extends A |
+| `semIIError158` | 10.5 | `toString` | interfaz redefiniendo metodo de Object con tipo de retorno distinto |
+| `semIIError159` | 10.2 | `Figura` | una clase no puede heredar de una interfaz |
+| `semIIError160` | 10.2 | `Base` | una interfaz no puede heredar de una clase |
+| `semIIError161` | 10.5 | `hablar` | clase que no implementa un metodo declarado por la interfaz |
+| `semIIError162` | 10.5 | `hablar` | implementacion de metodo de interfaz con tipo de retorno incompatible |
+| `semIIError163` | 10.4 | `m` | descendiente no puede redefinir un metodo estatico del ancestro |
+| `semIIError164` | 11.4 | `=` | no se usa un primario parentizado como base de una asignacion |
+| `semIIError165` | 12.3 | `var` | var prohibido como cuerpo directo de else |
+| `semIIError166` | 12.4 | `return` | return sin expresion en metodo no void |
+| `semIIError167` | 10.3 | `Caja` | instanciacion raw de clase generica prohibida |
+| `semIIError168` | 9.5 | `+` | no se puede operar con expresiones de tipo void |
+| `semIIError169` | 10.2 | `toString` | no se permiten invocar metodos sobre un receptor de tipo parametrico T |
+| `semIIError170` | 10.1 | `dato` | no se permiten acceder atributos sobre un receptor de tipo parametrico T |
+| `semIIError171` | 10.2 | `procesar` | argumento incompatible en llamada a metodo estatico calificado |
 
 ### Sin errores
 
@@ -183,3 +251,63 @@ Extiende la de los casos de referencia (no declarada → nombre; asignación →
 | `semIICorrecto32` | 12.3 | var toma exactamente el tipo del inicializador, conservando argumento generico y dimensiones. |
 | `semIICorrecto33` | 5 | Herencia sin argumento conserva T: el metodo heredado sigue retornando T (no Object). |
 | `semIICorrecto34` | 11.3 | this tiene tipo de la clase actual con su parametro: dentro de Caja<T> es Caja<T>. |
+| `semIICorrecto35` | — | literales bien tipados (int, char, boolean, String) y null en contexto de referencia |
+| `semIICorrecto36` | — | operadores unarios +, - y ! |
+| `semIICorrecto37` | — | operadores aritmeticos + - * / % sobre int |
+| `semIICorrecto38` | — | operadores relacionales < <= > >= |
+| `semIICorrecto39` | — | operadores logicos && y || con cortocircuito; ambos operandos se chequean |
+| `semIICorrecto40` | — | igualdad == y != para primitivos, referencias y null |
+| `semIICorrecto41` | — | igualdad entre tipos conformantes en alguna direccion |
+| `semIICorrecto42` | — | this en un metodo de instancia |
+| `semIICorrecto43` | — | this dentro de un constructor |
+| `semIICorrecto44` | — | this en una clase generica tiene tipo Clase<T> |
+| `semIICorrecto45` | — | this como expresion y parentizado |
+| `semIICorrecto46` | — | los parentesis agrupan valores en contextos de expresion |
+| `semIICorrecto47` | — | una asignacion parentizada produce un valor |
+| `semIICorrecto48` | — | return de una asignacion |
+| `semIICorrecto49` | — | una local puede ocultar un atributo |
+| `semIICorrecto50` | — | this.nombre selecciona el atributo con una local homonima visible |
+| `semIICorrecto51` | — | acceso implicito a atributos y metodos heredados |
+| `semIICorrecto52` | — | una local es visible en los bloques anidados |
+| `semIICorrecto53` | — | bloques hermanos pueden declarar el mismo nombre |
+| `semIICorrecto54` | — | llamada implicita a metodos de instancia y sobrecarga por aridad |
+| `semIICorrecto55` | — | llamada implicita a un metodo estatico desde instancia y desde contexto estatico |
+| `semIICorrecto56` | — | llamada a metodo estatico mediante el nombre de la clase |
+| `semIICorrecto57` | — | receptor expresion y encadenados llamada -> atributo |
+| `semIICorrecto58` | — | una llamada void es valida como sentencia |
+| `semIICorrecto59` | — | un metodo estatico puede seleccionarse mediante un receptor expresion |
+| `semIICorrecto60` | — | entidades predefinidas System, Object y String |
+| `semIICorrecto61` | — | creacion de objetos con argumentos, generica y como sentencia o argumento |
+| `semIICorrecto62` | — | arreglos basicos y multidimensionales; indexacion y length |
+| `semIICorrecto63` | — | arreglos de referencias, genericos y parametros de tipo |
+| `semIICorrecto64` | — | arreglos: conformidad con Object, length y toString |
+| `semIICorrecto65` | — | encadenado sobre componentes de arreglos y tamanio con expresion |
+| `semIICorrecto66` | — | asignaciones a componentes, atributos y conformidad polimorfica |
+| `semIICorrecto67` | — | conformidad con ancestro, interfaz, superinterfaz, Object y null |
+| `semIICorrecto68` | — | sustitucion generica desde el receptor (incluye arreglos) y herencia sin argumento |
+| `semIICorrecto69` | — | en contexto estatico, acceso a miembros de instancia mediante receptor explicito |
+| `semIICorrecto70` | — | un metodo estatico puede usar tipos genericos instanciados |
+| `semIICorrecto71` | — | sentencias vacias, bloques, if/else y while; var requiere bloque |
+| `semIICorrecto72` | — | variantes de return; no se exige retorno total ni se rechaza codigo inalcanzable |
+| `semIICorrecto73` | — | == y != entre referencias del mismo tipo estatico y entre arreglos |
+| `semIICorrecto74` | — | conformidad transitiva entre clases (Especifica -> SubRaza -> Raza) |
+| `semIICorrecto75` | — | clase que implementa una interfaz generica con argumento conforma con ella |
+| `semIICorrecto76` | — | un tipo generico instanciado conforma consigo mismo y new devuelve el tipo completo |
+| `semIICorrecto77` | — | filas de arreglos asignables; un subarreglo solo a un destino de tipo igual |
+| `semIICorrecto78` | — | null conforma con referencias, arreglos, interfaces y T; no con primitivas |
+| `semIICorrecto79` | — | un parametro puede ocultar un atributo |
+| `semIICorrecto80` | — | la sobrecarga por aridad atraviesa la herencia |
+| `semIICorrecto81` | — | un metodo estatico heredado puede invocarse sin receptor y mediante el nombre de la clase descendiente |
+| `semIICorrecto82` | — | sobrecarga de constructores por aridad |
+| `semIICorrecto83` | — | no hay llamada implicita a un constructor de la superclase |
+| `semIICorrecto84` | — | asignacion anidada con parentesis en el lado derecho |
+| `semIICorrecto85` | — | una llamada que produce valor es correcta como sentencia, incluso encadenada |
+| `semIICorrecto86` | — | una asignacion booleana puede ser condicion de if y de while |
+| `semIICorrecto87` | — | el tipo base de un arreglo puede ser una interfaz |
+| `semIICorrecto88` | — | crear arreglos cuyo argumento generico usa el parametro de la clase |
+| `semIICorrecto89` | — | un receptor de tipo interfaz selecciona sus metodos declarados y heredados |
+| `semIICorrecto90` | 10.4 | metodo estatico seleccionado por nombre de clase y por expresion receptora |
+| `semIICorrecto91` | 10.1 | herencia, atributo heredado y redefinicion con mismo tipo de retorno |
+| `semIICorrecto92` | 10.5 | variable tipada con interfaz e invocacion de su metodo |
+| `semIICorrecto93` | 9.4 | toString heredado de Object y accesible sobre un arreglo |
+| `semIICorrecto94` | 9.4 | null como argumento y en comparaciones con referencias y arreglos |
