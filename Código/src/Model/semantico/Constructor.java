@@ -1,6 +1,7 @@
 package Model.semantico;
 
 import Model.lexico.Token;
+import Model.semantico.ast.NodoBloque;
 
 import java.util.HashSet;
 import java.util.List;
@@ -10,6 +11,13 @@ import java.util.Set;
 public class Constructor implements Chequeable{
     private Token nombre;
     private List<Parametro> parametros;
+    // Clase que lo declaró (spec 0003, D4), la setea Clase al registrarlo.
+    // Los constructores no se heredan, pero se guarda igual que en Atributo
+    // y Metodo para que el recorrido de miembros propios sea uniforme.
+    private Clase claseDeclarante;
+    // null en el constructor por defecto y hasta que el parser enganche el
+    // AST.
+    private NodoBloque cuerpo;
 
     public Constructor(Token nombre, List<Parametro> parametros){
         this.nombre = nombre;
@@ -18,6 +26,26 @@ public class Constructor implements Chequeable{
 
     public Token getNombre() {
         return nombre;
+    }
+
+    public List<Parametro> getParams() {
+        return parametros;
+    }
+
+    public Clase getClaseDeclarante() {
+        return claseDeclarante;
+    }
+
+    public void setClaseDeclarante(Clase claseDeclarante) {
+        this.claseDeclarante = claseDeclarante;
+    }
+
+    public NodoBloque getCuerpo() {
+        return cuerpo;
+    }
+
+    public void setCuerpo(NodoBloque cuerpo) {
+        this.cuerpo = cuerpo;
     }
 
     // Clave del constructor: la aridad (D4, mismo criterio que

@@ -11,7 +11,7 @@ cd "$(dirname "$0")"
 ETAPAS_1_3="TesterDeCasosSinErrores TesterDeCasosConErrores
 TesterSintacticoDeCasosSinErrores TesterSintacticoDeCasosConErrores TesterSintacticoModoPanico
 TesterSemanticoDeCasosSinErrores TesterSemanticoDeCasosConErrores"
-SEM2="TesterSinErroresSem2 TesterConErroresSem2"
+SEM2="TesterSinErroresSem2 TesterConErroresSem2 TesterLogrosSem2"
 
 case "${1:-}" in
     "")   TESTERS="$ETAPAS_1_3" ;;

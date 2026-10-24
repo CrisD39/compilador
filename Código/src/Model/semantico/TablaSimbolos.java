@@ -3,7 +3,16 @@ package Model.semantico;
 import Model.lexico.Token;
 import Model.lexico.TokenType;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 // No implementa Chequeable: no es una declaración que se chequea, es el
 // contexto/sumidero de errores que las declaraciones usan para reportar
@@ -19,12 +28,20 @@ public class TablaSimbolos {
     // -- "resucitando" un nombre que el logro pide descartar para siempre
     // en cuanto se detecta la repetición, sin importar cuántas veces más
     // se repita.
+    private final Set<String> nombresInvalidados = new HashSet<>();
 
-    private Alcance scopeActual;
+    // Estado del chequeo de sentencias (spec 0003, D4/D6). La unidad actual
+    // son tres campos y a lo sumo uno es distinto de null (ver
+    // setUnidadActual()); metodoActual es el mismo que usa el parser.
+    private Constructor constructorActual;
+    private Atributo atributoActual;
+    // Un mapa por bloque abierto, el tope es el más interno. Lo abren y
+    // cierran los nodos que abren un scope, siempre en un finally.
+    private final Deque<Map<String, VariableLocal>> bloques = new ArrayDeque<>();
+
     public TablaSimbolos() {
         this.clases = new LinkedHashMap<>();
         registrarPredefinidas();
-        scopeActual = null;
     }
 
     // Tipos predefinidos (Parte I §7, ADR 0004): Object, String y System
@@ -258,32 +275,80 @@ public class TablaSimbolos {
         }
     }
 
-    //Chequeo de los AST.
-    public void chequearSentencias(){
-
-    }
-
-    //Toda la parte de creación y cierre de scope, buscar e insertar atributos.
-
-    public void abrirScope(){
-        if (scopeActual != null)
-            scopeActual.setAlcancePadre(scopeActual);
-        scopeActual = new Alcance();
-    }
-
-    public  void cerrarScope(){
-        if(scopeActual.getScopePadre()!=null)
-            scopeActual = scopeActual.getScopePadre();
-    }
-
-    public void añadirAtributoScope(Atributo atributoNuevo){
-        scopeActual.insertarAtributo(atributoNuevo);
-    }
-    public Atributo buscarAtributo(String atributoBuscado) {
-        if (scopeActual != null)
-            return scopeActual.buscarAtributo(atributoBuscado);
-        else {
-            //TODO:ERROR buscar cuando no existe scope.
+    // Tercera pasada (spec 0003, D4): chequea los cuerpos. El controller la
+    // llama sólo si no hubo errores léxicos, sintácticos ni de declaraciones
+    // (sin cascada, D3), así que acá la tabla ya está consolidada y sana.
+    // Recorre en orden de declaración (LinkedHashMap) y sólo clases del
+    // programa: las interfaces no tienen cuerpos y las predefinidas no se
+    // chequean. Se resetea la unidad actual porque el parser deja
+    // metodoActual apuntando al último método parseado.
+    public void chequearSentencias() {
+        setUnidadActual(null, null, null);
+        for (EntidadDeclarada entidad : clases.values()) {
+            if (!(entidad instanceof Clase) || esPredefinida(entidad)) {
+                continue;
+            }
+            Clase clase = (Clase) entidad;
+            setClaseActual(clase);
+            clase.chequearSentencias(this);
         }
+    }
+
+    // Unidad que se está chequeando: un método, un constructor o el
+    // inicializador de un atributo. Quien la setea pasa null en los otros
+    // dos, así nunca quedan dos campos a la vez.
+    public void setUnidadActual(Metodo metodo, Constructor constructor, Atributo atributo) {
+        metodoActual = metodo;
+        constructorActual = constructor;
+        atributoActual = atributo;
+    }
+
+    public Metodo getMetodoActual() {
+        return metodoActual;
+    }
+
+    public Constructor getConstructorActual() {
+        return constructorActual;
+    }
+
+    public Atributo getAtributoActual() {
+        return atributoActual;
+    }
+
+    public void abrirBloque() {
+        bloques.push(new HashMap<>());
+    }
+
+    public void cerrarBloque() {
+        bloques.pop();
+    }
+
+    // Registra la local en el bloque más interno. El ocultamiento
+    // (§10.1/§12.3) lo controla quien la declara, antes de llamar acá.
+    public void declararLocal(VariableLocal local) {
+        bloques.peek().put(local.getNombre().getLexema(), local);
+    }
+
+    // Resolución de un nombre suelto (spec 0003, D6), en este orden:
+    // locales del bloque más interno hacia afuera, parámetros de la unidad
+    // (un inicializador de atributo no tiene) y atributos de la clase
+    // actual, que ya incluyen los heredados porque consolidar() los copia.
+    // null si no aparece: quien llama reporta ERR_VAR_NO_DECLARADA.
+    public Variable buscarVariable(String nombre) {
+        for (Map<String, VariableLocal> bloque : bloques) {
+            VariableLocal local = bloque.get(nombre);
+            if (local != null) {
+                return local;
+            }
+        }
+        List<Parametro> parametros = metodoActual != null ? metodoActual.getParams()
+                : constructorActual != null ? constructorActual.getParams()
+                : Collections.emptyList();
+        for (Parametro parametro : parametros) {
+            if (parametro.getNombre().getLexema().equals(nombre)) {
+                return parametro;
+            }
+        }
+        return claseActual.getAtributo(nombre);
     }
 }

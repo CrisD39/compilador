@@ -150,8 +150,15 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
         }
         else
         {
+            atributo.setClaseDeclarante(this);
             atributos.put(clave,atributo);
         }
+    }
+
+    // Atributo con ese nombre, propio o ya copiado de un ancestro; null si no
+    // hay. Lo usa TablaSimbolos.buscarVariable() (spec 0003, D6).
+    public Atributo getAtributo(String nombre) {
+        return atributos.get(nombre);
     }
 
     /** Reporta ERR_METODO_DUPLICADO si ya había un método con la misma clave
@@ -166,6 +173,7 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
                     "ERR_METODO_DUPLICADO", metodo.getNombre().getLinea(), metodo.getNombre().getLexema()));
             return;
         }
+        metodo.setMiClase(this);
         metodos.put(clave, metodo);
     }
 
@@ -191,6 +199,7 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
                 return;
             }
         }
+        constructor.setClaseDeclarante(this);
         constructores.add(constructor);
     }
 
@@ -205,7 +214,9 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
     // que consolidarConPadre() no los copia.
     public void agregarConstructorPorDefectoSiFalta() {
         if (constructores.isEmpty()) {
-            constructores.add(new Constructor(nombre, new ArrayList<>()));
+            Constructor porDefecto = new Constructor(nombre, new ArrayList<>());
+            porDefecto.setClaseDeclarante(this);
+            constructores.add(porDefecto);
         }
     }
 
@@ -449,6 +460,43 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
         consolidarInterfaces();
         validarNonSealed();
         validarPermitidos();
+    }
+
+    // Tercera pasada (spec 0003, D4): chequea los cuerpos de los miembros
+    // PROPIOS, en orden atributos inicializados, constructores y métodos.
+    // Los heredados son los mismos objetos del padre (consolidarConPadre()),
+    // y chequearlos acá repetiría sus errores con la clase actual
+    // equivocada. Cada unidad setea su campo de unidad actual y deja los
+    // otros dos en null. Un cuerpo o inicializador null (todavía sin AST, o
+    // el constructor por defecto) no tiene nada que chequear.
+    // El inicializador no pasa por un NodoBloque, así que atrapa su propio
+    // error: un atributo mal inicializado no corta el resto de la clase.
+    public void chequearSentencias(TablaSimbolos tabla) {
+        for (Atributo atributo : atributos.values()) {
+            if (atributo.getClaseDeclarante() != this || atributo.getInicializador() == null) {
+                continue;
+            }
+            tabla.setUnidadActual(null, null, atributo);
+            try {
+                atributo.getInicializador().chequear(tabla);
+            } catch (ExcepcionSemantica e) {
+                tabla.agregarError(e.comoError());
+            }
+        }
+        for (Constructor constructor : constructores) {
+            if (constructor.getClaseDeclarante() != this || constructor.getCuerpo() == null) {
+                continue;
+            }
+            tabla.setUnidadActual(null, constructor, null);
+            constructor.getCuerpo().chequear(tabla);
+        }
+        for (Metodo metodo : metodos.values()) {
+            if (metodo.getMiClase() != this || metodo.getCuerpo() == null) {
+                continue;
+            }
+            tabla.setUnidadActual(metodo, null, null);
+            metodo.getCuerpo().chequear(tabla);
+        }
     }
 
     // 'permits' solo se puebla si la clase es sealed (ver permitidosSealed()

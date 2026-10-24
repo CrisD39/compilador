@@ -1,6 +1,6 @@
 ---
 titulo: Infraestructura
-estado: pendiente
+estado: hecho
 spec: ../../0003-chequeo-sentencias-base.md
 ---
 
@@ -51,10 +51,10 @@ de "Testing Decisions".
   la línea 2 pasa a `///[Error:z|11]`, sin mover las demás.
 
 **Criterios:**
-- [ ] `./build.sh` compila, y `java -jar out/compilador.jar` usa ET4.
-- [ ] `./test.sh` (Etapas 1–3) en verde.
-- [ ] `./test.sh sem2` corre los tres testers de Sem2. Pueden fallar casos,
+- [x] `./build.sh` compila, y `java -jar out/compilador.jar` usa ET4.
+- [x] `./test.sh` (Etapas 1–3) en verde.
+- [x] `./test.sh sem2` corre los tres testers de Sem2. Pueden fallar casos,
       pero no puede fallar la compilación.
-- [ ] Un programa con un error de declaraciones da exactamente los mismos
+- [x] Un programa con un error de declaraciones da exactamente los mismos
       errores en ET3 y en ET4.
-- [ ] No queda ninguna referencia a `Alcance` ni a los stubs de scope.
+- [x] No queda ninguna referencia a `Alcance` ni a los stubs de scope.

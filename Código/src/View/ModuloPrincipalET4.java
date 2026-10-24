@@ -1,17 +1,25 @@
 package View;
 
-import Controller.AnalizadorSemanticoHandler;
-import Controller.AnalizadorSemanticoHandlerImpl;
+import Controller.AnalizadorSemantico2Handler;
+import Controller.AnalizadorSemantico2HandlerImpl;
 import Controller.ResultadoAnalisisSemantico;
 import Model.lexico.ErrorLexico;
-import Model.lexico.Token;
 import Model.semantico.ErrorSemantico;
 import Model.sintactico.ErrorSintactico;
+import Model.lexico.ResultadoLexicoListener;
+import Model.lexico.Token;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
-public class ModuloPrincipalET4 {
+// Módulo Principal de la etapa 4 (main del jar): corre léxico + sintáctico +
+// el chequeo semántico de declaraciones y, si todo eso salió limpio, el de
+// sentencias (TablaSimbolos.chequearSentencias(), spec 0003). El wiring vive
+// en AnalizadorSemantico2HandlerImpl; acá sólo queda la presentación, con el
+// mismo formato de salida que ModuloPrincipalET3, que queda congelado con
+// sólo declaraciones para los testers de la Etapa 3.
+public final class ModuloPrincipalET4 implements ResultadoLexicoListener {
+
     private boolean huboErroresLexicos = false;
 
     public static void main(String[] args) {
@@ -19,11 +27,11 @@ public class ModuloPrincipalET4 {
             System.out.println("Uso: java -jar compilador.jar <archivo-fuente>");
             return;
         }
-        new ModuloPrincipalET3().ejecutar(args[0]);
+        new ModuloPrincipalET4().ejecutar(args[0]);
     }
 
     private void ejecutar(String rutaArchivo) {
-        AnalizadorSemanticoHandler handler = new AnalizadorSemanticoHandlerImpl();
+        AnalizadorSemantico2Handler handler = new AnalizadorSemantico2HandlerImpl();
         try {
             ResultadoAnalisisSemantico resultado = handler.analizar(rutaArchivo, this);
 
@@ -78,5 +86,4 @@ public class ModuloPrincipalET4 {
                 + error.getLexema() + " " + error.getRazon());
         System.out.println("[Error:" + error.getLexema() + "|" + error.getLinea() + "]");
     }
-}
 }

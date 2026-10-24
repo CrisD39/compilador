@@ -1,6 +1,6 @@
 package test.java;
 
-import View.ModuloPrincipalET3;
+import View.ModuloPrincipalET4;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -17,9 +17,8 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class TesterConErroresSem2 {
     
-    // Sem2: aún no está conectado al módulo principal de la etapa; ModuloPrincipalET3 es sólo el tipo
-    // de la variable init (cambiarlo cuando exista el main de la etapa 4).
-    private static final ModuloPrincipalET3 init = null;
+    // Sem2 corre sobre el main de la etapa 4 (declaraciones + sentencias).
+    private static final ModuloPrincipalET4 init = null;
     
     private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
     private final PrintStream originalOut = System.out;

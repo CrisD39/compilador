@@ -4,7 +4,7 @@ import Model.lexico.Token;
 
 import java.util.Map;
 
-public class Parametro implements Chequeable{
+public class Parametro implements Chequeable, Variable {
     private Token nombre;
     private Tipo tipo;
 
@@ -13,10 +13,12 @@ public class Parametro implements Chequeable{
         this.tipo = tipo;
     }
 
+    @Override
     public Token getNombre(){
         return nombre;
     }
 
+    @Override
     public Tipo getTipo(){
         return tipo;
     }

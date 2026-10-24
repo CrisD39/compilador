@@ -1,6 +1,7 @@
 package Model.semantico;
 
 import Model.lexico.Token;
+import Model.semantico.ast.NodoBloque;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,13 +18,13 @@ public class Metodo implements Chequeable, OrigenParametroTipo {
     private boolean estatico;
     private boolean esFinal;
     private List<Parametro> parametros;
-    // Variables locales del cuerpo (ver "Chequeo de sentencias" en
-    // analizador-semantico.md): se reutiliza Atributo (nombre+tipo) en vez de
-    // una clase nueva, mismo criterio que para Constructor con Metodo. Todavía
-    // no se puebla — bloque() sigue siendo puramente sintáctico (Pasada 2).
-    private List<Atributo> variablesLocales = new ArrayList<>();
-    //No sé como hacer para que el metodo sepa que atributos estan habilitados para utilizar.
-    private Clase miClase; //la clase que tengo asociadaaa
+    // Clase que lo declaró (spec 0003, D4), la setea Clase.agregarMetodo().
+    // consolidar() comparte este mismo objeto con las subclases, así que el
+    // cuerpo se chequea sólo en la clase donde miClase == this. null en los
+    // métodos de interfaz, que no tienen cuerpo.
+    private Clase miClase;
+    // Cuerpo del método; null hasta que el parser enganche el AST.
+    private NodoBloque cuerpo;
     // Parámetros de tipo propios del método (ej. el T de "<T> T metodo(T x)"),
     // distintos del/los de la clase/interfaz contenedora -- ver
     // TablaSimbolos.setParametrosTipoAMetodoActual().
@@ -69,6 +70,22 @@ public class Metodo implements Chequeable, OrigenParametroTipo {
 
     public List<Parametro> getParams() {
         return parametros;
+    }
+
+    public Clase getMiClase() {
+        return miClase;
+    }
+
+    public void setMiClase(Clase miClase) {
+        this.miClase = miClase;
+    }
+
+    public NodoBloque getCuerpo() {
+        return cuerpo;
+    }
+
+    public void setCuerpo(NodoBloque cuerpo) {
+        this.cuerpo = cuerpo;
     }
 
     public List<Token> getParametrosTipoPropios() {
@@ -189,10 +206,9 @@ public class Metodo implements Chequeable, OrigenParametroTipo {
         if (tipoRetorno != null) {
             tipoRetorno.estaBienDeclarado(tabla, entornoVigente);
         }
-        // El chequeo de variables locales (variablesLocales) es chequeo de
-        // SENTENCIAS, fuera de alcance de esta etapa -- ver
-        // analizador-semantico.md. Acá solo se valida que los parámetros no
-        // se repitan entre sí.
+        // Las variables locales son chequeo de sentencias (tercera pasada,
+        // TablaSimbolos.chequearSentencias()). Acá solo se valida que los
+        // parámetros no se repitan entre sí.
         Set<String> nombresVisibles = new HashSet<>();
         for (Parametro parametro : parametros) {
             if (!nombresVisibles.add(parametro.getNombre().getLexema())) {
