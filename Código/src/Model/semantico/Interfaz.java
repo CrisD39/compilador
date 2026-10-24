@@ -152,7 +152,7 @@ public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTi
         // Una superinterfaz que resulta ser una clase da
         // ERR_HERENCIA_TIPO_INCORRECTO (D1) y la consolidación la saltea.
         for (Tipo padre : herencias) {
-            padre.estaBienDeclarado(tabla, entornoInterfaz);
+            padre.estaBienDeclaradoComoSupertipo(tabla, entornoInterfaz);
             tabla.chequearCategoriaSupertipo(padre, false);
         }
         for (Metodo metodo : metodos.values()) {
@@ -187,11 +187,6 @@ public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTi
             return;
         }
         camino.add(this);
-        // Antes de heredar: en este punto 'metodos' tiene sólo los propios,
-        // y los heredados ya los comparó con Object la interfaz que los
-        // declara. Pasa una sola vez por interfaz, también en un ciclo (toda
-        // interfaz marcada enCiclo pasó antes por acá, en el camino).
-        compararConObject();
 
         // Padres resueltos, en orden de 'extends': sus métodos se heredan
         // recién después del recorrido, cuando 'instanciacion' ya une todas
@@ -257,6 +252,11 @@ public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTi
         for (Interfaz padre : padresResueltos) {
             heredarMetodosDe(padre, propios, heredados, redefinicionesReportadas);
         }
+        // Después de los padres, para no reportar dos veces un propio que ya
+        // chocó con el toString de Object que trajo un padre. Toda interfaz
+        // llega una sola vez hasta acá, también en un ciclo (la que se marca
+        // enCiclo ya está en el camino y termina su recorrido).
+        heredarDeObject(propios, redefinicionesReportadas);
         validarNonSealed();
         validarPermitidos();
         consolidado = true;
@@ -346,22 +346,35 @@ public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTi
         }
     }
 
-    // Los métodos propios de una interfaz se comparan con los métodos de
-    // instancia de Object con la regla de la redefinición (spec 0001,
-    // "Contratos e interfaces"; historias 62 y 63): misma clave y otra
-    // signatura da ERR_REDEFINICION_INCOMPATIBLE sobre el método de la
-    // interfaz ("int toString()", semError63). Los estáticos de Object no
-    // cuentan: "void debugPrint(int nivel)" en una interfaz es válido
-    // (semCorrecto32). La interfaz no copia los miembros de Object. No hay
-    // vista: Object no es genérico, y un parámetro de tipo de la interfaz
-    // nunca iguala a String ("T toString()" también es error, como en Java).
-    private void compararConObject() {
-        Clase object = tablaSimbolos.getObject();
-        for (Metodo propio : metodos.values()) {
-            Metodo deObject = object.buscarMetodo(propio.getClave());
-            if (deObject != null && !deObject.isEstatico() && !propio.mismaSignatura(deObject)) {
-                tablaSimbolos.agregarError(new ErrorSemantico(
-                        "ERR_REDEFINICION_INCOMPATIBLE", propio.getNombre().getLinea(), propio.getNombre().getLexema()));
+    // Como en Java, una interfaz contiene implícitamente los métodos de
+    // instancia de Object (spec 0002, historias 11-17): i.toString() es
+    // válido en la Etapa 4 (§10.2) y la llamada lo encuentra en 'metodos'.
+    // Se copia el mismo objeto Metodo de Object, así que en un diamante de
+    // interfaces llega idéntico por los dos lados y no es conflicto. Los
+    // estáticos de Object no pasan: "void debugPrint(int nivel)" en una
+    // interfaz es válido (semCorrecto32).
+    //
+    // Un propio con la clave de uno de Object lo redefine, con la regla de
+    // la redefinición (spec 0001, historias 62 y 63): otra signatura da
+    // ERR_REDEFINICION_INCOMPATIBLE sobre el método de la interfaz
+    // ("int toString()", semError63), salvo que ya se haya reportado contra
+    // el toString de Object que trajo un padre. No hay vista: Object no es
+    // genérico, y un parámetro de tipo de la interfaz nunca iguala a String
+    // ("T toString()" también es error, como en Java).
+    private void heredarDeObject(Map<String, Metodo> propios, Set<Metodo> redefinicionesReportadas) {
+        for (Metodo deObject : tablaSimbolos.getObject().getMetodos()) {
+            if (deObject.isEstatico()) {
+                continue;
+            }
+            Metodo propio = propios.get(deObject.getClave());
+            if (propio != null) {
+                if (!redefinicionesReportadas.contains(propio) && !propio.mismaSignatura(deObject)) {
+                    redefinicionesReportadas.add(propio);
+                    tablaSimbolos.agregarError(new ErrorSemantico(
+                            "ERR_REDEFINICION_INCOMPATIBLE", propio.getNombre().getLinea(), propio.getNombre().getLexema()));
+                }
+            } else {
+                metodos.putIfAbsent(deObject.getClave(), deObject);
             }
         }
     }

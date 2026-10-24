@@ -118,7 +118,7 @@ public class Metodo implements Chequeable, OrigenParametroTipo {
      * (Clase.chequearRedefinicion()), en el contrato de interfaz
      * (Clase.consolidarInterfaces()), en el conflicto entre superinterfaces
      * (Interfaz.heredarMetodosDe()) y en la comparación de una interfaz con
-     * Object (Interfaz.compararConObject()).
+     * Object (Interfaz.heredarDeObject()).
      *
      * 'vista' transforma cada tipo de los DOS métodos antes de comparar: es
      * cómo se ven desde el tipo que compara. Es la instanciación genérica:

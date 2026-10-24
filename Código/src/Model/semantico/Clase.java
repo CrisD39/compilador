@@ -73,10 +73,16 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
     }
 
     // Método con esa clave (nombre/aridad), propio o ya copiado de un
-    // ancestro; null si no hay. Lo usa Interfaz.compararConObject() para
-    // buscar en Object.
+    // ancestro; null si no hay. Lo usa consolidarInterfaces() para buscar
+    // en Object.
     public Metodo buscarMetodo(String clave) {
         return metodos.get(clave);
+    }
+
+    // Métodos propios y ya copiados de los ancestros. Lo usa
+    // Interfaz.heredarDeObject() para recorrer los de Object.
+    public Iterable<Metodo> getMetodos() {
+        return metodos.values();
     }
 
     public void setSealed(boolean sealed) {
@@ -247,11 +253,11 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
         // con el tipo equivocado (D1): 'extends' de una interfaz o
         // 'implements' de una clase.
         if (herencia != null) {
-            herencia.estaBienDeclarado(tabla, entornoClase);
+            herencia.estaBienDeclaradoComoSupertipo(tabla, entornoClase);
             tabla.chequearCategoriaSupertipo(herencia, true);
         }
         if (interfaz != null) {
-            interfaz.estaBienDeclarado(tabla, entornoClase);
+            interfaz.estaBienDeclaradoComoSupertipo(tabla, entornoClase);
             tabla.chequearCategoriaSupertipo(interfaz, false);
         }
         // ADR 0006 (§10.4): la firma de un estático no ve los parámetros de
@@ -406,15 +412,25 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
         for (Metodo metodo : interfazResuelta.getMetodos()) {
             Metodo propio = metodos.get(metodo.getClave());
             Metodo deObject = tablaSimbolos.getObject().buscarMetodo(metodo.getClave());
+            if (metodo == deObject) {
+                // Lo copió la interfaz desde Object (Interfaz.heredarDeObject(),
+                // spec 0002), no lo declaró. La clase siempre lo tiene por su
+                // padre efectivo, y si lo redefine mal ya lo reporta
+                // chequearRedefinicion(). Sin este salteo, una clase con
+                // "static String toString()" sumaría un
+                // ERR_METODO_INTERFAZ_NOIMPLEMENTADO sobre el token sintético
+                // de Object, en la línea 0.
+                continue;
+            }
             if (propio == null || propio.isEstatico()) {
                 tablaSimbolos.agregarError(new ErrorSemantico(
                         "ERR_METODO_INTERFAZ_NOIMPLEMENTADO", metodo.getNombre().getLinea(), metodo.getNombre().getLexema()));
             } else if (deObject != null && !deObject.isEstatico()) {
                 // La clave es la de un método de instancia de Object
-                // (toString). El contrato ya quedó decidido por las otras dos
-                // comparaciones: la interfaz contra Object
-                // (Interfaz.compararConObject(), historia 62, error sobre el
-                // método de la interfaz) y la clase contra Object, su padre
+                // (toString) que la interfaz redeclaró. El contrato ya quedó
+                // decidido por las otras dos comparaciones: la interfaz contra
+                // Object (Interfaz.heredarDeObject(), historia 62, error sobre
+                // el método de la interfaz) y la clase contra Object, su padre
                 // efectivo (chequearRedefinicion(), error sobre el método de
                 // la clase). Repetirla acá daba un segundo error idéntico
                 // sobre el método de la clase (semError94), o uno sobre el

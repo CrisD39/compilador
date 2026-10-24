@@ -128,6 +128,7 @@ hide empty members
       + agregarAtributo(atributo : Atributo) : void
       + agregarMetodo(metodo : Metodo) : void
       + buscarMetodo(clave : String) : Metodo
+      + getMetodos() : Iterable<Metodo>
       + agregarConstructor(constructor : Constructor) : void
       + agregarConstructorPorDefectoSiFalta() : void
       + getConstructores() : List<Constructor>
@@ -186,7 +187,7 @@ hide empty members
       - consolidarHerencia(camino : LinkedHashSet<Interfaz>) : void
       - unirInstanciacion(delPadre : Map<OrigenParametroTipo, Tipo>) : void
       - heredarMetodosDe(padre : Interfaz, propios : Map<String, Metodo>, heredados : Map<String, Metodo>, redefinicionesReportadas : Set<Metodo>) : void
-      - compararConObject() : void
+      - heredarDeObject(propios : Map<String, Metodo>, redefinicionesReportadas : Set<Metodo>) : void
       - validarNonSealed() : void
       - validarPermitidos() : void
       - esSubtipoDirecto(entidad : EntidadDeclarada) : boolean
@@ -284,6 +285,7 @@ hide empty members
       + hashCode() : int
       + toString() : String
       + estaBienDeclarado(tabla : TablaSimbolos, entornoGenerico : Map<String, OrigenParametroTipo>) : void
+      + estaBienDeclaradoComoSupertipo(tabla : TablaSimbolos, entornoGenerico : Map<String, OrigenParametroTipo>) : void
     }
   }
 

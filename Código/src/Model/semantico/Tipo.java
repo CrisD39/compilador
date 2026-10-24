@@ -151,12 +151,26 @@ public class Tipo implements Chequeable {
     // Logro 5: cada nivel se valida contra la tabla (idClase) o contra el
     // entorno de genéricos vigente (idGen). El argumento se recorre aunque
     // la cabeza falle, para reportar todos los errores en la misma corrida
-    // (Logro 4). Un raw type (Caja sin <...> siendo genérica) se acepta,
-    // como en Java. De paso, un idGen en alcance queda con su origen
-    // resuelto: el entorno ya trae quién declara cada nombre, con el
-    // shadowing aplicado (el método pisa al contenedor).
+    // (Logro 4). Un tipo raw (Caja sin <...> siendo genérica) es error
+    // (§5.2, ADR 0007): ésta es la validación de los tipos de atributos,
+    // parámetros, retornos y arreglos. De paso, un idGen en alcance queda
+    // con su origen resuelto: el entorno ya trae quién declara cada nombre,
+    // con el shadowing aplicado (el método pisa al contenedor).
     @Override
     public void estaBienDeclarado(TablaSimbolos tabla, Map<String, OrigenParametroTipo> entornoGenerico) {
+        validar(tabla, entornoGenerico, false);
+    }
+
+    // Validación del supertipo de un 'extends'/'implements': única
+    // excepción a la regla de los tipos raw, porque heredar sin argumento
+    // conserva el parámetro del padre (§5). La excepción vale sólo para la
+    // cabeza: en "extends Caja<Lista>" el argumento Lista sigue siendo raw.
+    public void estaBienDeclaradoComoSupertipo(TablaSimbolos tabla, Map<String, OrigenParametroTipo> entornoGenerico) {
+        validar(tabla, entornoGenerico, true);
+    }
+
+    private void validar(TablaSimbolos tabla, Map<String, OrigenParametroTipo> entornoGenerico,
+                         boolean admiteSinArgumento) {
         if (token.getTipo() == TokenType.ID_GEN) {
             origen = entornoGenerico.get(token.getLexema());
             if (origen == null) {
@@ -171,10 +185,13 @@ public class Tipo implements Chequeable {
             } else if (argumento != null && entidad.getParametrosTipo().isEmpty()) {
                 tabla.agregarError(new ErrorSemantico(
                         "ERR_TIPO_NO_GENERICO", token.getLinea(), token.getLexema()));
+            } else if (argumento == null && !admiteSinArgumento && !entidad.getParametrosTipo().isEmpty()) {
+                tabla.agregarError(new ErrorSemantico(
+                        "ERR_TIPO_SIN_ARGUMENTO", token.getLinea(), token.getLexema()));
             }
         }
         if (argumento != null) {
-            argumento.estaBienDeclarado(tabla, entornoGenerico);
+            argumento.validar(tabla, entornoGenerico, false);
         }
     }
 

@@ -126,10 +126,11 @@ _Evitar_: parámetro de tipo propio, genérico del método
 
 **Tipo raw**:
 Uso de un tipo declarado genérico sin argumento de tipo, fuera de una
-herencia (por ejemplo, `Caja dato;`). Se admite en los tipos de atributos,
-parámetros y retornos, y sus miembros conservan el parámetro de tipo
-original. No se admite al crear objetos (`new Caja()`). Es una desviación
-deliberada del enunciado: ver `adr/0001-tipos-raw-en-declaraciones.md`.
+herencia (por ejemplo, `Caja dato;`). MiniJava no lo admite en ningún
+lugar: atributos, parámetros, retornos, locales, tipos base de arreglos,
+argumentos genéricos ni creación de objetos. No es lo mismo que la
+*herencia sin argumento* (`class B extends Caja`), que sí se admite. Ver
+`adr/0007-sin-tipos-raw.md`.
 _Evitar_: tipo crudo, tipo sin instanciar
 
 ### Miembros
