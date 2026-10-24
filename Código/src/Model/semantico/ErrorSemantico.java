@@ -85,6 +85,8 @@ public final class ErrorSemantico {
             case "ERR_VAR_NO_DECLARADA" -> "la variable " + x + " no está declarada";
             case "ERR_ATRIBUTO_EN_ESTATICO" -> "el atributo " + x + " no se puede usar en un método estático";
             case "ERR_THIS_EN_ESTATICO" -> "this no se puede usar en un método estático";
+            case "ERR_PARAMETRO_TIPO_EN_ESTATICO" ->
+                    "el parámetro de tipo " + x + " de la clase no se puede usar en un método estático";
             case "ERR_ATRIBUTO_NO_ENCONTRADO" -> "el atributo " + x + " no existe en el tipo del receptor";
             case "ERR_RECEPTOR_SIN_MIEMBROS" ->
                     "no se puede seleccionar " + x + ": el receptor no es de una clase ni de una interfaz";
@@ -109,8 +111,7 @@ public final class ErrorSemantico {
                     "una declaración local no puede ser el cuerpo directo de if, else o while";
             case "ERR_CONDICION_NO_BOOLEAN" -> "la condición de " + x + " tiene que ser boolean";
             case "ERR_RETORNO_INCORRECTO" -> "el " + x + " no corresponde con el tipo de retorno de la unidad";
-            // Lo usan los nodos de logro (D11) y, hasta los tickets 04-06 de
-            // la spec 0003, los nodos base que todavía no se chequean.
+            // Lo usan los nodos de logro (D11), que todavía no se chequean.
             case "ERR_NO_SOPORTADO" -> "la construcción en " + x + " todavía no se soporta";
             default -> codigo + " (" + x + ")";
         };

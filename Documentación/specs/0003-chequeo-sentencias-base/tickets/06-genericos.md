@@ -1,6 +1,6 @@
 ---
 titulo: Genéricos
-estado: pendiente
+estado: hecho
 spec: ../../0003-chequeo-sentencias-base.md
 ---
 
@@ -41,9 +41,35 @@ receptor) y D11 (diamante y método genérico "no soportado") de la spec.
   `new Caja<String>[10]`) en un contexto de instancia.
 
 **Casos que pasan a verde:**
-- [ ] Con error (9): `semIIError11`, `20`, `24`, `28`, `32`, `40`, `41`,
+- [x] Con error (9): `semIIError11`, `20`, `24`, `28`, `32`, `40`, `41`,
       `42`, `43`.
-- [ ] Sin error (8): `semIICorrecto11`, `12`, `13`, `14`, `16`, `32`, `33`,
+- [x] Sin error (8): `semIICorrecto11`, `12`, `13`, `14`, `16`, `32`, `33`,
       `34`.
-- [ ] Siguen en verde los casos de los tickets 03–05 y `TesterLogrosSem2`.
-- [ ] `./test.sh` (Etapas 1–3) en verde.
+- [x] Siguen en verde los casos de los tickets 03–05 y `TesterLogrosSem2`.
+- [x] `./test.sh` (Etapas 1–3) en verde.
+
+**Nota de implementación:**
+- Los tipos escritos en un cuerpo (`new Caja<T>()`, `new T[10]`) no pasan
+  por `estaBienDeclarado()`. `Tipo.resolverEnCuerpo()` los valida con las
+  reglas y los códigos de la Etapa 3, lanzando, y devuelve una copia con el
+  origen de cada `T` resuelto (el método pisa a la clase). Sin el origen,
+  `matriz[0][1] = this;` no conformaría (`semIICorrecto16`). El `T` de la
+  clase dentro de un estático da `ERR_PARAMETRO_TIPO_EN_ESTATICO`, y un
+  idGen que no declara nadie da `ERR_TIPO_GENERICO_NO_DECLARADO`.
+- La conformidad con un ancestro usa `TablaSimbolos.vistaComoAncestro()`,
+  que reemplaza a `heredaDe()`: sube por los supertipos tal como están
+  escritos, sustituyendo en cada paso, y devuelve el ancestro con el
+  argumento con que lo ve el tipo. Sube también por `implements`, que
+  `Clase.getInstanciacion()` no incluye. Así `Hija extends Imp`,
+  `Imp implements Prov<String>` conforma con `Prov<String>` y no con
+  `Prov<Object>`. Heredado sin argumento, el `T` del ancestro se conserva y
+  no iguala a ningún argumento concreto (D5).
+- La vista desde el receptor (`instanciacionDe()`, D10) se aplica en `.x`,
+  `.m()` y `new C<X>(...)`. Para los miembros resueltos sin receptor (`m()`
+  y un atributo implícito) se usa `getInstanciacion()` de la clase actual.
+  Las locales y los parámetros no se sustituyen. Una llamada estática pasa
+  un mapa vacío, porque su firma no puede nombrar el `T` de la clase
+  (ADR 0006).
+- `this` es `Clase.comoTipo()`: `Caja<T>`, con el `T` de origen `Caja`.
+- `EntidadDeclarada` expone `getInstanciacion()` (ya la tenían `Clase` e
+  `Interfaz`).

@@ -8,6 +8,7 @@ import Model.semantico.TablaSimbolos;
 import Model.semantico.Tipo;
 
 import java.util.List;
+import java.util.Map;
 
 // <LlamadaMetodoEstatico> ::= idClase . idMetVar <ArgsActuales> (⚠6). Sale
 // también de la rama "." de <SentIdClase> y de <TrasIdClaseFor> (⚠13).
@@ -30,7 +31,9 @@ public class NodoLlamadaEstatica extends NodoPrimario {
     // §10.2: C tiene que existir (ERR_TIPO_NO_DECLARADO, el de la Etapa 3,
     // sobre C) y m ser estático, porque no hay objeto receptor
     // (semIIError18). Los estáticos heredados ya están copiados en C
-    // (A.debugPrint(3)). Una interfaz no tiene estáticos.
+    // (A.debugPrint(3)). Una interfaz no tiene estáticos. La firma de un
+    // estático no puede nombrar el T de su clase (ADR 0006), así que no hay
+    // nada que sustituir.
     @Override
     public Tipo chequear(TablaSimbolos tabla) {
         EntidadDeclarada entidad = tabla.buscarClase(clase.getLexema());
@@ -45,6 +48,6 @@ public class NodoLlamadaEstatica extends NodoPrimario {
             throw new ExcepcionSemantica(nombre, "ERR_METODO_NO_ESTATICO");
         }
         List<Tipo> tiposArgumentos = ChequeoLlamada.chequearArgumentos(tabla, argumentos);
-        return chequearEncadenado(tabla, ChequeoLlamada.tipoDeLlamada(tabla, metodo, nombre, tiposArgumentos));
+        return chequearEncadenado(tabla, ChequeoLlamada.tipoDeLlamada(tabla, metodo, Map.of(), nombre, tiposArgumentos));
     }
 }

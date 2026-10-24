@@ -207,30 +207,68 @@ public class TablaSimbolos {
         return clases.get(tipo.getToken().getLexema());
     }
 
-    // true si 'ancestro' es 'entidad' o uno de sus ancestros por extends/
-    // implements, a cualquier distancia (§9.2, spec 0003 D9). Una clase sube
-    // por su padre efectivo, que ya es Object si no escribió 'extends', y por
-    // su interfaz; una interfaz, por sus 'extends'. Toda interfaz llega
-    // además a Object, como en Java (ADR 0004): ya contiene sus métodos de
-    // instancia (spec 0002). Sin errores de declaraciones (D3) no hay ciclos
-    // ni relaciones con el tipo equivocado, así que la recursión termina.
-    public boolean heredaDe(EntidadDeclarada entidad, EntidadDeclarada ancestro) {
+    // 'tipo' (una clase o interfaz, no un arreglo) visto como 'ancestro', con
+    // el argumento con que lo ve (§9.2, §9.3, spec 0003 D9): con
+    // "Sub extends Caja<String>", Sub visto como Caja es Caja<String>. null
+    // si 'ancestro' no es el tipo ni uno de sus ancestros por extends/
+    // implements, a cualquier distancia. Se sube por los supertipos tal como
+    // están escritos, reemplazando en cada uno el parámetro de la entidad por
+    // el argumento de 'tipo'; así cubre también los ancestros que llegan por
+    // 'implements', que Clase.getInstanciacion() no incluye. Heredado sin
+    // argumento, el parámetro del ancestro se conserva (D5) y no iguala a
+    // ningún argumento concreto. Sin errores de declaraciones (D3) no hay
+    // ciclos ni relaciones con el tipo equivocado, así que la recursión
+    // termina.
+    public Tipo vistaComoAncestro(Tipo tipo, EntidadDeclarada ancestro) {
+        EntidadDeclarada entidad = entidadDe(tipo);
         if (entidad == ancestro) {
-            return true;
+            return tipo;
         }
+        Map<OrigenParametroTipo, Tipo> propio = tipo.getArgumento() == null
+                ? Map.of() : Map.of((OrigenParametroTipo) entidad, tipo.getArgumento());
+        for (Tipo supertipo : supertiposDe(entidad)) {
+            Tipo vista = vistaComoAncestro(supertipo.sustituir(propio), ancestro);
+            if (vista != null) {
+                return vista;
+            }
+        }
+        return null;
+    }
+
+    // Supertipos directos de una entidad, como tipos. Una clase sube por su
+    // padre efectivo, que es Object si no escribió 'extends', y por su
+    // interfaz; una interfaz, por sus 'extends'. Toda interfaz llega además a
+    // Object, como en Java (ADR 0004): ya contiene sus métodos de instancia
+    // (spec 0002).
+    private List<Tipo> supertiposDe(EntidadDeclarada entidad) {
+        List<Tipo> supertipos = new ArrayList<>();
         if (entidad instanceof Clase clase) {
             Clase padre = clase.getPadreEfectivo();
-            if (padre != null && heredaDe(padre, ancestro)) {
-                return true;
+            if (padre != null) {
+                supertipos.add(clase.getHerencia() != null ? clase.getHerencia() : new Tipo(padre.getNombre()));
             }
-            return clase.getInterfaz() != null && heredaDe(entidadDe(clase.getInterfaz()), ancestro);
-        }
-        for (Tipo superinterfaz : ((Interfaz) entidad).getHerencias()) {
-            if (heredaDe(entidadDe(superinterfaz), ancestro)) {
-                return true;
+            if (clase.getInterfaz() != null) {
+                supertipos.add(clase.getInterfaz());
             }
+        } else {
+            ((Interfaz) entidad).getHerencias().forEach(supertipos::add);
+            supertipos.add(new Tipo(getObject().getNombre()));
         }
-        return ancestro == getObject();
+        return supertipos;
+    }
+
+    // Vista desde el receptor (§5.1, spec 0003 D10): el mapa con que se ven
+    // los miembros de un receptor de tipo 'receptor'. Es el de la entidad
+    // (sus ancestros, ya instanciados desde ella) compuesto con el argumento
+    // del propio receptor: desde Caja<String>, T de Caja es String. Vacío para
+    // un receptor sin entidad (arreglo, primitivo, T) o sin argumento.
+    public Map<OrigenParametroTipo, Tipo> instanciacionDe(Tipo receptor) {
+        EntidadDeclarada entidad = entidadDe(receptor);
+        if (entidad == null) {
+            return Collections.emptyMap();
+        }
+        return Tipo.componerInstanciacion(
+                entidad.getInstanciacion(), (OrigenParametroTipo) entidad, receptor.getArgumento());
     }
 
     // Object, String o System (ADR 0004), que tienen reglas propias: no se

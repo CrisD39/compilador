@@ -34,7 +34,8 @@ public class NodoVarEncadenada extends NodoEncadenado {
     // no tiene atributos. La visibilidad se ignora (D11). El único atributo
     // de un arreglo es length, de tipo int (⚠10); otro nombre se busca en
     // Object, que no tiene atributos. Con tipo estático Object tampoco hay
-    // length (semIIError73).
+    // length (semIIError73). El tipo del atributo se ve desde el receptor:
+    // c.contenido con c de tipo Caja<String> es String (D10, semIICorrecto12).
     @Override
     public Tipo chequear(TablaSimbolos tabla, Tipo tipoIzquierdo) {
         esLength = tipoIzquierdo.esArreglo() && nombre.getLexema().equals("length");
@@ -46,6 +47,6 @@ public class NodoVarEncadenada extends NodoEncadenado {
         if (atributo == null) {
             throw new ExcepcionSemantica(nombre, "ERR_ATRIBUTO_NO_ENCONTRADO");
         }
-        return chequearSiguiente(tabla, atributo.getTipo());
+        return chequearSiguiente(tabla, atributo.getTipo().sustituir(tabla.instanciacionDe(tipoIzquierdo)));
     }
 }

@@ -3,6 +3,7 @@ package Model.semantico;
 import Model.lexico.Token;
 
 import java.util.List;
+import java.util.Map;
 
 public interface EntidadDeclarada {
     String getName();
@@ -20,4 +21,9 @@ public interface EntidadDeclarada {
     // sentencias (spec 0003, ticket 04), que reciben una clase o una
     // interfaz según el tipo estático del receptor.
     Metodo buscarMetodo(String clave);
+
+    // Para cada ancestro genérico, el argumento con que esta entidad lo
+    // hereda (ver Clase/Interfaz). Lo compone TablaSimbolos.instanciacionDe()
+    // con el argumento del receptor (spec 0003, D10).
+    Map<OrigenParametroTipo, Tipo> getInstanciacion();
 }

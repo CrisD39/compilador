@@ -26,7 +26,9 @@ public class NodoLlamadaMetodo extends NodoPrimario {
 
     // §10.2: se busca en la clase actual por nombre/aridad, con los heredados
     // ya copiados por consolidar(). En un método estático no hay this, así
-    // que sólo sirve otro estático (semIIError17).
+    // que sólo sirve otro estático (semIIError17). Un heredado se ve desde la
+    // clase actual: en "Final extends Intermedia<String>", el T obtener() de
+    // Base devuelve String (semIICorrecto13, D10).
     @Override
     public Tipo chequear(TablaSimbolos tabla) {
         Metodo metodo = tabla.getClaseActual().buscarMetodo(Metodo.clave(nombre.getLexema(), argumentos.size()));
@@ -37,6 +39,8 @@ public class NodoLlamadaMetodo extends NodoPrimario {
             throw new ExcepcionSemantica(nombre, "ERR_METODO_NO_ESTATICO");
         }
         List<Tipo> tiposArgumentos = ChequeoLlamada.chequearArgumentos(tabla, argumentos);
-        return chequearEncadenado(tabla, ChequeoLlamada.tipoDeLlamada(tabla, metodo, nombre, tiposArgumentos));
+        Tipo tipo = ChequeoLlamada.tipoDeLlamada(
+                tabla, metodo, tabla.getClaseActual().getInstanciacion(), nombre, tiposArgumentos);
+        return chequearEncadenado(tabla, tipo);
     }
 }

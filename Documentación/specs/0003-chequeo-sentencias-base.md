@@ -284,7 +284,7 @@ En `0003-chequeo-sentencias-base/tickets/`, uno por archivo.
 | 03 | Núcleo: expresiones, variables y sentencias | 02 | hecho |
 | 04 | Objetos y llamadas | 03 | hecho |
 | 05 | Arreglos | 04 | hecho |
-| 06 | Genéricos | 05 | pendiente |
+| 06 | Genéricos | 05 | hecho |
 | 07 | Cierre | 06 | pendiente |
 
 Reparto de casos base: 03 → 43 con error + 6 sin error; 04 → 38 + 15;

@@ -23,7 +23,9 @@ public class NodoAccesoVar extends NodoPrimario {
 
     // Un atributo implícito es this.x, y en un método estático no hay this
     // (§10.1, semIIError08). Se controla después de resolver: una local o un
-    // parámetro con ese nombre sí valen en un método estático.
+    // parámetro con ese nombre sí valen en un método estático. Un atributo
+    // heredado se ve desde la clase actual: en "Final extends
+    // Intermedia<String>", el T dato de Base es String (semIICorrecto13, D10).
     @Override
     public Tipo chequear(TablaSimbolos tabla) {
         Variable variable = tabla.buscarVariable(nombre.getLexema());
@@ -33,6 +35,10 @@ public class NodoAccesoVar extends NodoPrimario {
         if (variable instanceof Atributo && tabla.enContextoEstatico()) {
             throw new ExcepcionSemantica(nombre, "ERR_ATRIBUTO_EN_ESTATICO");
         }
-        return chequearEncadenado(tabla, variable.getTipo());
+        Tipo tipo = variable.getTipo();
+        if (variable instanceof Atributo) {
+            tipo = tipo.sustituir(tabla.getClaseActual().getInstanciacion());
+        }
+        return chequearEncadenado(tabla, tipo);
     }
 }

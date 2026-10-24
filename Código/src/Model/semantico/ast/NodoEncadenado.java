@@ -39,16 +39,14 @@ public abstract class NodoEncadenado {
     // error va sobre el nombre del miembro.
     // Un arreglo tiene los miembros de instancia de Object (§11.8, "Receptor
     // arreglo" de requerimientos.md), sea cual sea su tipo base; length lo
-    // resuelve NodoVarEncadenada antes de llegar acá (⚠10).
-    // Pendiente: el genérico instanciado, cuyos miembros se ven con T
-    // sustituido (Caja<String>, ticket 06, D10). Corta en vez de devolver un
-    // tipo con T sin reemplazar, que daría un error falso.
+    // resuelve NodoVarEncadenada antes de llegar acá (⚠10). Un T sin
+    // instanciar no tiene cotas, así que tampoco tiene los miembros de Object
+    // (semIIError11, 20). Con un genérico instanciado (Caja<String>) la
+    // entidad es la misma, y cada nodo ve el miembro con
+    // TablaSimbolos.instanciacionDe() (D10).
     protected static EntidadDeclarada entidadDelReceptor(TablaSimbolos tabla, Tipo receptor, Token miembro) {
         if (receptor.esArreglo()) {
             return tabla.getObject();
-        }
-        if (receptor.getArgumento() != null) {
-            throw ExcepcionSemantica.noSoportado(miembro);
         }
         EntidadDeclarada entidad = tabla.entidadDe(receptor);
         if (entidad == null) {

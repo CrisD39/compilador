@@ -4,6 +4,7 @@ import Model.lexico.Token;
 import Model.lexico.TokenType;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
@@ -114,9 +115,13 @@ public class Tipo implements Chequeable {
     // String[] no va donde se espera Object[] (semIIError44) ni int[][]
     // donde se espera int[] (semIIError45). Todo arreglo conforma además con
     // Object (§9.4, semIICorrecto15).
-    // Pendiente: los argumentos genéricos de un ancestro (ticket 06). Con la
-    // misma entidad se compara el tipo entero, así Caja<String> sigue sin
-    // conformar con Caja<Object>.
+    // Los argumentos genéricos son invariantes (§9.3, D9): este tipo visto
+    // como el ancestro tiene que ser igual al destino, argumento incluido.
+    // Caja<String> no conforma con Caja<Object> (semIIError40), y una
+    // subclase de Base<String> conforma con Base<String> y no con
+    // Base<Object>. Un parámetro de tipo no es clase ni interfaz: sólo
+    // conforma con el mismo T (mismo origen), no con Object ni con String
+    // (semIIError41-43).
     public boolean conformaCon(Tipo destino, TablaSimbolos tabla) {
         if (esVoid() || destino.esVoid()) {
             return false;
@@ -129,10 +134,66 @@ public class Tipo implements Chequeable {
         }
         EntidadDeclarada entidad = tabla.entidadDe(this);
         EntidadDeclarada ancestro = tabla.entidadDe(destino);
-        if (entidad == null || ancestro == null || entidad == ancestro) {
+        if (entidad == null || ancestro == null) {
             return equals(destino);
         }
-        return tabla.heredaDe(entidad, ancestro);
+        return destino.equals(tabla.vistaComoAncestro(this, ancestro));
+    }
+
+    // Un tipo escrito en un cuerpo (new Caja<T>(), new T[10]) no pasa por
+    // estaBienDeclarado(): se valida al chequear la expresión, con las reglas
+    // de la Etapa 3 y sus códigos, pero lanzando en vez de agregar el error
+    // (D7). Devuelve una copia con el origen de cada idGen resuelto, que es lo
+    // que necesitan equals() y sustituir(). La cabeza se valida antes que el
+    // argumento, así el error informado es el primero del fuente.
+    public Tipo resolverEnCuerpo(TablaSimbolos tabla) {
+        if (esParametroDeTipo()) {
+            Tipo copia = conDimensiones(dimensiones);
+            copia.origen = origenEnCuerpo(tabla);
+            return copia;
+        }
+        if (token.getTipo() == TokenType.ID_CLASE) {
+            EntidadDeclarada entidad = tabla.buscarClase(token.getLexema());
+            if (entidad == null) {
+                throw new ExcepcionSemantica(token, "ERR_TIPO_NO_DECLARADO");
+            }
+            boolean esGenerica = !entidad.getParametrosTipo().isEmpty();
+            if (esGenerica && argumento == null) {
+                throw new ExcepcionSemantica(token, "ERR_TIPO_SIN_ARGUMENTO");
+            }
+            if (!esGenerica && argumento != null) {
+                throw new ExcepcionSemantica(token, "ERR_TIPO_NO_GENERICO");
+            }
+        }
+        if (argumento == null) {
+            return this;
+        }
+        return new Tipo(token, argumento.resolverEnCuerpo(tabla), dimensiones);
+    }
+
+    // Quién declara este idGen dentro del cuerpo actual: el método, si es uno
+    // de sus parámetros de tipo propios (pisan a los de la clase, como en
+    // estaBienDeclarado() de Metodo), o la clase. Un estático no ve los de la
+    // clase (ADR 0006, §10.4): el T de Caja en new T[10] dentro de un static
+    // es ERR_PARAMETRO_TIPO_EN_ESTATICO (semIIError32), no "no declarado".
+    private OrigenParametroTipo origenEnCuerpo(TablaSimbolos tabla) {
+        String nombre = token.getLexema();
+        Metodo metodo = tabla.getMetodoActual();
+        if (metodo != null && declara(metodo.getParametrosTipoPropios(), nombre)) {
+            return metodo;
+        }
+        Clase clase = tabla.getClaseActual();
+        if (declara(clase.getParametrosTipo(), nombre)) {
+            if (tabla.enContextoEstatico()) {
+                throw new ExcepcionSemantica(token, "ERR_PARAMETRO_TIPO_EN_ESTATICO");
+            }
+            return clase;
+        }
+        throw new ExcepcionSemantica(token, "ERR_TIPO_GENERICO_NO_DECLARADO");
+    }
+
+    private static boolean declara(List<Token> parametrosTipo, String nombre) {
+        return parametrosTipo.stream().anyMatch(parametro -> parametro.getLexema().equals(nombre));
     }
 
     public OrigenParametroTipo getOrigen() {

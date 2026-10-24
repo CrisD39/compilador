@@ -172,6 +172,7 @@ public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTi
         return metodos.values();
     }
 
+    @Override
     public Map<OrigenParametroTipo, Tipo> getInstanciacion() {
         return Collections.unmodifiableMap(instanciacion);
     }

@@ -36,11 +36,10 @@ public class NodoCreacionObjeto extends NodoPrimario {
     // ninguno (semIIError25), y los de los ancestros no cuentan porque los
     // constructores no se heredan (semIIError26). Todos los errores van
     // sobre el nombre de la clase. Los argumentos de tipo siguen las reglas
-    // de la Etapa 3, con sus códigos: una clase genérica sin argumento es un
-    // tipo raw (ADR 0007, semIIError24) y una no genérica no admite uno.
-    // Pendiente (ticket 06): new Caja<String>(...), con los parámetros del
-    // constructor vistos desde Caja<String> (D10). Corta en vez de comparar
-    // los argumentos contra un T sin reemplazar.
+    // de la Etapa 3, con sus códigos (Tipo.resolverEnCuerpo()): una clase
+    // genérica sin argumento es un tipo raw (ADR 0007, semIIError24) y una no
+    // genérica no admite uno. Los parámetros del constructor se ven desde el
+    // tipo creado: en new Caja<String>(5), T es String (D10, semIIError28).
     @Override
     public Tipo chequear(TablaSimbolos tabla) {
         Token nombre = tipo.getToken();
@@ -54,22 +53,14 @@ public class NodoCreacionObjeto extends NodoPrimario {
         if (!(entidad instanceof Clase clase)) {
             throw new ExcepcionSemantica(nombre, "ERR_NEW_INTERFAZ");
         }
-        boolean esGenerica = !clase.getParametrosTipo().isEmpty();
-        if (esGenerica && tipo.getArgumento() == null) {
-            throw new ExcepcionSemantica(nombre, "ERR_TIPO_SIN_ARGUMENTO");
-        }
-        if (!esGenerica && tipo.getArgumento() != null) {
-            throw new ExcepcionSemantica(nombre, "ERR_TIPO_NO_GENERICO");
-        }
-        if (esGenerica) {
-            throw ExcepcionSemantica.noSoportado(nombre);
-        }
+        Tipo creado = tipo.resolverEnCuerpo(tabla);
         Constructor constructor = clase.getConstructores().stream()
                 .filter(c -> c.getParams().size() == argumentos.size())
                 .findFirst()
                 .orElseThrow(() -> new ExcepcionSemantica(nombre, "ERR_CONSTRUCTOR_NO_ENCONTRADO"));
         List<Tipo> tiposArgumentos = ChequeoLlamada.chequearArgumentos(tabla, argumentos);
-        ChequeoLlamada.exigirConformidad(tabla, constructor.getParams(), tiposArgumentos, nombre);
-        return chequearEncadenado(tabla, tipo);
+        ChequeoLlamada.exigirConformidad(
+                tabla, constructor.getParams(), tabla.instanciacionDe(creado), tiposArgumentos, nombre);
+        return chequearEncadenado(tabla, creado);
     }
 }

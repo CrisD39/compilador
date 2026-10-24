@@ -64,13 +64,26 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
     // "class Dd extends Base<String>" deja Base -> String). Se compone en
     // consolidarHerencia() a partir del del padre (Tipo.componerInstanciacion()),
     // así cubre la cadena entera. Un ancestro heredado sin argumento no tiene
-    // entrada: su parámetro se conserva (D5). Sólo se usa para comparar
-    // signaturas; los miembros copiados del padre no se reescriben (§5.1).
+    // entrada: su parámetro se conserva (D5). Se usa para comparar
+    // signaturas y, en el chequeo de cuerpos, para ver los miembros heredados
+    // desde acá (TablaSimbolos.instanciacionDe()); los miembros copiados del
+    // padre no se reescriben (§5.1).
     // Vacío para Object, para una clase en un ciclo y antes de consolidar.
     private Map<OrigenParametroTipo, Tipo> instanciacion = Collections.emptyMap();
 
+    @Override
     public Map<OrigenParametroTipo, Tipo> getInstanciacion() {
         return Collections.unmodifiableMap(instanciacion);
+    }
+
+    // Esta clase como tipo, con su propio parámetro de tipo como argumento:
+    // Caja<T> dentro de Caja<T>. Es el tipo de this (§11.3, semIICorrecto34).
+    public Tipo comoTipo() {
+        if (parametrosTipo.isEmpty()) {
+            return new Tipo(nombre);
+        }
+        Token parametro = parametrosTipo.get(0);
+        return new Tipo(nombre, Tipo.parametroDeTipo(parametro, this));
     }
 
     // Método con esa clave (nombre/aridad), propio o ya copiado de un
