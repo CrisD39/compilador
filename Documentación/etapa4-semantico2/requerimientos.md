@@ -187,9 +187,10 @@ donde está el detalle.
 - **Paquete `Model.semantico.ast`.** `NodoSentencia` se mueve ahí.
   `ExcepcionSemantica` queda en `Model.semantico`.
 - **Genéricos vistos desde el receptor (§5.1).**
-  `Tipo.sustituir(nombreParam, argumento)` se aplica en `NodoVarEncadenada` y
-  `NodoLlamadaEncadenada` sobre el tipo del atributo y sobre los parámetros y
-  el retorno del método. Es recursivo en arreglos y genéricos anidados. Como
+  `Tipo.sustituir(mapa)` (la firma real es `Map<OrigenParametroTipo, Tipo>`,
+  con el mapa que arma `TablaSimbolos.instanciacionDe(receptor)`; spec 0003,
+  D10) se aplica en `NodoVarEncadenada` y `NodoLlamadaEncadenada` sobre el
+  tipo del atributo y sobre los parámetros y el retorno del método. Es recursivo en arreglos y genéricos anidados. Como
   cada clase tiene un único parámetro de tipo, cada paso de la cadena de
   herencia es un reemplazo simple, y las sustituciones se componen.
 - Las ambigüedades ⚠1–⚠13 de la sección NODOS están resueltas en
@@ -243,6 +244,23 @@ encarar esta etapa.
 - Quedan como están los ejemplos de atributos `static` de "Atributos
   inicializados" (la gramática sólo admite `static` en métodos, §6.1) y
   los nodos de inicializadores de arreglo (⚠11, ⚠12).
+
+## Decisiones de la spec 0003 (2026-10-24)
+
+La implementación de la base de la etapa se planificó en
+`specs/0003-chequeo-sentencias-base.md`, con 7 tickets. Esa spec cierra lo
+que este documento dejaba abierto, y si algo de acá la contradice, vale la
+spec:
+
+- Alcance: sólo lo base (§9–§12), más *Multi-detección* y *Postfijos*
+  (`semIICorrecto03` usa `a1++`).
+- `Tipo` sigue siendo una sola clase, con `conformaCon`, `Tipo.NULL` y
+  `Tipo.VOID`. `Metodo` mantiene `null` = `void`.
+- Variables: interfaz `Variable` (`Parametro`, `Atributo`, `VariableLocal`)
+  y `buscarVariable` en `TablaSimbolos`. Reemplaza `EntradaVarLocal` y
+  `EntradaVariable` de los bocetos de abajo.
+- Las reglas de conformidad (D9), la vista desde el receptor (D10), los
+  tokens de "no soportado" (D11) y la tabla de códigos `ERR_*`.
 
 # Cadena de llamadas
 
@@ -423,7 +441,7 @@ Representa lo que viene después de un punto o un corchete (`.x`, `.m()` o `[i]`
 Dos responsabilidades más de los encadenados:
 
 - Sustitución genérica (§5.1): al encontrar el miembro, `NodoVarEncadenada` y `NodoLlamadaEncadenada`
-  ven su tipo desde el receptor con `Tipo.sustituir(nombreParam, argumento)`. Si `tipoIzquierdo` es
+  ven su tipo desde el receptor con `Tipo.sustituir(tabla.instanciacionDe(tipoIzquierdo))` (spec 0003, D10). Si `tipoIzquierdo` es
   `Caja<String>`, el atributo `T` se ve como `String`, y lo mismo pasa con los parámetros y el retorno
   del método. En una cadena de herencia (`Final extends Intermedia<String>`,
   `Intermedia<U> extends Base<U>`) las sustituciones se componen paso por paso.
