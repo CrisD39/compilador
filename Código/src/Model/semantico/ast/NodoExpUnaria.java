@@ -1,6 +1,8 @@
 package Model.semantico.ast;
 
 import Model.lexico.Token;
+import Model.lexico.TokenType;
+import Model.semantico.ExcepcionSemantica;
 import Model.semantico.TablaSimbolos;
 import Model.semantico.Tipo;
 
@@ -15,9 +17,14 @@ public class NodoExpUnaria extends NodoExpCompuesta {
         this.ladoDer = ladoDer;
     }
 
+    // §11.2: + y - sobre int, ! sobre boolean; el resultado es del mismo tipo.
     @Override
     public Tipo chequear(TablaSimbolos tabla) {
-        ladoDer.chequear(tabla);
-        return null;
+        Tipo operando = ladoDer.chequear(tabla);
+        Tipo esperado = operador.getTipo() == TokenType.OP_NOT ? Tipo.BOOLEAN : Tipo.INT;
+        if (!esperado.equals(operando)) {
+            throw new ExcepcionSemantica(operador, "ERR_OPERADOR_INCOMPATIBLE");
+        }
+        return esperado;
     }
 }

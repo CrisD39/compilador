@@ -1,7 +1,9 @@
 package Model.semantico.ast;
 
 import Model.lexico.Token;
+import Model.semantico.ExcepcionSemantica;
 import Model.semantico.TablaSimbolos;
+import Model.semantico.Tipo;
 
 // <While> ::= while ( <Expresion> ) <Sentencia>
 public class NodoWhile extends NodoSentencia {
@@ -15,9 +17,12 @@ public class NodoWhile extends NodoSentencia {
         this.cuerpo = cuerpo;
     }
 
+    // §12.4: misma regla de condición y de cuerpo que NodoIf.
     @Override
     public void chequear(TablaSimbolos tabla) {
-        condicion.chequear(tabla);
-        cuerpo.chequear(tabla);
+        if (!Tipo.BOOLEAN.equals(condicion.chequear(tabla))) {
+            throw new ExcepcionSemantica(tokenWhile, "ERR_CONDICION_NO_BOOLEAN");
+        }
+        chequearCuerpo(cuerpo, tabla);
     }
 }

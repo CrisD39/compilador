@@ -80,7 +80,25 @@ public final class ErrorSemantico {
                     x + " hereda un mismo tipo genérico con argumentos distintos";
             case "ERR_HERENCIA_TIPO_INCORRECTO" ->
                     x + " no es " + (detalle != null ? detalle : "del tipo esperado en la relación");
-            case "ERR_NO_SOPORTADO" -> "la construcción en " + x + " es de un logro que todavía no se soporta";
+            // Chequeo de cuerpos (spec 0003). El lexema sigue la convención
+            // de etapa4-semantico2/casos-de-prueba.md.
+            case "ERR_VAR_NO_DECLARADA" -> "la variable " + x + " no está declarada";
+            case "ERR_ATRIBUTO_EN_ESTATICO" -> "el atributo " + x + " no se puede usar en un método estático";
+            case "ERR_ASIGNACION_INCOMPATIBLE" -> "el valor asignado no conforma con el tipo del destino";
+            case "ERR_DESTINO_NO_ASIGNABLE" -> "el lado izquierdo de " + x + " no es un destino asignable";
+            case "ERR_OPERADOR_INCOMPATIBLE" -> "el operador " + x + " no admite los tipos de sus operandos";
+            case "ERR_SENTENCIA_INVALIDA" ->
+                    "la expresión no es una sentencia válida (asignación, llamada, creación de objeto o postfijo)";
+            case "ERR_LOCAL_DUPLICADA" ->
+                    "la variable local " + x + " repite el nombre de otra local visible o de un parámetro";
+            case "ERR_VAR_SIN_TIPO" -> "no se puede inferir el tipo de " + x + " a partir de null o de void";
+            case "ERR_DECLARACION_COMO_CUERPO" ->
+                    "una declaración local no puede ser el cuerpo directo de if, else o while";
+            case "ERR_CONDICION_NO_BOOLEAN" -> "la condición de " + x + " tiene que ser boolean";
+            case "ERR_RETORNO_INCORRECTO" -> "el " + x + " no corresponde con el tipo de retorno de la unidad";
+            // Lo usan los nodos de logro (D11) y, hasta los tickets 04-06 de
+            // la spec 0003, los nodos base que todavía no se chequean.
+            case "ERR_NO_SOPORTADO" -> "la construcción en " + x + " todavía no se soporta";
             default -> codigo + " (" + x + ")";
         };
     }

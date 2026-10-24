@@ -19,4 +19,12 @@ public abstract class NodoExpresion implements ValorArreglo {
     public boolean esLlamable() {
         return false;
     }
+
+    // Si la expresión puede ir sola con ";" (§12.2): por defecto, si termina
+    // en una llamada o en un new de objeto. La asignación y el postfijo la
+    // redefinen. Se pregunta sobre la expresión principal, así
+    // (a1 = 3); no vale (semIIError80).
+    public boolean esSentenciaValida() {
+        return esLlamable();
+    }
 }

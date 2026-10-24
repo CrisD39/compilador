@@ -1,6 +1,6 @@
 ---
 titulo: Núcleo — expresiones, variables y sentencias
-estado: pendiente
+estado: hecho
 spec: ../../0003-chequeo-sentencias-base.md
 ---
 
@@ -45,11 +45,18 @@ spec. `requerimientos.md`: ocultamiento (§10.1/§12.3), ⚠3 y la tabla de
   a parámetro de `m1`, y `b++` queda en la línea 7.
 
 **Casos que pasan a verde:**
-- [ ] Con error (43): `semIIError01`, `05`, `06`, `07`, `08`, `33`, `34`,
+- [x] Con error (43): `semIIError01`, `05`, `06`, `07`, `08`, `33`, `34`,
       `35`, `36`, `47`, `50`, `51`, `52`, `53`, `54`, `55`, `56`, `57`,
       `58`, `59`, `61`, `63`, `64`, `76`, `80`, `83`, `84`, `85`, `86`,
       `87`, `88`, `90`, `91`, `92`, `93`, `94`, `95`, `96`, `97`, `98`,
       `99`, `100`, `104`.
-- [ ] Sin error (6): `semIICorrecto01`, `02`, `03`, `27`, `29`, `31`.
-- [ ] `TesterLogrosSem2` en verde (multi-detección y postfijos).
-- [ ] `./test.sh` (Etapas 1–3) en verde.
+- [x] Sin error (6): `semIICorrecto01`, `02`, `03`, `27`, `29`, `31`.
+- [x] `TesterLogrosSem2` en verde (multi-detección y postfijos).
+- [x] `./test.sh` (Etapas 1–3) en verde.
+
+**Nota de implementación:** los nodos base que se tipan en los tickets
+04-06 (`this`, `.x`, `.m()`, `m()`, `C.m()`, `new C()`, `[i]` y `new T[n]`)
+recorren a sus hijos y después lanzan `ERR_NO_SOPORTADO` sobre su token, en
+vez de devolver un tipo `null` que rompería a quien lo consuma. Por eso
+los casos sin error que los usan dan error hasta su ticket. Cada ticket
+reemplaza el `chequear` de sus nodos.

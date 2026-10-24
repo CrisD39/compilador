@@ -17,6 +17,18 @@ import java.util.function.Function;
 // TipoReferencia/TipoGenerico/TipoArreglo, ver "Diseño: jerarquía Tipo" en
 // analizador-semantico.md) queda para la Etapa 4.
 public class Tipo implements Chequeable {
+    // Tipos fijos del chequeo de cuerpos (spec 0003, D5): los de los
+    // literales, el del literal null y el resultado de llamar a un método
+    // void (Metodo sigue representando void con tipoRetorno == null). Tokens
+    // sintéticos en la línea 0, como las predefinidas. Se pueden compartir:
+    // ninguno pasa por estaBienDeclarado(), el único que muta un Tipo.
+    public static final Tipo INT = sintetico(TokenType.PR_INT, "int");
+    public static final Tipo CHAR = sintetico(TokenType.PR_CHAR, "char");
+    public static final Tipo BOOLEAN = sintetico(TokenType.PR_BOOLEAN, "boolean");
+    public static final Tipo STRING = sintetico(TokenType.ID_CLASE, "String");
+    public static final Tipo NULL = sintetico(TokenType.PR_NULL, "null");
+    public static final Tipo VOID = sintetico(TokenType.PR_VOID, "void");
+
     private final Token token;
     private final Tipo argumento;
     // Cantidad de "[]" tras el tipo base: int[] e int son tipos distintos al
@@ -55,8 +67,56 @@ public class Tipo implements Chequeable {
         return dimensiones;
     }
 
+    private static Tipo sintetico(TokenType tipo, String lexema) {
+        return new Tipo(new Token(tipo, lexema, 0));
+    }
+
     public boolean esParametroDeTipo() {
         return token.getTipo() == TokenType.ID_GEN;
+    }
+
+    public boolean esPrimitivo() {
+        TokenType tipo = token.getTipo();
+        return dimensiones == 0
+                && (tipo == TokenType.PR_INT || tipo == TokenType.PR_CHAR || tipo == TokenType.PR_BOOLEAN);
+    }
+
+    public boolean esArreglo() {
+        return dimensiones > 0;
+    }
+
+    // Clases, interfaces, parámetros de tipo y arreglos (§9): lo que puede
+    // valer null. No incluye al tipo del literal null ni a void.
+    public boolean esReferencia() {
+        TokenType tipo = token.getTipo();
+        return esArreglo() || tipo == TokenType.ID_CLASE || tipo == TokenType.ID_GEN;
+    }
+
+    public boolean esVoid() {
+        return token.getTipo() == TokenType.PR_VOID;
+    }
+
+    public boolean esNull() {
+        return token.getTipo() == TokenType.PR_NULL;
+    }
+
+    // Conformidad S.conformaCon(D) (spec 0003, D9; §9, §11.2): si un valor
+    // de este tipo puede ir donde se espera 'destino'. Sin conversiones entre
+    // primitivos (char no conforma con int, §9.1), y void no conforma con
+    // nada, ni con void: una llamada void no produce valor (§9.5). null
+    // conforma con cualquier referencia y, como en Java (ADR 0004), con su
+    // propio tipo: null == null es válido.
+    // Entre referencias, por ahora sólo el mismo tipo. La herencia
+    // (ticket 04), los arreglos contra Object (05) y los genéricos (06) usan
+    // la tabla para subir por extends/implements.
+    public boolean conformaCon(Tipo destino, TablaSimbolos tabla) {
+        if (esVoid() || destino.esVoid()) {
+            return false;
+        }
+        if (esNull()) {
+            return destino.esNull() || destino.esReferencia();
+        }
+        return equals(destino);
     }
 
     public OrigenParametroTipo getOrigen() {

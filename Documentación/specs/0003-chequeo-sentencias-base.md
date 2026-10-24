@@ -281,7 +281,7 @@ En `0003-chequeo-sentencias-base/tickets/`, uno por archivo.
 |---|---|---|---|
 | 01 | Infraestructura | — | hecho |
 | 02 | AST completo | 01 | hecho |
-| 03 | Núcleo: expresiones, variables y sentencias | 02 | pendiente |
+| 03 | Núcleo: expresiones, variables y sentencias | 02 | hecho |
 | 04 | Objetos y llamadas | 03 | pendiente |
 | 05 | Arreglos | 04 | pendiente |
 | 06 | Genéricos | 05 | pendiente |

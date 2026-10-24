@@ -1,6 +1,7 @@
 package Model.semantico.ast;
 
 import Model.lexico.Token;
+import Model.semantico.ExcepcionSemantica;
 import Model.semantico.TablaSimbolos;
 import Model.semantico.Tipo;
 
@@ -29,6 +30,10 @@ public class NodoLlamadaEstatica extends NodoPrimario {
         for (NodoExpresion argumento : argumentos) {
             argumento.chequear(tabla);
         }
-        return chequearEncadenado(tabla, null);
+        // Pendiente (spec 0003, ticket 04): recorre a sus hijos y al resto de
+        // la cadena, así un error adentro (o un nodo de logro) igual se
+        // reporta, y corta en vez de devolver un tipo que todavía no calcula.
+        chequearEncadenado(tabla, null);
+        throw ExcepcionSemantica.noSoportado(nombre);
     }
 }

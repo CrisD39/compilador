@@ -15,6 +15,6 @@ public class NodoLiteralString extends NodoPrimario {
 
     @Override
     public Tipo chequear(TablaSimbolos tabla) {
-        return chequearEncadenado(tabla, null);
+        return chequearEncadenado(tabla, Tipo.STRING);
     }
 }

@@ -8,13 +8,15 @@ import Model.semantico.Tipo;
 // fijo. El String no está acá: admite encadenado y es un NodoPrimario.
 public abstract class NodoLiteral extends NodoOperando {
     protected final Token literal;
+    private final Tipo tipo;
 
-    protected NodoLiteral(Token literal) {
+    protected NodoLiteral(Token literal, Tipo tipo) {
         this.literal = literal;
+        this.tipo = tipo;
     }
 
     @Override
     public Tipo chequear(TablaSimbolos tabla) {
-        return null;
+        return tipo;
     }
 }

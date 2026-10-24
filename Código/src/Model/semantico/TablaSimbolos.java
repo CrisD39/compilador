@@ -315,6 +315,13 @@ public class TablaSimbolos {
         return atributoActual;
     }
 
+    // Un método estático no tiene this: no admite el acceso implícito a un
+    // atributo (§10.1). Constructores e inicializadores de atributo nunca son
+    // estáticos (la gramática sólo admite static en métodos, §6.1).
+    public boolean enContextoEstatico() {
+        return metodoActual != null && metodoActual.isEstatico();
+    }
+
     public void abrirBloque() {
         bloques.push(new HashMap<>());
     }

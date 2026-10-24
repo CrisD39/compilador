@@ -22,8 +22,12 @@ public class NodoVarLocalClasica extends NodoSentencia {
         this.inicializador = inicializador;
     }
 
+    public Token getPrimerNombre() {
+        return nombres.get(0);
+    }
+
     @Override
     public void chequear(TablaSimbolos tabla) {
-        throw ExcepcionSemantica.noSoportado(nombres.get(0));
+        throw ExcepcionSemantica.noSoportado(getPrimerNombre());
     }
 }

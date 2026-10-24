@@ -25,7 +25,6 @@ public class NodoExpParentizada extends NodoPrimario {
 
     @Override
     public Tipo chequear(TablaSimbolos tabla) {
-        expresion.chequear(tabla);
-        return chequearEncadenado(tabla, null);
+        return chequearEncadenado(tabla, expresion.chequear(tabla));
     }
 }

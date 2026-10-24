@@ -1,6 +1,7 @@
 package Model.semantico.ast;
 
 import Model.lexico.Token;
+import Model.semantico.ExcepcionSemantica;
 import Model.semantico.TablaSimbolos;
 
 // <Sentencia> ::= <Expresion> ; (y la rama "." de <SentIdClase>). Único
@@ -19,5 +20,8 @@ public class NodoSentenciaExpresion extends NodoSentencia {
     @Override
     public void chequear(TablaSimbolos tabla) {
         expresion.chequear(tabla);
+        if (!expresion.esSentenciaValida()) {
+            throw new ExcepcionSemantica(puntoYComa, "ERR_SENTENCIA_INVALIDA");
+        }
     }
 }
