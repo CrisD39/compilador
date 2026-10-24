@@ -6,7 +6,9 @@ Esta guía explica cómo incorporar, ejecutar y ampliar los testers de JUnit ent
 > - `TesterDeCasosSinErrores` → `Código/src/test/java/TesterSinErroresSem2.java`
 > - `TesterDeCasosConErrores` → `Código/src/test/java/TesterConErroresSem2.java`
 > - `resources/sinErrores/` y `resources/conErrores/` → `Código/resources/semantico2/sinErrores/` y `.../conErrores/`
-> - Paquete `test.java`, y `init` tipado como `ModuloPrincipalET3` hasta que exista el main de la etapa.
+> - Paquete `test.java`, y `init` tipado como `ModuloPrincipalET4` (el main de la etapa).
+> - Además, `TesterLogrosSem2` corre los casos de `semantico2/logros/<logro>/` de los logros listados en `LOGROS_HABILITADOS`; en los casos con error exige todas las etiquetas `///[...]` de las primeras líneas.
+> - Se corren con `./test.sh` (todos los testers) o `./test.sh sem2` (sólo Sem2), desde `Código/`.
 
 Los testers invocan el método `main` del compilador con un archivo fuente como único argumento y verifican el resultado informado por `System.out`.
 

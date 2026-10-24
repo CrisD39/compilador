@@ -262,6 +262,39 @@ spec:
 - Las reglas de conformidad (D9), la vista desde el receptor (D10), los
   tokens de "no soportado" (D11) y la tabla de códigos `ERR_*`.
 
+## Estado de la implementación (2026-10-24)
+
+La spec 0003 está cerrada. Quedó implementado:
+
+- **Lo base de §9–§12.** Los 138 casos de `resources/semantico2/` (34 sin
+  error y 104 con error) pasan con `ModuloPrincipalET4`, que es el main del
+  jar. La tercera pasada es `TablaSimbolos.chequearSentencias()`, y sólo
+  corre si no hubo errores léxicos, sintácticos ni de declaraciones.
+  `ModuloPrincipalET3` no cambió: sobre los casos de `semantico/` da la
+  misma salida que ET4.
+- **Logros chequeados:** *Multi-detección Errores Semánticos en
+  Sentencias* (cada sentencia se chequea aparte, y un error no corta las
+  siguientes ni las de otros métodos) y *Postfijos*. Los dos están en
+  `LOGROS_HABILITADOS` de `TesterLogrosSem2`.
+
+Siguen pendientes, cada uno para una spec propia. El parser ya los acepta y
+arma sus nodos, pero el chequeo reporta `ERR_NO_SOPORTADO` (spec 0003, D11):
+
+- *Minilambdas*, *For*, *Ternarios*, *Variables Locales Clásicas
+  Controladas*, *Atributos Inicializados*, *Métodos Genéricos E4* y
+  *Genericidad Avanzada* (diamante).
+- *Instanceof* y *Super!*: la gramática todavía no los tiene.
+- *Visibilidad chequeada*: la visibilidad se ignora, el parser no la
+  guarda.
+- *Todos los caminos llevan al retorno* y *Floats y coerción*: además hay
+  que decidir qué pasa con los casos base que los contradicen
+  (`semIICorrecto31`, `semIIError104`; `semIIError33`, `34`, `52`, `59`,
+  `70`).
+
+Para habilitar un logro: implementar su chequeo, poner en verde sus casos de
+`resources/semantico2/logros/<logro>/` y agregar el nombre a
+`LOGROS_HABILITADOS`.
+
 # Cadena de llamadas
 
 ## Orden de chequeo de semantica

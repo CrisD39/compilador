@@ -4,28 +4,41 @@ Casos de `Código/resources/semantico2/{conErrores,sinErrores}/` para el funcion
 
 - `semIIError01..05` y `semIICorrecto01..05` son los de referencia de la cátedra (sin modificar).
 - Los demás se escribieron sin usar sintaxis de logros (sin for, ternario, lambda, float, instanceof, super, `++`/`--`, locales clásicas `Tipo x = e;`, atributos inicializados).
-- Cada caso con error tiene **un** error; el resto del programa es válido. Todos pasan el sintáctico (`ModuloPrincipalET2`) y el chequeo de declaraciones (`ModuloPrincipalET3`), salvo `ERR_TIPO_NO_DECLARADO` para `Object`/`String`/`System`, que todavía no están registradas como predefinidas.
+- Cada caso con error tiene **un** error; el resto del programa es válido. Todos pasan el sintáctico (`ModuloPrincipalET2`) y el chequeo de declaraciones (`ModuloPrincipalET3`); el error aparece recién en el chequeo de sentencias (`ModuloPrincipalET4`).
 
 ## Convención de lexema en `[Error:<lexema>|<línea>]`
 
-| Error | Lexema |
-|---|---|
-| Variable/atributo no encontrado, `e.x` inexistente | el nombre |
-| Asignación incompatible o destino no asignable | `=` |
-| Método inexistente, aridad sin match, argumento no conforma, llamada estática inválida | nombre del método |
-| `new` de interfaz / clase inexistente / genérica sin argumento / sin constructor de esa aridad / argumento no conforma | nombre de la clase |
-| Operador con tipos incorrectos u operando void | el operador |
-| Condición no boolean | `if` / `while` |
-| Return incorrecto (incluye retorno no conformante) | `return` |
-| `this` en contexto estático | `this` |
-| Índice/tamaño no int, indexar algo que no es arreglo | `[` |
-| Miembro inexistente sobre primitivo, `T`, Object o arreglo (`length`, `clone`, …) | el nombre del miembro |
-| Uso de `T` en contexto estático | `T` |
-| Expresión que no es sentencia válida | `;` |
-| Local repetida / choca con parámetro / `var` con null, void o autorreferencia | nombre de la local |
-| `var` como cuerpo directo de if/else/while | `var` |
+Es el contrato de la spec 0003 (D7): los 104 casos con error lo cumplen. El código `ERR_*` sólo elige la descripción (`ErrorSemantico.getDescripcion()`) y nunca se imprime en la etiqueta.
 
-Extiende la de los casos de referencia (no declarada → nombre; asignación → `=`; parámetros → nombre del método; local repetida → nombre). Es una propuesta: si la implementación reporta en otro token, ajustar la tabla y las primeras líneas.
+| Error | Lexema | Código `ERR_*` |
+|---|---|---|
+| Variable no declarada (incluye `var x = x;` y el uso de una local cuyo `var` falló) | el nombre | `ERR_VAR_NO_DECLARADA` |
+| Atributo implícito desde un método estático | el nombre | `ERR_ATRIBUTO_EN_ESTATICO` |
+| `e.x` inexistente en el tipo estático de `e` (incluye `length` sobre `Object`) | el nombre del atributo | `ERR_ATRIBUTO_NO_ENCONTRADO` |
+| Asignación incompatible | `=` | `ERR_ASIGNACION_INCOMPATIBLE` |
+| Destino no asignable | `=` (o `++`/`--`) | `ERR_DESTINO_NO_ASIGNABLE` |
+| Método inexistente o aridad sin match (incluye `clone` sobre un arreglo) | nombre del método | `ERR_METODO_NO_ENCONTRADO` |
+| Argumento que no conforma (método o constructor) | nombre del método o de la clase | `ERR_ARGUMENTO_INCOMPATIBLE` |
+| Llamada sin receptor o `Clase.m()` a un método de instancia | nombre del método | `ERR_METODO_NO_ESTATICO` |
+| `Clase.m()` o `new` de una clase inexistente | nombre de la clase | `ERR_TIPO_NO_DECLARADO` (de la Etapa 3) |
+| `new` de interfaz | nombre de la interfaz | `ERR_NEW_INTERFAZ` |
+| `new` de una genérica sin argumento | nombre de la clase | `ERR_TIPO_SIN_ARGUMENTO` (de la Etapa 3) |
+| `new` sin constructor de esa aridad | nombre de la clase | `ERR_CONSTRUCTOR_NO_ENCONTRADO` |
+| Miembro sobre un primitivo o un `T` sin instanciar | el nombre del miembro | `ERR_RECEPTOR_SIN_MIEMBROS` |
+| Operador con tipos incorrectos u operando void (incluye `++`/`--` sobre algo que no es `int`) | el operador | `ERR_OPERADOR_INCOMPATIBLE` |
+| Condición no boolean | `if` / `while` | `ERR_CONDICION_NO_BOOLEAN` |
+| Return incorrecto (incluye retorno no conformante) | `return` | `ERR_RETORNO_INCORRECTO` |
+| `this` en contexto estático | `this` | `ERR_THIS_EN_ESTATICO` |
+| Uso de `T` en contexto estático | `T` | `ERR_PARAMETRO_TIPO_EN_ESTATICO` |
+| Índice o tamaño no int | `[` | `ERR_INDICE_NO_ENTERO` |
+| Indexar algo que no es arreglo | `[` | `ERR_NO_ES_ARREGLO` |
+| Expresión que no es sentencia válida | `;` | `ERR_SENTENCIA_INVALIDA` |
+| Local repetida, choca con un parámetro u oculta una local visible | nombre de la local | `ERR_LOCAL_DUPLICADA` |
+| `var` con `null` o `void` | nombre de la local | `ERR_VAR_SIN_TIPO` |
+| `var` como cuerpo directo de if/else/while | `var` | `ERR_DECLARACION_COMO_CUERPO` |
+| Construcción de un logro no implementado | ver la spec 0003, D11 | `ERR_NO_SOPORTADO` |
+
+Extiende la de los casos de referencia (no declarada → nombre; asignación → `=`; parámetros → nombre del método; local repetida → nombre). Un caso nuevo tiene que seguir esta tabla; si una regla nueva necesita otro token, se agrega una fila.
 
 ## Pendiente de confirmar
 

@@ -1,6 +1,6 @@
 ---
 titulo: Chequeo de sentencias base (Etapa 4)
-estado: ready-for-agent
+estado: hecho
 origen: entrevista de diseño (grilling, 2026-10-24)
 fecha: 2026-10-24
 ---
@@ -285,7 +285,11 @@ En `0003-chequeo-sentencias-base/tickets/`, uno por archivo.
 | 04 | Objetos y llamadas | 03 | hecho |
 | 05 | Arreglos | 04 | hecho |
 | 06 | Genéricos | 05 | hecho |
-| 07 | Cierre | 06 | pendiente |
+| 07 | Cierre | 06 | hecho |
 
 Reparto de casos base: 03 → 43 con error + 6 sin error; 04 → 38 + 15;
 05 → 14 + 5; 06 → 9 + 8. En total, 104 + 34.
+
+Están todos hechos. Al cerrar, `./test.sh` da 426 tests en verde: Etapas
+1–3 284 (léxico 14 + 24, sintáctico 38 + 63, pánico 4, semántico 37 + 104),
+Sem2 138 (34 + 104) y `TesterLogrosSem2` 4.

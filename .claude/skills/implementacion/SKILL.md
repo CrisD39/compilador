@@ -18,11 +18,11 @@ description: Implementar o modificar funcionalidad del compilador MiniJava (léx
 
 Capas en `Código/src/`, sin dependencias externas:
 
-- **View** (`ModuloPrincipal`, `ModuloPrincipalET2`, `ModuloPrincipalET3`): sólo presentación y formato de salida. Las tres se mantienen porque cada tester de etapa invoca la suya. No mover lógica acá.
-- **Controller** (`Analizador*HandlerImpl`): arma el pipeline. ET3: `SourceManagerMejorado` → `AnalizadorLexicoImpl` → `AnalizadorSintacticoImpl(lexico, tablaSimbolos)` → `start()` → `tablaSimbolos.estaBienDeclarado()` → `tablaSimbolos.consolidar()`.
+- **View** (`ModuloPrincipal`, `ModuloPrincipalET2`, `ModuloPrincipalET3`, `ModuloPrincipalET4`): sólo presentación y formato de salida. Las cuatro se mantienen porque cada tester de etapa invoca la suya; ET3 queda congelado y ET4 es el main del jar. No mover lógica acá.
+- **Controller** (`Analizador*HandlerImpl`): arma el pipeline. ET3: `SourceManagerMejorado` → `AnalizadorLexicoImpl` → `AnalizadorSintacticoImpl(lexico, tablaSimbolos)` → `start()` → `tablaSimbolos.estaBienDeclarado()` → `tablaSimbolos.consolidar()`. ET4 (`AnalizadorSemantico2HandlerImpl`): lo mismo y después `tablaSimbolos.chequearSentencias()`, sólo si no hubo errores previos.
 - **Model/lexico**: autómata con un método por estado. Errores léxicos van al `ResultadoLexicoListener` y no cortan.
 - **Model/sintactico**: descenso recursivo LL(1). Un método por no terminal, con la producción en un comentario encima. Errores → `ErrorSintactico` + `sincronizar()` (modo pánico), nunca excepción. Las acciones semánticas que construyen la tabla se ejecutan acá, mientras se parsea.
-- **Model/semantico**: `TablaSimbolos` (instancia única pasada por referencia, **no** Singleton), `Clase`, `Interfaz`, `Metodo`, `Constructor`, `Atributo`, `Parametro`, jerarquía `Tipo`, `ErrorSemantico`.
+- **Model/semantico**: `TablaSimbolos` (instancia única pasada por referencia, **no** Singleton), `Clase`, `Interfaz`, `Metodo`, `Constructor`, `Atributo`, `Parametro`, `VariableLocal`, `Tipo` (una sola clase, sin jerarquía), `ErrorSemantico`, `ExcepcionSemantica`; los nodos del AST en `Model.semantico.ast`.
 
 ## Reglas que hay que respetar
 

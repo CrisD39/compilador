@@ -1,6 +1,6 @@
 ---
 titulo: Cierre
-estado: pendiente
+estado: hecho
 spec: ../../0003-chequeo-sentencias-base.md
 ---
 
@@ -27,10 +27,10 @@ documentación refleja lo implementado.
 - La spec 0003 y sus tickets pasan a `estado: hecho`.
 
 **Criterios:**
-- [ ] `./test.sh` completo en verde: Etapas 1–3, los 138 casos de Sem2 y
+- [x] `./test.sh` completo en verde: Etapas 1–3, los 138 casos de Sem2 y
       `TesterLogrosSem2`. Se anota la cantidad de tests en la spec, como en la 0002.
-- [ ] Un programa con dos errores en sentencias distintas de métodos
+- [x] Un programa con dos errores en sentencias distintas de métodos
       distintos reporta los dos (verificado a mano).
-- [ ] `java -jar out/compilador.jar` sobre un caso de `semantico/` (Etapa 3)
+- [x] `java -jar out/compilador.jar` sobre un caso de `semantico/` (Etapa 3)
       con errores de declaraciones da los mismos errores que ET3, sin errores
       de sentencias agregados.

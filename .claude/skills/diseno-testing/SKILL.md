@@ -18,8 +18,8 @@ Los testers (`Código/src/test/java/`, paquete `test.java`) son JUnit 4 parametr
 | Modo pánico | `resources/sintactico/panico/` | `TesterSintacticoModoPanico` (asserts a mano, un `@Test` por archivo) | `ModuloPrincipalET2` | descriptivo |
 | Semántico OK | `resources/semantico/sinErrores/` | `TesterSemanticoDeCasosSinErrores` | `ModuloPrincipalET3` | `semCorrectoNN.java` |
 | Semántico error | `resources/semantico/conErrores/` | `TesterSemanticoDeCasosConErrores` | `ModuloPrincipalET3` | `semErrorNN.java` |
-| Sem2 sentencias | `resources/semantico2/{sinErrores,conErrores}/` | `TesterSinErroresSem2` / `TesterConErroresSem2` | (sin conectar) | `semIICorrectoNN` / `semIIErrorNN` |
-| Sem2 por logro | `resources/semantico2/logros/<logro>/{sinErrores,conErrores}/` | (ninguno todavía) | (sin conectar) | `semII<Logro>Correcto01` / `Error01` |
+| Sem2 sentencias | `resources/semantico2/{sinErrores,conErrores}/` | `TesterSinErroresSem2` / `TesterConErroresSem2` | `ModuloPrincipalET4` | `semIICorrectoNN` / `semIIErrorNN` |
+| Sem2 por logro | `resources/semantico2/logros/<logro>/{sinErrores,conErrores}/` | `TesterLogrosSem2` (sólo los logros de `LOGROS_HABILITADOS`; exige todas las etiquetas `///[...]`) | `ModuloPrincipalET4` | `semII<Logro>Correcto01` / `Error01` |
 | Varios errores | `resources/semantico/multiError/` | (ningún tester todavía) | `ModuloPrincipalET3` | `semMultiError<Descripcion>.java` |
 
 Numerar continuando el último número existente de la carpeta (`ls` antes de crear).
@@ -61,8 +61,8 @@ Siempre desde `Código/` (los paths de las carpetas son relativos):
 
 ```bash
 cd Código
-./test.sh          # compila y corre todos los testers de Etapas 1-3 (léxico, sintáctico, semántico)
-./test.sh sem2     # sólo Sem2; `./test.sh todo` corre ambos
+./test.sh             # compila y corre todos los testers (Etapas 1-3 y Sem2)
+./test.sh etapas1-3   # sólo Etapas 1-3; `./test.sh sem2` sólo Sem2
 ```
 
 Un único caso: `java -jar out/compilador.jar resources/semantico/conErrores/semError15.java` y comparar con su primera línea.

@@ -2,9 +2,9 @@
 # Compila el compilador y los testers, y corre los testers de una o más etapas.
 # Imprime una línea por tester; si alguno falla, también sus fallas, y sale con 1.
 # Uso:
-#   ./test.sh            # Etapas 1-3 (léxico, sintáctico, semántico de declaraciones)
-#   ./test.sh sem2       # sólo Sem2 (chequeo de sentencias, todavía en progreso)
-#   ./test.sh todo       # Etapas 1-3 y Sem2
+#   ./test.sh            # todos: Etapas 1-3 (léxico, sintáctico, declaraciones) y Sem2 (sentencias y logros)
+#   ./test.sh etapas1-3  # sólo Etapas 1-3
+#   ./test.sh sem2       # sólo Sem2
 set -e
 cd "$(dirname "$0")"
 
@@ -14,10 +14,10 @@ TesterSemanticoDeCasosSinErrores TesterSemanticoDeCasosConErrores"
 SEM2="TesterSinErroresSem2 TesterConErroresSem2 TesterLogrosSem2"
 
 case "${1:-}" in
-    "")   TESTERS="$ETAPAS_1_3" ;;
-    sem2) TESTERS="$SEM2" ;;
-    todo) TESTERS="$ETAPAS_1_3 $SEM2" ;;
-    *)    echo "Uso: ./test.sh [sem2|todo]" >&2; exit 2 ;;
+    "")        TESTERS="$ETAPAS_1_3 $SEM2" ;;
+    etapas1-3) TESTERS="$ETAPAS_1_3" ;;
+    sem2)      TESTERS="$SEM2" ;;
+    *)         echo "Uso: ./test.sh [etapas1-3|sem2]" >&2; exit 2 ;;
 esac
 
 ./build.sh >/dev/null
