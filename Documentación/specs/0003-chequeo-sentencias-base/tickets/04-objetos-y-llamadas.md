@@ -1,6 +1,6 @@
 ---
 titulo: Objetos y llamadas
-estado: pendiente
+estado: hecho
 spec: ../../0003-chequeo-sentencias-base.md
 ---
 
@@ -48,11 +48,28 @@ interfaz".
   primario parentizado (`(p1).m2();`).
 
 **Casos que pasan a verde:**
-- [ ] Con error (38): `semIIError02`, `03`, `04`, `09`, `10`, `12`, `13`,
+- [x] Con error (38): `semIIError02`, `03`, `04`, `09`, `10`, `12`, `13`,
       `14`, `15`, `16`, `17`, `18`, `19`, `21`, `22`, `23`, `25`, `26`,
       `27`, `29`, `30`, `31`, `37`, `38`, `39`, `48`, `49`, `60`, `62`,
       `65`, `66`, `77`, `81`, `82`, `89`, `101`, `102`, `103`.
-- [ ] Sin error (15): `semIICorrecto04`, `05`, `06`, `08`, `09`, `10`, `18`,
+- [x] Sin error (15): `semIICorrecto04`, `05`, `06`, `08`, `09`, `10`, `18`,
       `19`, `20`, `21`, `22`, `23`, `24`, `26`, `30`.
-- [ ] Siguen en verde los casos del ticket 03 y `TesterLogrosSem2`.
-- [ ] `./test.sh` (Etapas 1–3) en verde.
+- [x] Siguen en verde los casos del ticket 03 y `TesterLogrosSem2`.
+- [x] `./test.sh` (Etapas 1–3) en verde.
+
+**Nota de implementación:**
+- `new Caja()` con `Caja` genérica ya da `ERR_TIPO_SIN_ARGUMENTO`
+  (`semIIError24`, del ticket 06). Antes pasaba de casualidad con el "no
+  soportado" sobre `Caja`, y sin el control habría quedado en rojo. `new
+  A<String>()` con `A` no genérica da `ERR_TIPO_NO_GENERICO`.
+- Lo genérico corta con `ERR_NO_SOPORTADO` hasta el ticket 06, en vez de
+  devolver un tipo con `T` sin sustituir: `.x`/`.m()` sobre un receptor con
+  argumento, `new Caja<String>()` y `this` en una clase genérica. Por eso
+  `semIICorrecto14` (del 06), que pasaba de casualidad, queda en rojo hasta
+  ese ticket.
+- Las llamadas y `new` resuelven el método o el constructor antes de
+  chequear los argumentos: en `noExiste(z)` se informa `noExiste`.
+- `[i]` y `new T[n]` (pendientes del ticket 05) ya no recorren el resto de
+  la cadena: `.x` y `.m()` necesitan el tipo de su izquierda, y recibían
+  `null`.
+- Una interfaz conforma con `Object`, como en Java (ADR 0004).

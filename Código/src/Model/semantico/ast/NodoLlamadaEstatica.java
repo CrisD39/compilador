@@ -1,7 +1,9 @@
 package Model.semantico.ast;
 
 import Model.lexico.Token;
+import Model.semantico.EntidadDeclarada;
 import Model.semantico.ExcepcionSemantica;
+import Model.semantico.Metodo;
 import Model.semantico.TablaSimbolos;
 import Model.semantico.Tipo;
 
@@ -25,15 +27,24 @@ public class NodoLlamadaEstatica extends NodoPrimario {
         return true;
     }
 
+    // §10.2: C tiene que existir (ERR_TIPO_NO_DECLARADO, el de la Etapa 3,
+    // sobre C) y m ser estático, porque no hay objeto receptor
+    // (semIIError18). Los estáticos heredados ya están copiados en C
+    // (A.debugPrint(3)). Una interfaz no tiene estáticos.
     @Override
     public Tipo chequear(TablaSimbolos tabla) {
-        for (NodoExpresion argumento : argumentos) {
-            argumento.chequear(tabla);
+        EntidadDeclarada entidad = tabla.buscarClase(clase.getLexema());
+        if (entidad == null) {
+            throw new ExcepcionSemantica(clase, "ERR_TIPO_NO_DECLARADO");
         }
-        // Pendiente (spec 0003, ticket 04): recorre a sus hijos y al resto de
-        // la cadena, así un error adentro (o un nodo de logro) igual se
-        // reporta, y corta en vez de devolver un tipo que todavía no calcula.
-        chequearEncadenado(tabla, null);
-        throw ExcepcionSemantica.noSoportado(nombre);
+        Metodo metodo = entidad.buscarMetodo(Metodo.clave(nombre.getLexema(), argumentos.size()));
+        if (metodo == null) {
+            throw new ExcepcionSemantica(nombre, "ERR_METODO_NO_ENCONTRADO");
+        }
+        if (!metodo.isEstatico()) {
+            throw new ExcepcionSemantica(nombre, "ERR_METODO_NO_ESTATICO");
+        }
+        List<Tipo> tiposArgumentos = ChequeoLlamada.chequearArgumentos(tabla, argumentos);
+        return chequearEncadenado(tabla, ChequeoLlamada.tipoDeLlamada(tabla, metodo, nombre, tiposArgumentos));
     }
 }

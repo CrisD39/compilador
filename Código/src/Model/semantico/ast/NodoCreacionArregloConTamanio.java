@@ -26,10 +26,10 @@ public class NodoCreacionArregloConTamanio extends NodoPrimario {
         for (NodoExpresion tamanio : tamanios) {
             tamanio.chequear(tabla);
         }
-        // Pendiente (spec 0003, ticket 05): recorre a sus hijos y al resto de
-        // la cadena, así un error adentro (o un nodo de logro) igual se
-        // reporta, y corta en vez de devolver un tipo que todavía no calcula.
-        chequearEncadenado(tabla, null);
+        // Pendiente (spec 0003, ticket 05): recorre a sus hijos, así un error
+        // adentro (o un nodo de logro) igual se reporta, y corta en vez de
+        // devolver un tipo que todavía no calcula. El resto de la cadena no se
+        // recorre: .x y .m() necesitan el tipo de su izquierda.
         throw ExcepcionSemantica.noSoportado(corchetes.get(0));
     }
 }

@@ -56,6 +56,13 @@ public class Metodo implements Chequeable, OrigenParametroTipo {
         return tipoRetorno;
     }
 
+    // Tipo de una llamada a este método en una expresión (spec 0003, D5):
+    // el retorno, o Tipo.VOID si es void. La declaración sigue con null, del
+    // que depende la comparación de signaturas.
+    public Tipo getTipoDeLlamada() {
+        return tipoRetorno != null ? tipoRetorno : Tipo.VOID;
+    }
+
     public boolean isEstatico() {
         return estatico;
     }
@@ -115,7 +122,13 @@ public class Metodo implements Chequeable, OrigenParametroTipo {
      * (tipos) se compara aparte, en la redefinición.
      */
     public String getClave() {
-        return nombre.getLexema() + "/" + parametros.size();
+        return clave(nombre.getLexema(), parametros.size());
+    }
+
+    // La misma clave armada desde una llamada, que tiene el nombre y la
+    // cantidad de argumentos pero todavía no el método (§10.2).
+    public static String clave(String nombre, int aridad) {
+        return nombre + "/" + aridad;
     }
 
     /**

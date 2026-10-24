@@ -1,7 +1,9 @@
 package Model.semantico.ast;
 
 import Model.lexico.Token;
+import Model.semantico.EntidadDeclarada;
 import Model.semantico.ExcepcionSemantica;
+import Model.semantico.Metodo;
 import Model.semantico.TablaSimbolos;
 import Model.semantico.Tipo;
 
@@ -24,15 +26,18 @@ public class NodoLlamadaEncadenada extends NodoEncadenado {
         return true;
     }
 
+    // §10.2: m se busca por nombre/aridad en el tipo estático del receptor
+    // (ver entidadDelReceptor()), clase o interfaz. Una interfaz ya trae los
+    // métodos de instancia de Object (i.toString()). Con receptor también
+    // vale un estático (persona.consultar(2), semIICorrecto19).
     @Override
     public Tipo chequear(TablaSimbolos tabla, Tipo tipoIzquierdo) {
-        for (NodoExpresion argumento : argumentos) {
-            argumento.chequear(tabla);
+        EntidadDeclarada entidad = entidadDelReceptor(tabla, tipoIzquierdo, nombre);
+        Metodo metodo = entidad.buscarMetodo(Metodo.clave(nombre.getLexema(), argumentos.size()));
+        if (metodo == null) {
+            throw new ExcepcionSemantica(nombre, "ERR_METODO_NO_ENCONTRADO");
         }
-        // Pendiente (spec 0003, ticket 04): recorre a sus hijos y al resto de
-        // la cadena, así un error adentro (o un nodo de logro) igual se
-        // reporta, y corta en vez de devolver un tipo que todavía no calcula.
-        chequearSiguiente(tabla, null);
-        throw ExcepcionSemantica.noSoportado(nombre);
+        List<Tipo> tiposArgumentos = ChequeoLlamada.chequearArgumentos(tabla, argumentos);
+        return chequearSiguiente(tabla, ChequeoLlamada.tipoDeLlamada(tabla, metodo, nombre, tiposArgumentos));
     }
 }

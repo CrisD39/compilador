@@ -2,6 +2,7 @@ package Model.semantico.ast;
 
 import Model.lexico.Token;
 import Model.semantico.ExcepcionSemantica;
+import Model.semantico.Metodo;
 import Model.semantico.TablaSimbolos;
 import Model.semantico.Tipo;
 
@@ -23,15 +24,19 @@ public class NodoLlamadaMetodo extends NodoPrimario {
         return true;
     }
 
+    // §10.2: se busca en la clase actual por nombre/aridad, con los heredados
+    // ya copiados por consolidar(). En un método estático no hay this, así
+    // que sólo sirve otro estático (semIIError17).
     @Override
     public Tipo chequear(TablaSimbolos tabla) {
-        for (NodoExpresion argumento : argumentos) {
-            argumento.chequear(tabla);
+        Metodo metodo = tabla.getClaseActual().buscarMetodo(Metodo.clave(nombre.getLexema(), argumentos.size()));
+        if (metodo == null) {
+            throw new ExcepcionSemantica(nombre, "ERR_METODO_NO_ENCONTRADO");
         }
-        // Pendiente (spec 0003, ticket 04): recorre a sus hijos y al resto de
-        // la cadena, así un error adentro (o un nodo de logro) igual se
-        // reporta, y corta en vez de devolver un tipo que todavía no calcula.
-        chequearEncadenado(tabla, null);
-        throw ExcepcionSemantica.noSoportado(nombre);
+        if (!metodo.isEstatico() && tabla.enContextoEstatico()) {
+            throw new ExcepcionSemantica(nombre, "ERR_METODO_NO_ESTATICO");
+        }
+        List<Tipo> tiposArgumentos = ChequeoLlamada.chequearArgumentos(tabla, argumentos);
+        return chequearEncadenado(tabla, ChequeoLlamada.tipoDeLlamada(tabla, metodo, nombre, tiposArgumentos));
     }
 }

@@ -84,6 +84,17 @@ public final class ErrorSemantico {
             // de etapa4-semantico2/casos-de-prueba.md.
             case "ERR_VAR_NO_DECLARADA" -> "la variable " + x + " no está declarada";
             case "ERR_ATRIBUTO_EN_ESTATICO" -> "el atributo " + x + " no se puede usar en un método estático";
+            case "ERR_THIS_EN_ESTATICO" -> "this no se puede usar en un método estático";
+            case "ERR_ATRIBUTO_NO_ENCONTRADO" -> "el atributo " + x + " no existe en el tipo del receptor";
+            case "ERR_RECEPTOR_SIN_MIEMBROS" ->
+                    "no se puede seleccionar " + x + ": el receptor no es de una clase ni de una interfaz";
+            case "ERR_METODO_NO_ENCONTRADO" -> "no existe un método " + x + " con esa cantidad de argumentos";
+            case "ERR_METODO_NO_ESTATICO" -> "el método " + x + " no es estático y no hay un objeto receptor";
+            case "ERR_ARGUMENTO_INCOMPATIBLE" ->
+                    "los argumentos de " + x + " no conforman con los tipos de sus parámetros";
+            case "ERR_NEW_INTERFAZ" -> "no se puede crear un objeto de la interfaz " + x;
+            case "ERR_CONSTRUCTOR_NO_ENCONTRADO" ->
+                    "la clase " + x + " no tiene un constructor con esa cantidad de argumentos";
             case "ERR_ASIGNACION_INCOMPATIBLE" -> "el valor asignado no conforma con el tipo del destino";
             case "ERR_DESTINO_NO_ASIGNABLE" -> "el lado izquierdo de " + x + " no es un destino asignable";
             case "ERR_OPERADOR_INCOMPATIBLE" -> "el operador " + x + " no admite los tipos de sus operandos";

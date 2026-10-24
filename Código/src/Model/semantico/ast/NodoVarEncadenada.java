@@ -1,6 +1,9 @@
 package Model.semantico.ast;
 
 import Model.lexico.Token;
+import Model.semantico.Atributo;
+import Model.semantico.Clase;
+import Model.semantico.EntidadDeclarada;
 import Model.semantico.ExcepcionSemantica;
 import Model.semantico.TablaSimbolos;
 import Model.semantico.Tipo;
@@ -20,12 +23,17 @@ public class NodoVarEncadenada extends NodoEncadenado {
         return true;
     }
 
+    // §10.1: x se busca en el tipo estático del receptor (ver
+    // entidadDelReceptor()), con los atributos heredados ya copiados por
+    // consolidar(), y no en la clase del objeto (semIIError09). Una interfaz
+    // no tiene atributos. La visibilidad se ignora (D11).
     @Override
     public Tipo chequear(TablaSimbolos tabla, Tipo tipoIzquierdo) {
-        // Pendiente (spec 0003, ticket 04): recorre a sus hijos y al resto de
-        // la cadena, así un error adentro (o un nodo de logro) igual se
-        // reporta, y corta en vez de devolver un tipo que todavía no calcula.
-        chequearSiguiente(tabla, null);
-        throw ExcepcionSemantica.noSoportado(nombre);
+        EntidadDeclarada entidad = entidadDelReceptor(tabla, tipoIzquierdo, nombre);
+        Atributo atributo = entidad instanceof Clase clase ? clase.getAtributo(nombre.getLexema()) : null;
+        if (atributo == null) {
+            throw new ExcepcionSemantica(nombre, "ERR_ATRIBUTO_NO_ENCONTRADO");
+        }
+        return chequearSiguiente(tabla, atributo.getTipo());
     }
 }

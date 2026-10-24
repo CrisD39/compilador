@@ -75,7 +75,8 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
 
     // Método con esa clave (nombre/aridad), propio o ya copiado de un
     // ancestro; null si no hay. Lo usa consolidarInterfaces() para buscar
-    // en Object.
+    // en Object, y las llamadas del chequeo de sentencias.
+    @Override
     public Metodo buscarMetodo(String clave) {
         return metodos.get(clave);
     }

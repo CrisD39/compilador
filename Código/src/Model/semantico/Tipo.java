@@ -106,9 +106,13 @@ public class Tipo implements Chequeable {
     // nada, ni con void: una llamada void no produce valor (§9.5). null
     // conforma con cualquier referencia y, como en Java (ADR 0004), con su
     // propio tipo: null == null es válido.
-    // Entre referencias, por ahora sólo el mismo tipo. La herencia
-    // (ticket 04), los arreglos contra Object (05) y los genéricos (06) usan
-    // la tabla para subir por extends/implements.
+    // Una clase o interfaz conforma con sí misma y con sus ancestros por
+    // extends/implements, transitivo y hasta Object (§9.2): B2 va donde se
+    // espera A1, pero no al revés (semIIError37), y una interfaz no va donde
+    // se espera la clase que la implementa (semIIError38).
+    // Pendiente: los arreglos contra Object (ticket 05) y los argumentos
+    // genéricos de un ancestro (ticket 06). Con la misma entidad se compara
+    // el tipo entero, así Caja<String> sigue sin conformar con Caja<Object>.
     public boolean conformaCon(Tipo destino, TablaSimbolos tabla) {
         if (esVoid() || destino.esVoid()) {
             return false;
@@ -116,7 +120,12 @@ public class Tipo implements Chequeable {
         if (esNull()) {
             return destino.esNull() || destino.esReferencia();
         }
-        return equals(destino);
+        EntidadDeclarada entidad = tabla.entidadDe(this);
+        EntidadDeclarada ancestro = tabla.entidadDe(destino);
+        if (entidad == null || ancestro == null || entidad == ancestro) {
+            return equals(destino);
+        }
+        return tabla.heredaDe(entidad, ancestro);
     }
 
     public OrigenParametroTipo getOrigen() {

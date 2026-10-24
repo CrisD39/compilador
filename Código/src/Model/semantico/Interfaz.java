@@ -160,6 +160,14 @@ public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTi
         }
     }
 
+    // Después de consolidar() incluye los de las superinterfaces y los de
+    // instancia de Object (heredarDeObject()): i.toString() los encuentra
+    // sin un caso especial (§10.2).
+    @Override
+    public Metodo buscarMetodo(String clave) {
+        return metodos.get(clave);
+    }
+
     public Iterable<Metodo> getMetodos(){
         return metodos.values();
     }

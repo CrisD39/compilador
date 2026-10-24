@@ -194,6 +194,45 @@ public class TablaSimbolos {
         }
     }
 
+    // Clase o interfaz que nombra un tipo usado en una expresión (spec 0003,
+    // ticket 04); null si no nombra ninguna: primitivos, void, null,
+    // parámetros de tipo y arreglos. Con D3 no hay tipos sin declarar en las
+    // declaraciones, así que un null acá es siempre "no es clase ni
+    // interfaz". El nombre suelto de una clase (C.m(), new C()) lo resuelve
+    // cada nodo con buscarClase().
+    public EntidadDeclarada entidadDe(Tipo tipo) {
+        if (tipo.esArreglo() || tipo.getToken().getTipo() != TokenType.ID_CLASE) {
+            return null;
+        }
+        return clases.get(tipo.getToken().getLexema());
+    }
+
+    // true si 'ancestro' es 'entidad' o uno de sus ancestros por extends/
+    // implements, a cualquier distancia (§9.2, spec 0003 D9). Una clase sube
+    // por su padre efectivo, que ya es Object si no escribió 'extends', y por
+    // su interfaz; una interfaz, por sus 'extends'. Toda interfaz llega
+    // además a Object, como en Java (ADR 0004): ya contiene sus métodos de
+    // instancia (spec 0002). Sin errores de declaraciones (D3) no hay ciclos
+    // ni relaciones con el tipo equivocado, así que la recursión termina.
+    public boolean heredaDe(EntidadDeclarada entidad, EntidadDeclarada ancestro) {
+        if (entidad == ancestro) {
+            return true;
+        }
+        if (entidad instanceof Clase clase) {
+            Clase padre = clase.getPadreEfectivo();
+            if (padre != null && heredaDe(padre, ancestro)) {
+                return true;
+            }
+            return clase.getInterfaz() != null && heredaDe(entidadDe(clase.getInterfaz()), ancestro);
+        }
+        for (Tipo superinterfaz : ((Interfaz) entidad).getHerencias()) {
+            if (heredaDe(entidadDe(superinterfaz), ancestro)) {
+                return true;
+            }
+        }
+        return ancestro == getObject();
+    }
+
     // Object, String o System (ADR 0004), que tienen reglas propias: no se
     // descartan si el programa las redeclara y no pasan por el control de
     // declaraciones.
