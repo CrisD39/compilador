@@ -17,18 +17,26 @@ public class NodoAccesoArregloEncadenado extends NodoEncadenado {
         this.indice = indice;
     }
 
+    // Un componente es un destino asignable (§11.9), pero no una sentencia
+    // (p1[0]; es error, semIIError78).
     @Override
     protected boolean esAsignableSinSiguiente() {
         return true;
     }
 
+    // §11.8: sólo se indexa un arreglo por su tipo estático, así que un
+    // arreglo guardado en un Object no se indexa (semIIError72). El receptor
+    // se controla antes que el índice, en el orden del fuente. Cada
+    // indexación quita una dimensión: con v de tipo int[], v[0] es int y
+    // v[0][1] es error (semIIError75).
     @Override
     public Tipo chequear(TablaSimbolos tabla, Tipo tipoIzquierdo) {
-        indice.chequear(tabla);
-        // Pendiente (spec 0003, ticket 05): recorre a sus hijos, así un error
-        // adentro (o un nodo de logro) igual se reporta, y corta en vez de
-        // devolver un tipo que todavía no calcula. El resto de la cadena no se
-        // recorre: .x y .m() necesitan el tipo de su izquierda.
-        throw ExcepcionSemantica.noSoportado(corchete);
+        if (!tipoIzquierdo.esArreglo()) {
+            throw new ExcepcionSemantica(corchete, "ERR_NO_ES_ARREGLO");
+        }
+        if (!indice.chequear(tabla).conformaCon(Tipo.INT, tabla)) {
+            throw new ExcepcionSemantica(corchete, "ERR_INDICE_NO_ENTERO");
+        }
+        return chequearSiguiente(tabla, tipoIzquierdo.conDimensiones(tipoIzquierdo.getDimensiones() - 1));
     }
 }

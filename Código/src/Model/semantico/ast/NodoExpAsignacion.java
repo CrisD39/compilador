@@ -24,13 +24,18 @@ public class NodoExpAsignacion extends NodoExpresion {
     // sobre el "=". El resultado tiene el tipo del destino: if (a1 = 3) es
     // una condición int (semIIError96). esAsignable() es estructural, así que
     // va antes de chequear el destino: en m9() = 3 el error es el destino, no
-    // que m9 no exista.
+    // que m9 no exista. Se vuelve a preguntar después de chequearlo porque
+    // v.length depende del tipo de v: recién entonces se sabe que es el
+    // length de un arreglo, de sólo lectura (⚠10, semIIError67).
     @Override
     public Tipo chequear(TablaSimbolos tabla) {
         if (!ladoIzq.esAsignable()) {
             throw new ExcepcionSemantica(operador, "ERR_DESTINO_NO_ASIGNABLE");
         }
         Tipo destino = ladoIzq.chequear(tabla);
+        if (!ladoIzq.esAsignable()) {
+            throw new ExcepcionSemantica(operador, "ERR_DESTINO_NO_ASIGNABLE");
+        }
         Tipo valor = ladoDer.chequear(tabla);
         if (!valor.conformaCon(destino, tabla)) {
             throw new ExcepcionSemantica(operador, "ERR_ASIGNACION_INCOMPATIBLE");

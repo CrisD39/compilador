@@ -110,15 +110,22 @@ public class Tipo implements Chequeable {
     // extends/implements, transitivo y hasta Object (§9.2): B2 va donde se
     // espera A1, pero no al revés (semIIError37), y una interfaz no va donde
     // se espera la clase que la implementa (semIIError38).
-    // Pendiente: los arreglos contra Object (ticket 05) y los argumentos
-    // genéricos de un ancestro (ticket 06). Con la misma entidad se compara
-    // el tipo entero, así Caja<String> sigue sin conformar con Caja<Object>.
+    // Los arreglos son invariantes: tipo base y dimensiones iguales, así
+    // String[] no va donde se espera Object[] (semIIError44) ni int[][]
+    // donde se espera int[] (semIIError45). Todo arreglo conforma además con
+    // Object (§9.4, semIICorrecto15).
+    // Pendiente: los argumentos genéricos de un ancestro (ticket 06). Con la
+    // misma entidad se compara el tipo entero, así Caja<String> sigue sin
+    // conformar con Caja<Object>.
     public boolean conformaCon(Tipo destino, TablaSimbolos tabla) {
         if (esVoid() || destino.esVoid()) {
             return false;
         }
         if (esNull()) {
             return destino.esNull() || destino.esReferencia();
+        }
+        if (esArreglo()) {
+            return equals(destino) || tabla.entidadDe(destino) == tabla.getObject();
         }
         EntidadDeclarada entidad = tabla.entidadDe(this);
         EntidadDeclarada ancestro = tabla.entidadDe(destino);

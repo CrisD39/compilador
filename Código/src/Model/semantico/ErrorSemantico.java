@@ -98,6 +98,8 @@ public final class ErrorSemantico {
             case "ERR_ASIGNACION_INCOMPATIBLE" -> "el valor asignado no conforma con el tipo del destino";
             case "ERR_DESTINO_NO_ASIGNABLE" -> "el lado izquierdo de " + x + " no es un destino asignable";
             case "ERR_OPERADOR_INCOMPATIBLE" -> "el operador " + x + " no admite los tipos de sus operandos";
+            case "ERR_INDICE_NO_ENTERO" -> "el índice o el tamaño entre " + x + " y \"]\" tiene que ser int";
+            case "ERR_NO_ES_ARREGLO" -> "sólo se puede indexar con " + x + " una expresión de tipo arreglo";
             case "ERR_SENTENCIA_INVALIDA" ->
                     "la expresión no es una sentencia válida (asignación, llamada, creación de objeto o postfijo)";
             case "ERR_LOCAL_DUPLICADA" ->

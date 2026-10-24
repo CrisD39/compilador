@@ -1,6 +1,6 @@
 ---
 titulo: Arreglos
-estado: pendiente
+estado: hecho
 spec: ../../0003-chequeo-sentencias-base.md
 ---
 
@@ -33,8 +33,25 @@ indexación, `length`, `toString()` y conformidad (§9.4, §11.8).
   (logro).
 
 **Casos que pasan a verde:**
-- [ ] Con error (14): `semIIError44`, `45`, `46`, `67`, `68`, `69`, `70`,
+- [x] Con error (14): `semIIError44`, `45`, `46`, `67`, `68`, `69`, `70`,
       `71`, `72`, `73`, `74`, `75`, `78`, `79`.
-- [ ] Sin error (5): `semIICorrecto07`, `15`, `17`, `25`, `28`.
-- [ ] Siguen en verde los casos de los tickets 03–04 y `TesterLogrosSem2`.
-- [ ] `./test.sh` (Etapas 1–3) en verde.
+- [x] Sin error (5): `semIICorrecto07`, `15`, `17`, `25`, `28`.
+- [x] Siguen en verde los casos de los tickets 03–04 y `TesterLogrosSem2`.
+- [x] `./test.sh` (Etapas 1–3) en verde.
+
+**Nota de implementación:**
+- `length` depende del tipo del receptor, y `esAsignable()` es estructural.
+  `NodoVarEncadenada` recuerda en `chequear()` si resolvió un `length`, y
+  `NodoExpAsignacion` vuelve a preguntar `esAsignable()` después de chequear
+  el destino (`v.length = 3`, `semIIError67`). El postfijo ya preguntaba
+  después, así que `v.length++` da `ERR_DESTINO_NO_ASIGNABLE` sobre `++`.
+- Un receptor arreglo usa los miembros de `Object` (`entidadDelReceptor`),
+  descartando los estáticos: `v.debugPrint(1)` da `ERR_METODO_NO_ENCONTRADO`.
+- El tipo base de `new X[n]` sigue las reglas de la Etapa 3 con sus códigos,
+  como `new X()`: `ERR_TIPO_NO_DECLARADO`, `ERR_TIPO_SIN_ARGUMENTO` para
+  `new Caja[3]` (sin tipos raw, ADR 0007) y `ERR_TIPO_NO_GENERICO`. Se
+  controla antes que los tamaños, en el orden del fuente. `new T[n]` y
+  `new Caja<String>[n]` cortan con `ERR_NO_SOPORTADO` hasta el ticket 06;
+  por eso `semIIError32` (del 06) ya pasa de casualidad.
+- `[i]` controla el receptor antes que el índice: con `p1` de tipo `int`,
+  `p1[true]` informa `ERR_NO_ES_ARREGLO`.

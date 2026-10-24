@@ -37,12 +37,17 @@ public abstract class NodoEncadenado {
     // ESTÁTICO del receptor (§10.1, §10.2). Un receptor que no es clase ni
     // interfaz (primitivo, void, T sin instanciar) no tiene miembros, y el
     // error va sobre el nombre del miembro.
-    // Pendiente: el receptor arreglo (length y toString(), ticket 05) y el
-    // genérico instanciado, cuyos miembros se ven con T sustituido
-    // (Caja<String>, ticket 06, D10). Cortan en vez de devolver un tipo con
-    // T sin reemplazar, que daría un error falso.
+    // Un arreglo tiene los miembros de instancia de Object (§11.8, "Receptor
+    // arreglo" de requerimientos.md), sea cual sea su tipo base; length lo
+    // resuelve NodoVarEncadenada antes de llegar acá (⚠10).
+    // Pendiente: el genérico instanciado, cuyos miembros se ven con T
+    // sustituido (Caja<String>, ticket 06, D10). Corta en vez de devolver un
+    // tipo con T sin reemplazar, que daría un error falso.
     protected static EntidadDeclarada entidadDelReceptor(TablaSimbolos tabla, Tipo receptor, Token miembro) {
-        if (receptor.esArreglo() || receptor.getArgumento() != null) {
+        if (receptor.esArreglo()) {
+            return tabla.getObject();
+        }
+        if (receptor.getArgumento() != null) {
             throw ExcepcionSemantica.noSoportado(miembro);
         }
         EntidadDeclarada entidad = tabla.entidadDe(receptor);
