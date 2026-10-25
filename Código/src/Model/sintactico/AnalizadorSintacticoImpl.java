@@ -1337,15 +1337,30 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
         return ternarioOpcional(expresionCompuestaResto(expresionBasica()));
     }
 
-    // <ExpresionCompuestaResto> ::= <OperadorBinario> <ExpresionBasica> <ExpresionCompuestaResto> | ϵ
+    // <ExpresionCompuestaResto> ::= <OperadorBinario> <ExpresionBasica> <ExpresionCompuestaResto>
+    //                            |  instanceof <TipoReferencia> <ExpresionCompuestaResto> | ϵ
     // Arrastra a derecha lo ya armado como lado izquierdo, así la cadena
     // queda asociativa a izquierda y sin precedencia (política de Etapa 2):
-    // 2+4*b es (2+4)*b.
+    // 2+4*b es (2+4)*b, y x == y instanceof B es (x == y) instanceof B.
+    // instanceof (logro Instanceof) es un terminal nuevo, fuera de FIRST de
+    // los operadores binarios y del FOLLOW, así que sigue siendo LL(1). Su
+    // lado derecho es un tipo y no una <ExpresionBasica>; <TipoReferencia>
+    // deja afuera a idGen y a los arreglos. Si sigue "<", se toma como
+    // argumento genérico, que después rechaza el semántico.
     private NodoExpresion expresionCompuestaResto(NodoExpresion ladoIzq) {
         if (actualEn(PRIMEROS_OP_BINARIO)) {
             Token operador = operadorBinario();
             NodoExpBinaria binaria = new NodoExpBinaria(ladoIzq, operador, expresionBasica());
             return expresionCompuestaResto(binaria);
+        } else if (actualEs(TokenType.PR_INSTANCEOF)) {
+            Token operador = tokenActual;
+            match(TokenType.PR_INSTANCEOF);
+            if (!actualEs(TokenType.ID_CLASE)) {
+                error("una clase o interfaz después de \"instanceof\"");
+                return ladoIzq;
+            }
+            NodoExpInstanceof prueba = new NodoExpInstanceof(ladoIzq, operador, tipoReferencia());
+            return expresionCompuestaResto(prueba);
         }
         return ladoIzq;
     }

@@ -36,6 +36,7 @@ public final class TablaPalabrasClave {
         PALABRAS_CLAVE.put("permits", TokenType.PR_PERMITS);
         PALABRAS_CLAVE.put("nonsealed", TokenType.PR_NONSEALED);
         PALABRAS_CLAVE.put("final", TokenType.PR_FINAL);
+        PALABRAS_CLAVE.put("instanceof", TokenType.PR_INSTANCEOF); // logro Instanceof
     }
 
     private TablaPalabrasClave() {

@@ -1,12 +1,13 @@
-///[Error:instanceof|9]
-// El tipo a la derecha de instanceof no puede ser generico.
+///[Error:instanceof|10]
+// El tipo a la derecha de instanceof no puede ser generico
+// (ERR_INSTANCEOF_GENERICO, sobre instanceof).
 
 class Caja<T> {}
 
 class A1 {
     void m1() {
-        A1 a = new A1();
-        boolean b = a instanceof Caja<A1>;
+        var a = new A1();
+        var b = a instanceof Caja<A1>;
     }
 }
 

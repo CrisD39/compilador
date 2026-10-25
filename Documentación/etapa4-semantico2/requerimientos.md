@@ -303,6 +303,26 @@ La spec 0003 está cerrada. Quedó implementado:
   rechaza el parser). Como la conformidad es la de D9, un `MiniIterable<T>`
   se recorre como `T` pero no como `Object` (`semIIForError17`). Casos:
   `semIIForCorrecto05`–`09` y `semIIForError10`–`27`.
+- **Logro *Instanceof*** (2026-10-25). `instanceof` es palabra clave
+  (`PR_INSTANCEOF`) y entra en `<ExpresionCompuestaResto>` como otro
+  eslabón de la cadena sin precedencia, con un `<TipoReferencia>` a la
+  derecha: `x == y instanceof B` es `(x == y) instanceof B`. Un `T`, un
+  arreglo o la variable asociada (`a instanceof B b`) a la derecha son
+  errores sintácticos. `NodoExpInstanceof` (hereda de `NodoExpCompuesta`)
+  da `boolean` y chequea, en este orden: que el operando sea una
+  referencia o `null` (`ERR_OPERADOR_INCOMPATIBLE`), que el destino esté
+  declarado (`ERR_TIPO_NO_DECLARADO`, sobre el nombre), que no sea genérico,
+  ni con argumento ni raw (`ERR_INSTANCEOF_GENERICO`), y que los dos tipos
+  estén relacionados como en el cast de Java (`ERR_OPERADOR_INCOMPATIBLE`).
+  No hace falta que sean iguales: vale subir y bajar por la jerarquía, un
+  `null` o un `T` contra cualquier clase y un arreglo contra `Object`. Como
+  en Java, una interfaz y una clase no `final` (o dos interfaces) siempre
+  se aceptan, porque pueden tener un subtipo común. Con una clase `final`,
+  `String` incluido, vale sólo la conformidad. No se sigue la regla de
+  Java 17 que usa sealed/permits para probar que dos tipos son disjuntos.
+  Los errores propios van sobre `instanceof`. `instanceOf` está en
+  `LOGROS_HABILITADOS`. Casos: `semIIInstanceOfCorrecto01`–`04` y
+  `semIIInstanceOfError01`–`15`.
 
 Correcciones posteriores al cierre (code review, 2026-10-24):
 
@@ -326,7 +346,7 @@ arma sus nodos, pero el chequeo reporta `ERR_NO_SOPORTADO` (spec 0003, D11):
 - *Minilambdas*, *Ternarios*, *Variables Locales Clásicas
   Controladas*, *Atributos Inicializados*, *Métodos Genéricos E4* y
   *Genericidad Avanzada* (diamante).
-- *Instanceof* y *Super!*: la gramática todavía no los tiene.
+- *Super!*: la gramática todavía no lo tiene.
 - *Visibilidad chequeada*: la visibilidad se ignora, el parser no la
   guarda.
 - *Todos los caminos llevan al retorno* y *Floats y coerción*: además hay
@@ -1004,7 +1024,6 @@ extender la gramática:
 
 | Logro | Nodo reservado | Hereda de |
 |---|---|---|
-| Instanceof | `NodoExpInstanceof` (`ladoIzq`, `operador` = `instanceof`, tipo destino) | `NodoExpCompuesta` |
 | Super! (acceso / llamada) | `NodoSuper` | `NodoPrimario` |
 | Super! (`super(...)` en constructor) | `NodoLlamadaSuperConstructor` | `NodoSentencia` |
 | Floats y Coerción | `NodoLiteralFloat` (el léxico ya produce `LIT_FLOAT`) | `NodoLiteral` |
@@ -1035,7 +1054,7 @@ NodoExpresion (abstracta)
     ├── NodoExpTernaria             condicion, ladoIzq, ladoDer, operador
     ├── NodoExpUnaria               operador, ladoDer           ⚠5
     ├── NodoExpPostfija             ladoIzq, operador           ⚠5
-    ├── NodoExpInstanceof           [pendiente]
+    ├── NodoExpInstanceof           ladoIzq, operador, tipoDestino
     └── NodoOperando (abstracta)
         ├── NodoLiteral (abstracta)                             ⚠4
         │   ├── NodoLiteralEntero

@@ -26,7 +26,7 @@ Es el contrato de la spec 0003 (D7): todos los casos con error lo cumplen. El c�
 | `new` de una genérica sin argumento | nombre de la clase | `ERR_TIPO_SIN_ARGUMENTO` (de la Etapa 3) |
 | `new` sin constructor de esa aridad | nombre de la clase | `ERR_CONSTRUCTOR_NO_ENCONTRADO` |
 | Miembro sobre un primitivo o un `T` sin instanciar | el nombre del miembro | `ERR_RECEPTOR_SIN_MIEMBROS` |
-| Operador con tipos incorrectos u operando void (incluye `++`/`--` sobre algo que no es `int`) | el operador | `ERR_OPERADOR_INCOMPATIBLE` |
+| Operador con tipos incorrectos u operando void (incluye `++`/`--` sobre algo que no es `int`, y un `instanceof` con operando primitivo o tipos sin relación) | el operador | `ERR_OPERADOR_INCOMPATIBLE` |
 | Condición no boolean | `if` / `while` / `for` | `ERR_CONDICION_NO_BOOLEAN` |
 | Return incorrecto (incluye retorno no conformante) | `return` | `ERR_RETORNO_INCORRECTO` |
 | `this` en contexto estático | `this` | `ERR_THIS_EN_ESTATICO` |
@@ -41,6 +41,7 @@ Es el contrato de la spec 0003 (D7): todos los casos con error lo cumplen. El c�
 | Actualización del for que no es una asignación (logro For) | `for` | `ERR_FOR_ACTUALIZACION` |
 | Expresión del for-each que no conforma con `MiniIterable` (arreglos incluidos; logro For) | `for` | `ERR_FOREACH_NO_ITERABLE` |
 | Elemento del for-each que no conforma con el tipo de la variable (logro For) | `for` | `ERR_FOREACH_TIPO_INCOMPATIBLE` |
+| Destino genérico de `instanceof`, con argumento o raw (logro Instanceof) | `instanceof` | `ERR_INSTANCEOF_GENERICO` |
 | Construcción de un logro no implementado | ver la spec 0003, D11 | `ERR_NO_SOPORTADO` |
 
 Una local cuyo `var` falló (inicializador con error, `null` o `void`) queda declarada sin tipo: usarla corta la sentencia sin reportar nada más, así un solo error no se repite en cada uso (`semIIMultiErrorError03`).

@@ -1106,7 +1106,14 @@ una `IOException` del `SourceManager` se re-lanza envuelta en
 
 <ExpresionCompuesta> ::= <ExpresionBasica> <ExpresionCompuestaResto> <TernarioOpcional>
 
-<ExpresionCompuestaResto> ::= <OperadorBinario> <ExpresionBasica> <ExpresionCompuestaResto> | ϵ
+# Logro Instanceof (Etapa 4): instanceof es otro eslabón de la cadena sin
+# precedencia, con un tipo a la derecha en vez de una <ExpresionBasica>.
+# Es un terminal nuevo, ajeno a FIRST(<OperadorBinario>) y al FOLLOW de
+# <ExpresionCompuestaResto>, así que no agrega conflictos. <TipoReferencia>
+# deja afuera a idGen y a los arreglos; un "<" después del idClase se toma
+# como argumento genérico (lo rechaza el semántico).
+<ExpresionCompuestaResto> ::= <OperadorBinario> <ExpresionBasica> <ExpresionCompuestaResto>
+                           |  instanceof <TipoReferencia> <ExpresionCompuestaResto> | ϵ
 
 <OperadorBinario> ::= || | && | == | != | < | > | <= | >= | + | - | * | / | %
 
