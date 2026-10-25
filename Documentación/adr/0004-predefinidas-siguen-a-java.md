@@ -10,6 +10,11 @@ completar esos huecos como lo hace Java:
   `new Object()` y `new String()` son válidos. `System` no tiene ningún
   constructor (en Java es privado), y `new System()` es un error en Etapa 4.
 
+`MiniIterable<T>` (logro *For*) también es predefinida, pero su forma
+(`void start(); T next(); boolean hasNext();`) la fija el logro, no Java.
+Tiene las mismas reglas de redeclaración y de control de declaraciones que
+las otras tres.
+
 ## Opciones consideradas
 
 - **Lectura literal del enunciado**: si no prohíbe extenderlas, se pueden

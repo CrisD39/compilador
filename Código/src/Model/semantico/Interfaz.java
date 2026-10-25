@@ -55,11 +55,22 @@ public class Interfaz implements Chequeable, EntidadDeclarada, OrigenParametroTi
     // distintos (ver unirInstanciacion()). No tienen entrada en
     // 'instanciacion'.
     private final Set<OrigenParametroTipo> ancestrosEnConflicto = new HashSet<>();
+    // MiniIterable (logro For): mismo rol que Clase.predefinida.
+    private boolean predefinida = false;
 
     public Interfaz(Token nombre, TablaSimbolos tablaSimbolos) {
         this.nombre = nombre;
         this.tablaSimbolos = tablaSimbolos;
         this.herencias = new LinkedHashSet<>();
+    }
+
+    public void setPredefinida(boolean predefinida) {
+        this.predefinida = predefinida;
+    }
+
+    @Override
+    public boolean isPredefinida() {
+        return predefinida;
     }
 
     public void setSealed(boolean sealed) {

@@ -44,6 +44,7 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
         this.predefinida = predefinida;
     }
 
+    @Override
     public boolean isPredefinida() {
         return predefinida;
     }

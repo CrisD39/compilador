@@ -26,4 +26,8 @@ public interface EntidadDeclarada {
     // hereda (ver Clase/Interfaz). Lo compone TablaSimbolos.instanciacionDe()
     // con el argumento del receptor (spec 0003, D10).
     Map<OrigenParametroTipo, Tipo> getInstanciacion();
+
+    // Object, String, System o MiniIterable (ADR 0004): la registra la tabla,
+    // no el programa (ver TablaSimbolos.registrarPredefinidas()).
+    boolean isPredefinida();
 }

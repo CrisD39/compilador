@@ -44,8 +44,8 @@ public class TablaSimbolos {
         registrarPredefinidas();
     }
 
-    // Tipos predefinidos (Parte I §7, ADR 0004): Object, String y System
-    // están en la tabla ANTES de analizar el programa, así que se pueden
+    // Tipos predefinidos (Parte I §7, ADR 0004): Object, String, System y
+    // MiniIterable están en la tabla ANTES de analizar el programa, así que se pueden
     // usar como tipos sin declararlos. Se registran primero para que el
     // LinkedHashMap los recorra primero en consolidar() (los hijos
     // implícitos de Object lo necesitan consolidado). Tokens sintéticos en
@@ -77,6 +77,29 @@ public class TablaSimbolos {
         agregarPrintPredefinido(system, "printCln", "c", TokenType.PR_CHAR, "char");
         agregarPrintPredefinido(system, "printIln", "i", TokenType.PR_INT, "int");
         system.agregarMetodo(metodoPredefinido("printSln", true, null, parametroPredefinido("s", tipoClase("String"))));
+
+        registrarMiniIterable();
+    }
+
+    // interface MiniIterable<T> { void start(); T next(); boolean hasNext(); }
+    // Logro For: el for-each sólo recorre lo que conforma con MiniIterable<T>
+    // (NodoForEach). La forma la fija el logro, no Java; la misma está como
+    // referencia en MiniIterable.java, y si cambia una hay que cambiar la
+    // otra. Va después de Object porque consolidar() recorre en orden de
+    // inserción y la interfaz hereda los métodos de instancia de Object.
+    // El T de next() se crea ya resuelto (origen = la interfaz): las
+    // predefinidas no pasan por estaBienDeclarado(), que es donde se resuelve,
+    // y sin origen ni el contrato de quien la implementa ni la vista del
+    // for-each podrían reemplazarlo por el argumento.
+    private void registrarMiniIterable() {
+        Interfaz miniIterable = new Interfaz(new Token(TokenType.ID_CLASE, "MiniIterable", 0), this);
+        miniIterable.setPredefinida(true);
+        Token parametroTipo = new Token(TokenType.ID_GEN, "T", 0);
+        miniIterable.setParametrosTipo(new ArrayList<>(List.of(parametroTipo)));
+        miniIterable.agregarMetodo(metodoPredefinido("start", false, null));
+        miniIterable.agregarMetodo(metodoPredefinido("next", false, Tipo.parametroDeTipo(parametroTipo, miniIterable)));
+        miniIterable.agregarMetodo(metodoPredefinido("hasNext", false, tipoPrimitivo(TokenType.PR_BOOLEAN, "boolean")));
+        clases.put(miniIterable.getName(), miniIterable);
     }
 
     // static void <nombre>(<primitivo> <param>) -- forma de los print* de System.
@@ -116,6 +139,11 @@ public class TablaSimbolos {
     // no lo saca de la tabla (ver insertarClase()).
     public Clase getObject() {
         return (Clase) clases.get("Object");
+    }
+
+    // Igual que getObject(): redeclarar MiniIterable no la saca de la tabla.
+    public Interfaz getMiniIterable() {
+        return (Interfaz) clases.get("MiniIterable");
     }
 
     public void agregarError(ErrorSemantico error) {
@@ -280,11 +308,11 @@ public class TablaSimbolos {
                 entidad.getInstanciacion(), (OrigenParametroTipo) entidad, receptor.getArgumento());
     }
 
-    // Object, String o System (ADR 0004), que tienen reglas propias: no se
-    // descartan si el programa las redeclara y no pasan por el control de
-    // declaraciones.
+    // Object, String, System o MiniIterable (ADR 0004), que tienen reglas
+    // propias: no se descartan si el programa las redeclara y no pasan por el
+    // control de declaraciones.
     private static boolean esPredefinida(EntidadDeclarada entidad) {
-        return entidad instanceof Clase && ((Clase) entidad).isPredefinida();
+        return entidad != null && entidad.isPredefinida();
     }
     // Parchean el placeholder dejado por crearMetodo() (Estrategia A de
     // transición, ver "Estrategia de construcción" en analizador-semantico.md)

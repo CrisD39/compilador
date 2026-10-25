@@ -10,6 +10,16 @@ Esta guía explica cómo incorporar, ejecutar y ampliar los testers de JUnit ent
 > - `TesterConErroresSem2` es más estricto que el de la cátedra: toma la etiqueta `[Error:...]` de la primera línea (sea `//` o `///`) y exige que sea la **primera** etiqueta de la salida, no sólo que aparezca. Así detecta errores previos fuera de orden o en cascada.
 > - Además, `TesterLogrosSem2` corre los casos de `semantico2/logros/<logro>/` de los logros listados en `LOGROS_HABILITADOS`; en los casos con error, las etiquetas `[Error:...]` de la salida tienen que ser exactamente las `///[...]` de las primeras líneas, en el mismo orden (ni de más ni de menos).
 > - Se corren con `./test.sh` (todos los testers) o `./test.sh sem2` (sólo Sem2), desde `Código/`.
+> - Hoy `LOGROS_HABILITADOS` tiene `multiDeteccionErrores`, `postfijos` y `for` (clásico y for-each).
+> - Para correr sólo `TesterLogrosSem2`, desde `Código/` (en bash; en fish, la asignación es `set CP "..."` y la sustitución `(find ...)`, sin `$`):
+>
+>   ```bash
+>   ./build.sh
+>   CP="out/classes:lib/junit-4.13.2.jar:lib/hamcrest-core-1.3.jar"
+>   rm -rf out/test-classes
+>   javac -nowarn -cp "$CP" -d out/test-classes $(find src/test -name "*.java")
+>   java -cp "$CP:out/test-classes" org.junit.runner.JUnitCore test.java.TesterLogrosSem2
+>   ```
 
 Los testers invocan el método `main` del compilador con un archivo fuente como único argumento y verifican el resultado informado por `System.out`.
 

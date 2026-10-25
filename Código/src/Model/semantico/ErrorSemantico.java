@@ -114,6 +114,9 @@ public final class ErrorSemantico {
             case "ERR_FOR_INICIALIZACION" ->
                     "la inicialización del " + x + " tiene que ser una asignación o una declaración var";
             case "ERR_FOR_ACTUALIZACION" -> "la actualización del " + x + " tiene que ser una asignación";
+            case "ERR_FOREACH_NO_ITERABLE" -> "la expresión del " + x + " no conforma con MiniIterable";
+            case "ERR_FOREACH_TIPO_INCOMPATIBLE" ->
+                    "los elementos que recorre el " + x + " no conforman con el tipo de su variable";
             case "ERR_RETORNO_INCORRECTO" -> "el " + x + " no corresponde con el tipo de retorno de la unidad";
             // Lo usan los nodos de logro (D11), que todavía no se chequean.
             case "ERR_NO_SOPORTADO" -> "la construcción en " + x + " todavía no se soporta";

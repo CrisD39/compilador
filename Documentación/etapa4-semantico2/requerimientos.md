@@ -25,7 +25,7 @@ cuerpo debe estar formado por una única expresión, sin llaves. No se
 permite la captura de variables locales o parámetros externos, ni el uso
 de this dentro de una Lambda.
 
-### For
+### For - Chequeado
 El compilador permite estructuras de repetición for y for de iteradores
 controlando su uso correcto. A diferencia de Java el de iteradores
 requiere la estructura conforme con `MiniIterable<T>`, una interfaz
@@ -99,7 +99,7 @@ errores que tenga el programa fuente en una corrida. Como mínimo se
 espera que el compilador pueda continuar con el análisis de la próxima
 sentencia
 
-### Atributos Inicializados – Chequeado
+### Atributos Inicializados
 
 El compilador controla que los atributos inicializados son
 correctamente tipados (los controles son los mismos que en Java)
@@ -282,8 +282,27 @@ La spec 0003 está cerrada. Quedó implementado:
   boolean y la actualización es una asignación (`i++` es
   `ERR_FOR_ACTUALIZACION`). Las cláusulas vacías valen (`for (;;)`). Los
   errores propios del for van sobre `for`. El parser admite `var` en la
-  inicialización. `for` está en `LOGROS_HABILITADOS`. El for-each (con
-  `MiniIterable<T>`) sigue pendiente y da `ERR_NO_SOPORTADO`.
+  inicialización. `for` está en `LOGROS_HABILITADOS`. Casos:
+  `semIIForCorrecto01`–`04` y `semIIForError01`–`09`.
+- **Logro *For*, for-each** (2026-10-25). Con esto el logro *For* queda
+  completo. `MiniIterable<T>` es una interfaz
+  predefinida (`void start(); T next(); boolean hasNext();`), registrada en
+  `TablaSimbolos.registrarMiniIterable()` junto a Object, String y System
+  (ADR 0004). `MiniIterable.java` en `Model.semantico` sólo documenta su
+  forma. Un programa la implementa o la extiende como cualquier interfaz
+  (con el control de contrato de la Etapa 3), y redeclararla es
+  `ERR_CLASE_DUPLICADA`. `NodoForEach` chequea, en este orden: el tipo de la
+  variable (mismas reglas y códigos que en el resto del cuerpo, raw
+  incluido), el ocultamiento (`ERR_LOCAL_DUPLICADA` sobre el nombre) y la
+  expresión. Después mira el tipo de la expresión como `MiniIterable` con
+  `vistaComoAncestro()`. Si no lo es (un arreglo tampoco, a diferencia de
+  Java), da `ERR_FOREACH_NO_ITERABLE`. Si el argumento que ve no conforma
+  con el tipo de la variable, da `ERR_FOREACH_TIPO_INCOMPATIBLE`. Los dos van
+  sobre `for`. La variable no se ve en la expresión, y vive en un scope
+  propio que sólo cubre el cuerpo. El for-each con `var` no se admite (lo
+  rechaza el parser). Como la conformidad es la de D9, un `MiniIterable<T>`
+  se recorre como `T` pero no como `Object` (`semIIForError17`). Casos:
+  `semIIForCorrecto05`–`09` y `semIIForError10`–`27`.
 
 Correcciones posteriores al cierre (code review, 2026-10-24):
 
@@ -304,7 +323,7 @@ Correcciones posteriores al cierre (code review, 2026-10-24):
 Siguen pendientes, cada uno para una spec propia. El parser ya los acepta y
 arma sus nodos, pero el chequeo reporta `ERR_NO_SOPORTADO` (spec 0003, D11):
 
-- *Minilambdas*, *For* (sólo el for-each), *Ternarios*, *Variables Locales Clásicas
+- *Minilambdas*, *Ternarios*, *Variables Locales Clásicas
   Controladas*, *Atributos Inicializados*, *Métodos Genéricos E4* y
   *Genericidad Avanzada* (diamante).
 - *Instanceof* y *Super!*: la gramática todavía no los tiene.
