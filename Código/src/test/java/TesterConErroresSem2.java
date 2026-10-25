@@ -4,6 +4,8 @@ import View.ModuloPrincipalET4;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.hamcrest.CoreMatchers;
 import org.junit.After;
@@ -23,6 +25,7 @@ public class TesterConErroresSem2 {
     private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
     private final PrintStream originalOut = System.out;
     private static final String testFilesDirectoryPath = "resources/semantico2/conErrores/";
+    private static final Pattern etiquetaDeError = Pattern.compile("\\[Error:[^\\]]*\\]");
     private boolean fullCompilerOuputPrintingInEachTest = true;
      
     @Before
@@ -69,10 +72,20 @@ public class TesterConErroresSem2 {
             System.out.println(outContent.toString());
         }
 
-        assertThat("No se encontro el codigo: " + errorCode,  outContent.toString(), CoreMatchers.containsString(errorCode));
+        // La etiqueta esperada tiene que ser la PRIMERA de la salida, no sólo
+        // aparecer: con Multi-detección, un error previo fuera de orden o en
+        // cascada (spec 0003) pasaría con containsString.
+        assertThat("La primera etiqueta de la salida no es la esperada",
+                primeraEtiqueta(outContent.toString()), CoreMatchers.is(errorCode));
     }
 
+    private static String primeraEtiqueta(String texto) {
+        Matcher m = etiquetaDeError.matcher(texto);
+        return m.find() ? m.group() : null;
+    }
 
+    // Se toma la etiqueta con la expresión regular y no con un corte fijo de
+    // caracteres, porque los casos de la cátedra la escriben con "//" y no "///".
     String getErrorCode(String testCaseFilePath)  {
         String lineWithTheCode = null;
         try {
@@ -81,8 +94,7 @@ public class TesterConErroresSem2 {
             e.printStackTrace();
         }
 
-        String errorCode = lineWithTheCode.substring(3);
-        return errorCode;
+        return primeraEtiqueta(lineWithTheCode);
     }
 
 

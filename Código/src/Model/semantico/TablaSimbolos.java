@@ -122,6 +122,15 @@ public class TablaSimbolos {
         errores.add(error);
     }
 
+    // Lo que hace quien atrapa una ExcepcionSemantica (NodoBloque, el
+    // inicializador de atributo): la agrega como error, salvo que sea en
+    // cascada de un error ya reportado.
+    public void registrarError(ExcepcionSemantica e) {
+        if (!e.esEnCascada()) {
+            agregarError(e.comoError());
+        }
+    }
+
     public List<ErrorSemantico> getErrores() {
         return errores;
     }

@@ -3,7 +3,6 @@ package Model.semantico;
 import Model.lexico.Token;
 
 import java.util.*;
-import java.util.function.Function;
 
 public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo {
     private Token nombre;
@@ -478,50 +477,62 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
     }
 
     // Tercera pasada (spec 0003, D4): chequea los cuerpos de los miembros
-    // PROPIOS, en orden atributos inicializados, constructores y métodos.
-    // Los heredados son los mismos objetos del padre (consolidarConPadre()),
-    // y chequearlos acá repetiría sus errores con la clase actual
-    // equivocada. Cada unidad setea su campo de unidad actual y deja los
-    // otros dos en null. Un cuerpo o inicializador null (todavía sin AST, o
-    // el constructor por defecto) no tiene nada que chequear.
-    // atributos y metodos son HashMap (su orden no es el del fuente), así
-    // que cada grupo se ordena por línea: con Multi-detección los errores
-    // salen en el orden en que aparecen en el programa.
+    // PROPIOS: atributos inicializados, constructores y métodos. Los
+    // heredados son los mismos objetos del padre (consolidarConPadre()), y
+    // chequearlos acá repetiría sus errores con la clase actual equivocada.
+    // Cada unidad setea su campo de unidad actual y deja los otros dos en
+    // null. Un cuerpo o inicializador null (todavía sin AST, o el constructor
+    // por defecto) no tiene nada que chequear.
+    // Las unidades de los tres tipos van en una sola lista ordenada por la
+    // línea de su nombre (atributos y metodos son HashMap, su orden no es el
+    // del fuente): con Multi-detección los errores salen en el orden en que
+    // aparecen en el programa, aunque un constructor esté después de un
+    // método (semIIMultiErrorError02). Ordenar cada tipo por separado no
+    // alcanza.
     // El inicializador no pasa por un NodoBloque, así que atrapa su propio
     // error: un atributo mal inicializado no corta el resto de la clase.
     public void chequearSentencias(TablaSimbolos tabla) {
-        for (Atributo atributo : enOrdenDeLinea(atributos.values(), a -> a.getNombre())) {
+        List<UnidadAChequear> unidades = new ArrayList<>();
+        for (Atributo atributo : atributos.values()) {
             if (atributo.getClaseDeclarante() != this || atributo.getInicializador() == null) {
                 continue;
             }
-            tabla.setUnidadActual(null, null, atributo);
-            try {
-                atributo.chequearInicializador(tabla);
-            } catch (ExcepcionSemantica e) {
-                tabla.agregarError(e.comoError());
-            }
+            unidades.add(new UnidadAChequear(atributo.getNombre(), () -> {
+                tabla.setUnidadActual(null, null, atributo);
+                try {
+                    atributo.chequearInicializador(tabla);
+                } catch (ExcepcionSemantica e) {
+                    tabla.registrarError(e);
+                }
+            }));
         }
         for (Constructor constructor : constructores) {
             if (constructor.getClaseDeclarante() != this || constructor.getCuerpo() == null) {
                 continue;
             }
-            tabla.setUnidadActual(null, constructor, null);
-            constructor.getCuerpo().chequear(tabla);
+            unidades.add(new UnidadAChequear(constructor.getNombre(), () -> {
+                tabla.setUnidadActual(null, constructor, null);
+                constructor.getCuerpo().chequear(tabla);
+            }));
         }
-        for (Metodo metodo : enOrdenDeLinea(metodos.values(), m -> m.getNombre())) {
+        for (Metodo metodo : metodos.values()) {
             if (metodo.getMiClase() != this || metodo.getCuerpo() == null) {
                 continue;
             }
-            tabla.setUnidadActual(metodo, null, null);
-            metodo.getCuerpo().chequear(tabla);
+            unidades.add(new UnidadAChequear(metodo.getNombre(), () -> {
+                tabla.setUnidadActual(metodo, null, null);
+                metodo.getCuerpo().chequear(tabla);
+            }));
+        }
+        unidades.sort(Comparator.comparingInt(u -> u.nombre().getLinea()));
+        for (UnidadAChequear unidad : unidades) {
+            unidad.chequeo().run();
         }
     }
 
-    private static <M> List<M> enOrdenDeLinea(Collection<M> miembros, Function<M, Token> nombre) {
-        List<M> ordenados = new ArrayList<>(miembros);
-        ordenados.sort(Comparator.comparingInt(m -> nombre.apply(m).getLinea()));
-        return ordenados;
-    }
+    // Un miembro propio con algo que chequear: el nombre da la línea para
+    // ordenar.
+    private record UnidadAChequear(Token nombre, Runnable chequeo) {}
 
     // 'permits' solo se puebla si la clase es sealed (ver permitidosSealed()
     // en el parser), así que alcanza con iterar 'permitidos' sin guardia

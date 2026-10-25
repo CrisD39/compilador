@@ -26,7 +26,7 @@ Numerar continuando el último número existente de la carpeta (`ls` antes de cr
 
 ## Formato de un caso
 
-Primera línea = etiqueta esperada precedida de `///`. El tester de errores verifica que esa etiqueta aparezca en la salida.
+Primera línea = etiqueta esperada precedida de `///`. El tester de errores verifica que esa etiqueta aparezca en la salida; en Sem2 (`TesterConErroresSem2`) tiene que ser la **primera** etiqueta de la salida.
 
 - Éxito: `///[SinErrores]`
 - Léxico / sintáctico / semántico: `///[Error:<lexema>|<línea>]` (formato único de la cátedra; en el semántico el lexema es el nombre de la entidad que dispara el error, ver la tabla de lexemas en `Documentación/etapa3-semantico/casos-de-prueba.md`)

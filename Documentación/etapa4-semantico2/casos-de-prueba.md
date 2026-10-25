@@ -9,11 +9,11 @@ Casos de `Código/resources/semantico2/{conErrores,sinErrores}/` para el funcion
 
 ## Convención de lexema en `[Error:<lexema>|<línea>]`
 
-Es el contrato de la spec 0003 (D7): los 171 casos con error lo cumplen. El código `ERR_*` sólo elige la descripción (`ErrorSemantico.getDescripcion()`) y nunca se imprime en la etiqueta.
+Es el contrato de la spec 0003 (D7): todos los casos con error lo cumplen. El código `ERR_*` sólo elige la descripción (`ErrorSemantico.getDescripcion()`) y nunca se imprime en la etiqueta.
 
 | Error | Lexema | Código `ERR_*` |
 |---|---|---|
-| Variable no declarada (incluye `var x = x;` y el uso de una local cuyo `var` falló) | el nombre | `ERR_VAR_NO_DECLARADA` |
+| Variable no declarada (incluye `var x = x;`) | el nombre | `ERR_VAR_NO_DECLARADA` |
 | Atributo implícito desde un método estático | el nombre | `ERR_ATRIBUTO_EN_ESTATICO` |
 | `e.x` inexistente en el tipo estático de `e` (incluye `length` sobre `Object`) | el nombre del atributo | `ERR_ATRIBUTO_NO_ENCONTRADO` |
 | Asignación incompatible | `=` | `ERR_ASIGNACION_INCOMPATIBLE` |
@@ -38,6 +38,8 @@ Es el contrato de la spec 0003 (D7): los 171 casos con error lo cumplen. El cód
 | `var` con `null` o `void` | nombre de la local | `ERR_VAR_SIN_TIPO` |
 | `var` como cuerpo directo de if/else/while | `var` | `ERR_DECLARACION_COMO_CUERPO` |
 | Construcción de un logro no implementado | ver la spec 0003, D11 | `ERR_NO_SOPORTADO` |
+
+Una local cuyo `var` falló (inicializador con error, `null` o `void`) queda declarada sin tipo: usarla corta la sentencia sin reportar nada más, así un solo error no se repite en cada uso (`semIIMultiErrorError03`).
 
 Extiende la de los casos de referencia (no declarada → nombre; asignación → `=`; parámetros → nombre del método; local repetida → nombre). Un caso nuevo tiene que seguir esta tabla; si una regla nueva necesita otro token, se agrega una fila.
 
@@ -217,6 +219,7 @@ Extiende la de los casos de referencia (no declarada → nombre; asignación →
 | `semIIError169` | 10.2 | `toString` | no se permiten invocar metodos sobre un receptor de tipo parametrico T |
 | `semIIError170` | 10.1 | `dato` | no se permiten acceder atributos sobre un receptor de tipo parametrico T |
 | `semIIError171` | 10.2 | `procesar` | argumento incompatible en llamada a metodo estatico calificado |
+| `semIIError172` | D11 | `A1` | El diamante también en la creación de un arreglo (`new A1<>[2]`): logro no soportado. |
 
 ### Sin errores
 

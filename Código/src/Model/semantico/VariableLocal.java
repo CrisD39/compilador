@@ -13,6 +13,17 @@ public class VariableLocal implements Variable {
         this.tipo = tipo;
     }
 
+    // Una local cuyo var falló (inicializador con error, null o void): el
+    // nombre queda declarado, pero sin tipo. Usarla corta la sentencia sin
+    // otro error (NodoAccesoVar, ExcepcionSemantica.enCascada()).
+    public static VariableLocal sinTipo(Token nombre) {
+        return new VariableLocal(nombre, null);
+    }
+
+    public boolean esSinTipo() {
+        return tipo == null;
+    }
+
     @Override
     public Token getNombre() {
         return nombre;

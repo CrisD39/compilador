@@ -30,7 +30,7 @@ public class NodoBloque extends NodoSentencia {
                 try {
                     sentencia.chequear(tabla);
                 } catch (ExcepcionSemantica e) {
-                    tabla.agregarError(e.comoError());
+                    tabla.registrarError(e);
                 }
             }
         } finally {

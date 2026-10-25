@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.hamcrest.CoreMatchers;
 import org.junit.After;
@@ -25,14 +27,17 @@ import static org.hamcrest.MatcherAssert.assertThat;
 // para los logros ya implementados (spec 0003, "Testing Decisions"). Una spec
 // de logro nueva sólo agrega el nombre a LOGROS_HABILITADOS.
 // A diferencia de TesterConErroresSem2, un caso con error puede esperar
-// varios errores: cada línea inicial "///[...]" es una etiqueta y tienen que
-// aparecer todas (logro Multi-detección).
+// varios errores: cada línea inicial "///[...]" es una etiqueta, y las
+// etiquetas [Error:...] de la salida tienen que ser exactamente ésas y en
+// ese orden (logro Multi-detección: todos los errores, en el orden del
+// programa, y ninguno en cascada).
 @RunWith(Parameterized.class)
 public class TesterLogrosSem2 {
 
     private static final String[] LOGROS_HABILITADOS = {"multiDeteccionErrores", "postfijos"};
     private static final String directorioLogros = "resources/semantico2/logros/";
     private static final String msgExito = "[SinErrores]";
+    private static final Pattern etiquetaDeError = Pattern.compile("\\[Error:[^\\]]*\\]");
 
     private static final ModuloPrincipalET4 init = null;
 
@@ -91,18 +96,24 @@ public class TesterLogrosSem2 {
             List<String> etiquetas = etiquetasEsperadas(path);
             assertThat("El caso no declara ninguna etiqueta ///[...]: " + path,
                     etiquetas.isEmpty(), CoreMatchers.is(false));
-            for (String etiqueta : etiquetas) {
-                assertThat("No se encontro el codigo: " + etiqueta + " en " + path,
-                        outContent.toString(), CoreMatchers.containsString(etiqueta));
-            }
+            assertThat("Etiquetas incorrectas en " + path,
+                    etiquetasDeLaSalida(outContent.toString()), CoreMatchers.is(etiquetas));
         } else {
             assertThat("Mensaje Incorrecto en: " + path,
                     outContent.toString(), CoreMatchers.containsString(msgExito));
         }
     }
 
-    // Las líneas iniciales que empiezan con "///", sin ese prefijo (mismo
-    // corte de 3 caracteres que TesterConErroresSem2).
+    private static List<String> etiquetasDeLaSalida(String salida) {
+        List<String> etiquetas = new ArrayList<>();
+        Matcher m = etiquetaDeError.matcher(salida);
+        while (m.find()) {
+            etiquetas.add(m.group());
+        }
+        return etiquetas;
+    }
+
+    // Las líneas iniciales que empiezan con "///", sin ese prefijo.
     private static List<String> etiquetasEsperadas(String path) {
         List<String> etiquetas = new ArrayList<>();
         try (BufferedReader lector = new BufferedReader(new FileReader(path))) {

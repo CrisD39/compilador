@@ -1628,11 +1628,11 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     private NodoPrimario restoNew(Token tokenNew) {
         if (actualEn(PRIMEROS_TIPO_PRIMITIVO)) {
             Tipo tipoBase = new Tipo(tipoPrimitivo());
-            return dimensionesNew(tokenNew, tipoBase);
+            return dimensionesNew(tokenNew, tipoBase, false);
         } else if (actualEs(TokenType.ID_GEN)) {
             Tipo tipoBase = new Tipo(tokenActual);
             match(TokenType.ID_GEN);
-            return dimensionesNew(tokenNew, tipoBase);
+            return dimensionesNew(tokenNew, tipoBase, false);
         } else if (actualEs(TokenType.ID_CLASE)) {
             Token idClase = tokenActual;
             match(TokenType.ID_CLASE);
@@ -1646,9 +1646,11 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     }
 
     // <RestoNewIdClase> ::= <DimensionesNew> | <ArgsActuales>
+    // El diamante también llega a la forma de arreglo: si no, new C<>[3]
+    // quedaría como un new C[3] válido y se aceptaría en silencio.
     private NodoPrimario restoNewIdClase(Token tokenNew, Tipo tipo, boolean esDiamante) {
         if (actualEs(TokenType.CORCHETE_A)) {
-            return dimensionesNew(tokenNew, tipo);
+            return dimensionesNew(tokenNew, tipo, esDiamante);
         } else if (actualEs(TokenType.PAR_A)) {
             return new NodoCreacionObjeto(tipo, esDiamante, argsActuales());
         } else {
@@ -1668,10 +1670,10 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     }
 
     // <DimensionesNew> ::= [ <TrasCorcheteNew>
-    private NodoPrimario dimensionesNew(Token tokenNew, Tipo tipoBase) {
+    private NodoPrimario dimensionesNew(Token tokenNew, Tipo tipoBase, boolean esDiamante) {
         Token corchete = tokenActual;
         match(TokenType.CORCHETE_A);
-        return trasCorcheteNew(tokenNew, tipoBase, corchete);
+        return trasCorcheteNew(tokenNew, tipoBase, corchete, esDiamante);
     }
 
     // <TrasCorcheteNew> ::= ] <MasCorchetesVaciosNew> <InicializadorArreglo>
@@ -1681,7 +1683,7 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     // mezclar tamaño e inicializador, igual que en Java. Cualquier otra cosa:
     // sigue la forma de tamaño de siempre, sin cambios. Cada forma tiene su
     // nodo (⚠11).
-    private NodoPrimario trasCorcheteNew(Token tokenNew, Tipo tipoBase, Token corchete) {
+    private NodoPrimario trasCorcheteNew(Token tokenNew, Tipo tipoBase, Token corchete, boolean esDiamante) {
         if (actualEs(TokenType.CORCHETE_C)) {
             match(TokenType.CORCHETE_C);
             int dimensiones = 1 + masCorchetesVaciosNew();
@@ -1693,7 +1695,7 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
             tamanios.add(expresion());
             match(TokenType.CORCHETE_C);
             dimensionesConTamanioOpc(corchetes, tamanios);
-            return new NodoCreacionArregloConTamanio(tipoBase, corchetes, tamanios);
+            return new NodoCreacionArregloConTamanio(tipoBase, esDiamante, corchetes, tamanios);
         }
     }
 

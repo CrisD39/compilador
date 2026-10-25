@@ -11,11 +11,29 @@ import Model.lexico.Token;
 public class ExcepcionSemantica extends RuntimeException {
     private final Token token;
     private final String codigo;
+    private final boolean enCascada;
 
     public ExcepcionSemantica(Token token, String codigo) {
+        this(token, codigo, false);
+    }
+
+    private ExcepcionSemantica(Token token, String codigo, boolean enCascada) {
         super(codigo + " (" + token.getLexema() + ")");
         this.token = token;
         this.codigo = codigo;
+        this.enCascada = enCascada;
+    }
+
+    // Corta una sentencia que usa una local cuyo var no tuvo tipo
+    // (VariableLocal.sinTipo()). Ese error ya se reportó en el var: esta
+    // excepción no agrega otro (TablaSimbolos.registrarError()), así un var
+    // que falla no arrastra un "no declarada" por cada uso posterior.
+    public static ExcepcionSemantica enCascada(Token token) {
+        return new ExcepcionSemantica(token, "ERR_EN_CASCADA", true);
+    }
+
+    public boolean esEnCascada() {
+        return enCascada;
     }
 
     // Lo lanzan los nodos de logro que todavía no se chequean (spec 0003,

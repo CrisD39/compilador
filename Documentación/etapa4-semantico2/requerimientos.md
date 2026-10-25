@@ -266,9 +266,8 @@ spec:
 
 La spec 0003 está cerrada. Quedó implementado:
 
-- **Lo base de §9–§12.** Los 138 casos de `resources/semantico2/` (34 sin
-  error y 104 con error) pasan con `ModuloPrincipalET4`, que es el main del
-  jar. La tercera pasada es `TablaSimbolos.chequearSentencias()`, y sólo
+- **Lo base de §9–§12.** Todos los casos de `resources/semantico2/{sinErrores,conErrores}`
+  pasan con `ModuloPrincipalET4`, que es el main del jar. La tercera pasada es `TablaSimbolos.chequearSentencias()`, y sólo
   corre si no hubo errores léxicos, sintácticos ni de declaraciones.
   `ModuloPrincipalET3` no cambió: sobre los casos de `semantico/` da la
   misma salida que ET4.
@@ -276,6 +275,22 @@ La spec 0003 está cerrada. Quedó implementado:
   Sentencias* (cada sentencia se chequea aparte, y un error no corta las
   siguientes ni las de otros métodos) y *Postfijos*. Los dos están en
   `LOGROS_HABILITADOS` de `TesterLogrosSem2`.
+
+Correcciones posteriores al cierre (code review, 2026-10-24):
+
+- `new C<>[n]` se aceptaba en silencio: el parser perdía la marca de
+  diamante en la forma de arreglo. Ahora da `ERR_NO_SOPORTADO` sobre el
+  nombre de la clase, como `new C<>()` (`semIIError172`).
+- Con Multi-detección los errores salían agrupados por tipo de miembro
+  (inicializadores, constructores, métodos) y no en el orden del programa.
+  `Clase.chequearSentencias` ahora ordena todas las unidades juntas por
+  línea (`semIIMultiErrorError02`).
+- Una local cuyo `var` fallaba no se registraba (lo que la spec 0003 dejó
+  fuera de alcance), y cada uso posterior sumaba un "no declarada" falso.
+  Ahora queda declarada sin tipo y sus usos cortan la sentencia sin otro
+  error (`semIIMultiErrorError03`).
+- `TesterLogrosSem2` exige que las etiquetas de la salida sean exactamente
+  las esperadas y en orden; antes sólo controlaba que aparecieran.
 
 Siguen pendientes, cada uno para una spec propia. El parser ya los acepta y
 arma sus nodos, pero el chequeo reporta `ERR_NO_SOPORTADO` (spec 0003, D11):
