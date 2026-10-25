@@ -9,7 +9,7 @@ import Model.semantico.TablaSimbolos;
 public abstract class NodoSentencia {
     public abstract void chequear(TablaSimbolos tabla);
 
-    // Cuerpo de if, else o while (§12.3): una declaración local no puede ir
+    // Cuerpo de if, else, while o for (§12.3, ⚠9): una declaración local no puede ir
     // sola, sin bloque, porque su alcance no tendría sentido. Fuera de esa
     // regla, un cuerpo sin llaves no abre scope: no puede declarar nada. La
     // regla es base y vale también para una local clásica (int x = 1;), antes

@@ -275,6 +275,15 @@ La spec 0003 está cerrada. Quedó implementado:
   Sentencias* (cada sentencia se chequea aparte, y un error no corta las
   siguientes ni las de otros métodos) y *Postfijos*. Los dos están en
   `LOGROS_HABILITADOS` de `TesterLogrosSem2`.
+- **Logro *For*, for clásico** (2026-10-25, después del cierre). `NodoFor`
+  abre un scope propio para la variable de la inicialización. Siguiendo el
+  logro al pie de la letra, la inicialización es una asignación o un `var`
+  (`int i = 0` y una llamada son `ERR_FOR_INICIALIZACION`), la condición es
+  boolean y la actualización es una asignación (`i++` es
+  `ERR_FOR_ACTUALIZACION`). Las cláusulas vacías valen (`for (;;)`). Los
+  errores propios del for van sobre `for`. El parser admite `var` en la
+  inicialización. `for` está en `LOGROS_HABILITADOS`. El for-each (con
+  `MiniIterable<T>`) sigue pendiente y da `ERR_NO_SOPORTADO`.
 
 Correcciones posteriores al cierre (code review, 2026-10-24):
 
@@ -295,7 +304,7 @@ Correcciones posteriores al cierre (code review, 2026-10-24):
 Siguen pendientes, cada uno para una spec propia. El parser ya los acepta y
 arma sus nodos, pero el chequeo reporta `ERR_NO_SOPORTADO` (spec 0003, D11):
 
-- *Minilambdas*, *For*, *Ternarios*, *Variables Locales Clásicas
+- *Minilambdas*, *For* (sólo el for-each), *Ternarios*, *Variables Locales Clásicas
   Controladas*, *Atributos Inicializados*, *Métodos Genéricos E4* y
   *Genericidad Avanzada* (diamante).
 - *Instanceof* y *Super!*: la gramática todavía no los tiene.

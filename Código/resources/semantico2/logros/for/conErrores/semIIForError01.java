@@ -1,5 +1,6 @@
-///[Error:5|8]
-// La condicion del for estandar debe ser booleana, aca es un int.
+///[Error:for|9]
+// La condicion del for estandar debe ser booleana, aca es un int
+// (ERR_CONDICION_NO_BOOLEAN, sobre el for como en if/while).
 
 class A1 {
     int a1;

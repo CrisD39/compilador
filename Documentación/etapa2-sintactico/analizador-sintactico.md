@@ -1071,6 +1071,7 @@ una `IOException` del `SourceManager` se re-lanza envuelta en
 <For> ::= for ( <ClausulasFor> ) <Sentencia>
 
 <ClausulasFor> ::= ; <CondFor> ; <ActFor>
+<ClausulasFor> ::= <VarLocal> ; <CondFor> ; <ActFor>
 <ClausulasFor> ::= <TipoPrimitivo> idMetVar <TrasIdForTipo>
 <ClausulasFor> ::= idGen idMetVar <TrasIdForTipo>
 <ClausulasFor> ::= idClase <TrasIdClaseFor>
@@ -1539,6 +1540,7 @@ más en cada punto, igual que en los casos anteriores:
 <For> ::= for ( <ClausulasFor> ) <Sentencia>
 
 <ClausulasFor> ::= ; <CondFor> ; <ActFor>                            # sin inicialización
+                 |  <VarLocal> ; <CondFor> ; <ActFor>                # init. es una declaración var
                  |  <TipoPrimitivo> idMetVar <TrasIdForTipo>
                  |  idGen idMetVar <TrasIdForTipo>
                  |  idClase <TrasIdClaseFor>
@@ -1554,7 +1556,7 @@ más en cada punto, igual que en los casos anteriores:
 <ActFor>  ::= <Expresion> | ϵ
 ```
 
-- `<ClausulasFor>`: FIRST disjuntos — `{ ; }` / `{ boolean, char, int }` /
+- `<ClausulasFor>`: FIRST disjuntos — `{ ; }` / `{ var }` / `{ boolean, char, int }` /
   `{ idGen }` / `{ idClase }` / resto de `FIRST(<Expresion>)` (sin `idClase`,
   que ya lo toma la rama anterior — mismo criterio que `<Sentencia>` con
   `<SentIdClase>`).
@@ -1573,6 +1575,9 @@ de implementar):
 - El **cuerpo es `<Sentencia>`**, no `<Bloque>`: admite tanto una sentencia
   simple sin llaves como un bloque, igual que `<If>`/`<While>` — no hay motivo
   para que `for` sea más estricto que esos dos.
+- El **for clásico admite `var`** en la inicialización (`<VarLocal> ;`), que
+  es la declaración que pide el logro For de la Etapa 4. Es una alternativa
+  más de `<ClausulasFor>` con FIRST `{ var }`, disjunto del resto.
 - El **for-each no admite `var`** (sólo tipo explícito) por ahora; se puede
   sumar después como una alternativa más de `<ClausulasFor>`
   (`var idMetVar : <Expresion>`) sin romper nada, porque `var` es palabra clave

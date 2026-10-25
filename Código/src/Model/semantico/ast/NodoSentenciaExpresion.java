@@ -17,6 +17,10 @@ public class NodoSentenciaExpresion extends NodoSentencia {
         this.puntoYComa = puntoYComa;
     }
 
+    public NodoExpresion getExpresion() {
+        return expresion;
+    }
+
     @Override
     public void chequear(TablaSimbolos tabla) {
         expresion.chequear(tabla);

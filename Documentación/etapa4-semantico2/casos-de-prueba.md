@@ -27,7 +27,7 @@ Es el contrato de la spec 0003 (D7): todos los casos con error lo cumplen. El c�
 | `new` sin constructor de esa aridad | nombre de la clase | `ERR_CONSTRUCTOR_NO_ENCONTRADO` |
 | Miembro sobre un primitivo o un `T` sin instanciar | el nombre del miembro | `ERR_RECEPTOR_SIN_MIEMBROS` |
 | Operador con tipos incorrectos u operando void (incluye `++`/`--` sobre algo que no es `int`) | el operador | `ERR_OPERADOR_INCOMPATIBLE` |
-| Condición no boolean | `if` / `while` | `ERR_CONDICION_NO_BOOLEAN` |
+| Condición no boolean | `if` / `while` / `for` | `ERR_CONDICION_NO_BOOLEAN` |
 | Return incorrecto (incluye retorno no conformante) | `return` | `ERR_RETORNO_INCORRECTO` |
 | `this` en contexto estático | `this` | `ERR_THIS_EN_ESTATICO` |
 | Uso de `T` en contexto estático | `T` | `ERR_PARAMETRO_TIPO_EN_ESTATICO` |
@@ -36,7 +36,9 @@ Es el contrato de la spec 0003 (D7): todos los casos con error lo cumplen. El c�
 | Expresión que no es sentencia válida | `;` | `ERR_SENTENCIA_INVALIDA` |
 | Local repetida, choca con un parámetro u oculta una local visible | nombre de la local | `ERR_LOCAL_DUPLICADA` |
 | `var` con `null` o `void` | nombre de la local | `ERR_VAR_SIN_TIPO` |
-| `var` como cuerpo directo de if/else/while | `var` | `ERR_DECLARACION_COMO_CUERPO` |
+| `var` como cuerpo directo de if/else/while/for | `var` | `ERR_DECLARACION_COMO_CUERPO` |
+| Inicialización del for que no es una asignación ni un `var` (logro For) | `for` | `ERR_FOR_INICIALIZACION` |
+| Actualización del for que no es una asignación (logro For) | `for` | `ERR_FOR_ACTUALIZACION` |
 | Construcción de un logro no implementado | ver la spec 0003, D11 | `ERR_NO_SOPORTADO` |
 
 Una local cuyo `var` falló (inicializador con error, `null` o `void`) queda declarada sin tipo: usarla corta la sentencia sin reportar nada más, así un solo error no se repite en cada uso (`semIIMultiErrorError03`).

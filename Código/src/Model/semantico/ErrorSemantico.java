@@ -108,8 +108,12 @@ public final class ErrorSemantico {
                     "la variable local " + x + " repite el nombre de otra local visible o de un parámetro";
             case "ERR_VAR_SIN_TIPO" -> "no se puede inferir el tipo de " + x + " a partir de null o de void";
             case "ERR_DECLARACION_COMO_CUERPO" ->
-                    "una declaración local no puede ser el cuerpo directo de if, else o while";
+                    "una declaración local no puede ser el cuerpo directo de if, else, while o for";
             case "ERR_CONDICION_NO_BOOLEAN" -> "la condición de " + x + " tiene que ser boolean";
+            // Logro For.
+            case "ERR_FOR_INICIALIZACION" ->
+                    "la inicialización del " + x + " tiene que ser una asignación o una declaración var";
+            case "ERR_FOR_ACTUALIZACION" -> "la actualización del " + x + " tiene que ser una asignación";
             case "ERR_RETORNO_INCORRECTO" -> "el " + x + " no corresponde con el tipo de retorno de la unidad";
             // Lo usan los nodos de logro (D11), que todavía no se chequean.
             case "ERR_NO_SOPORTADO" -> "la construcción en " + x + " todavía no se soporta";

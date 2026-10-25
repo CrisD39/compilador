@@ -1200,6 +1200,7 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     }
 
     // <ClausulasFor> ::= ; <CondFor> ; <ActFor>
+    //                 |  <VarLocal> ; <CondFor> ; <ActFor>
     //                 |  <TipoPrimitivo> idMetVar <TrasIdForTipo>
     //                 |  idGen idMetVar <TrasIdForTipo>
     //                 |  idClase <TrasIdClaseFor>
@@ -1209,11 +1210,18 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     // tipo (declaración clásica o for-each) o el resto de una llamada estática
     // (expresión de inicialización, p. ej. Fabrica.reset()); un token más lo
     // decide en trasIdClaseFor().
+    // La rama var es la declaración que pide el logro For para el for
+    // clásico; var no está en ningún otro FIRST, así que sigue LL(1). El
+    // for-each con var no se admite (sólo tipo explícito).
     // Devuelve un NodoFor o un NodoForEach todavía sin cuerpo.
     private NodoSentencia clausulasFor(Token tokenFor) {
         if (actualEs(TokenType.PUNTO_COMA)) {
             match(TokenType.PUNTO_COMA);
             return restoForClasico(tokenFor, null);
+        } else if (actualEs(TokenType.PR_VAR)) {
+            NodoVarLocal declaracion = varLocal();
+            matchCierre(TokenType.PUNTO_COMA);
+            return restoForClasico(tokenFor, declaracion);
         } else if (actualEn(PRIMEROS_TIPO_PRIMITIVO)) {
             Tipo tipo = new Tipo(tipoPrimitivo());
             Token nombre = tokenActual;
@@ -1232,7 +1240,7 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
         } else if (actualEn(PRIMEROS_EXPRESION)) {
             return restoForClasico(tokenFor, cerrarSentenciaExpresion(expresion()));
         } else {
-            error("\";\", un tipo o una expresión (inicialización del \"for\")");
+            error("\";\", var, un tipo o una expresión (inicialización del \"for\")");
             return null;
         }
     }
