@@ -32,7 +32,9 @@ public class NodoLlamadaEncadenada extends NodoEncadenado {
     // vale un estático (persona.consultar(2), semIICorrecto19). Un arreglo
     // sólo tiene los métodos de instancia de Object: toString() sí, el
     // estático debugPrint no, y clone() no existe (§11.8, semIIError74). Sus
-    // parámetros y su retorno se ven desde el receptor (D10).
+    // parámetros y su retorno se ven desde el receptor (D10). Un private sólo
+    // vale desde su clase y con un receptor de esa clase (logro Visibilidad
+    // chequeada).
     @Override
     public Tipo chequear(TablaSimbolos tabla, Tipo tipoIzquierdo) {
         EntidadDeclarada entidad = entidadDelReceptor(tabla, tipoIzquierdo, nombre);
@@ -40,6 +42,7 @@ public class NodoLlamadaEncadenada extends NodoEncadenado {
         if (metodo == null || (tipoIzquierdo.esArreglo() && metodo.isEstatico())) {
             throw new ExcepcionSemantica(nombre, "ERR_METODO_NO_ENCONTRADO");
         }
+        ChequeoVisibilidad.exigirAcceso(tabla, metodo.isPrivado(), metodo.getMiClase(), entidad, nombre);
         List<Tipo> tiposArgumentos = ChequeoLlamada.chequearArgumentos(tabla, argumentos);
         Tipo tipo = ChequeoLlamada.tipoDeLlamada(
                 tabla, metodo, tabla.instanciacionDe(tipoIzquierdo), nombre, tiposArgumentos);

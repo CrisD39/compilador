@@ -17,6 +17,11 @@ public class Metodo implements Chequeable, OrigenParametroTipo {
     private Tipo tipoRetorno; // null representa "void" ?? not sure
     private boolean estatico;
     private boolean esFinal;
+    // Logro Visibilidad chequeada: true si se declaró private. Sin
+    // modificador o con public es público, como los de interfaz y los
+    // predefinidos. Sólo lo mira el
+    // chequeo de cuerpos (ChequeoVisibilidad); la Etapa 3 lo ignora.
+    private boolean privado;
     private List<Parametro> parametros;
     // Clase que lo declaró (spec 0003, D4), la setea Clase.agregarMetodo().
     // consolidar() comparte este mismo objeto con las subclases, así que el
@@ -73,6 +78,14 @@ public class Metodo implements Chequeable, OrigenParametroTipo {
 
     public boolean isFinal() {
         return esFinal;
+    }
+
+    public boolean isPrivado() {
+        return privado;
+    }
+
+    public void setPrivado(boolean privado) {
+        this.privado = privado;
     }
 
     public List<Parametro> getParams() {

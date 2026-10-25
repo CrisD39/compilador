@@ -33,7 +33,8 @@ public class NodoLlamadaEstatica extends NodoPrimario {
     // (semIIError18). Los estáticos heredados ya están copiados en C
     // (A.debugPrint(3)). Una interfaz no tiene estáticos. La firma de un
     // estático no puede nombrar el T de su clase (ADR 0006), así que no hay
-    // nada que sustituir.
+    // nada que sustituir. Un private sólo vale desde C (logro Visibilidad
+    // chequeada).
     @Override
     public Tipo chequear(TablaSimbolos tabla) {
         EntidadDeclarada entidad = tabla.buscarClase(clase.getLexema());
@@ -44,6 +45,7 @@ public class NodoLlamadaEstatica extends NodoPrimario {
         if (metodo == null) {
             throw new ExcepcionSemantica(nombre, "ERR_METODO_NO_ENCONTRADO");
         }
+        ChequeoVisibilidad.exigirAcceso(tabla, metodo.isPrivado(), metodo.getMiClase(), entidad, nombre);
         if (!metodo.isEstatico()) {
             throw new ExcepcionSemantica(nombre, "ERR_METODO_NO_ESTATICO");
         }

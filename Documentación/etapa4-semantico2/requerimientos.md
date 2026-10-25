@@ -323,6 +323,26 @@ La spec 0003 está cerrada. Quedó implementado:
   Los errores propios van sobre `instanceof`. `instanceOf` está en
   `LOGROS_HABILITADOS`. Casos: `semIIInstanceOfCorrecto01`–`04` y
   `semIIInstanceOfError01`–`15`.
+- **Logro *Visibilidad chequeada*** (2026-10-25). El parser guarda
+  `private` en `Atributo`, `Metodo` y `Constructor` (`isPrivado()`). Sin
+  modificador o con `public` el miembro es público (Parte I §6.1), igual
+  que los métodos de interfaz, los predefinidos y el constructor por
+  defecto. Los seis accesos (`x`, `m()`, `e.x`, `e.m()`, `C.m()` y
+  `new C()`) llaman a `ChequeoVisibilidad.exigirAcceso()` apenas resuelven
+  el miembro, antes que static y argumentos. Un private sólo se usa desde
+  el código de su clase declarante y a través de un receptor de esa clase,
+  como en Java: desde una subclase, implícito o con `this`, es error, y
+  dentro de `A1` también lo es `b.x` con `b` de tipo `B2`
+  (`ERR_ACCESO_PRIVADO`, sobre el nombre del miembro o, en `new`, de la
+  clase). La Etapa 3 no cambia: los private se siguen copiando a las
+  subclases y cuentan en redefiniciones y contratos, así que un método
+  igual a uno private del padre se controla como redefinición, un private
+  puede cumplir un método de interfaz, y reducir la visibilidad al
+  redefinir no es error (en Java, las dos últimas sí lo son). Un
+  constructor private no molesta a una subclase, porque MiniJava no tiene
+  la llamada implícita a `super()` (Parte I §6.3). `visibilidadChequeada`
+  está en `LOGROS_HABILITADOS`. Casos: `semIIVisibilidadCorrecto01`–`04` y
+  `semIIVisibilidadError01`–`11`.
 
 Correcciones posteriores al cierre (code review, 2026-10-24):
 
@@ -347,8 +367,6 @@ arma sus nodos, pero el chequeo reporta `ERR_NO_SOPORTADO` (spec 0003, D11):
   Controladas*, *Atributos Inicializados*, *Métodos Genéricos E4* y
   *Genericidad Avanzada* (diamante).
 - *Super!*: la gramática todavía no lo tiene.
-- *Visibilidad chequeada*: la visibilidad se ignora, el parser no la
-  guarda.
 - *Todos los caminos llevan al retorno* y *Floats y coerción*: además hay
   que decidir qué pasa con los casos base que los contradicen
   (`semIICorrecto31`, `semIIError104`; `semIIError33`, `34`, `52`, `59`,

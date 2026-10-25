@@ -134,7 +134,9 @@ en "Gramática Expandida (Logros)" y ya está implementada:
 - **Forma**: `<Visibilidad> ::= public | private | ϵ` como prefijo opcional de
   todo `<Miembro>` (atributo, método y constructor). Omitirla = visibilidad
   implícita; qué visibilidad implica y si `private` es legal en cada contexto se
-  resuelve en la etapa semántica.
+  resuelve en la etapa semántica. En la Etapa 4 (logro *Visibilidad
+  chequeada*) omitirla equivale a `public`, y `visibilidad()` le pasa al
+  miembro sólo si era `private`.
 - **Efecto sobre el constructor**: deja de escribirse `public idClase (...)` con
   `public` obligatorio; pasa a `<Visibilidad> idClase <ArgsFormales> <Bloque>`
   (con `public`, `private` o nada).

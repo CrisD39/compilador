@@ -7,7 +7,7 @@ class A1 {
 
 class B2 {
     void m1() {
-        A1 a = new A1();
+        var a = new A1();
         a.x = 1;
     }
 }

@@ -117,6 +117,8 @@ public final class ErrorSemantico {
             case "ERR_FOREACH_NO_ITERABLE" -> "la expresión del " + x + " no conforma con MiniIterable";
             case "ERR_FOREACH_TIPO_INCOMPATIBLE" ->
                     "los elementos que recorre el " + x + " no conforman con el tipo de su variable";
+            // En new, x es el nombre de la clase, cuyo constructor es el private.
+            case "ERR_ACCESO_PRIVADO" -> "no se puede acceder a " + x + ": es private y sólo se usa dentro de su clase";
             case "ERR_INSTANCEOF_GENERICO" -> "el tipo a la derecha de " + x + " no puede ser genérico";
             case "ERR_RETORNO_INCORRECTO" -> "el " + x + " no corresponde con el tipo de retorno de la unidad";
             // Lo usan los nodos de logro (D11), que todavía no se chequean.

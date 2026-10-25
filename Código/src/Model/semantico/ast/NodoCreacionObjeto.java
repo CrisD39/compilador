@@ -40,6 +40,8 @@ public class NodoCreacionObjeto extends NodoPrimario {
     // genérica sin argumento es un tipo raw (ADR 0007, semIIError24) y una no
     // genérica no admite uno. Los parámetros del constructor se ven desde el
     // tipo creado: en new Caja<String>(5), T es String (D10, semIIError28).
+    // Un constructor private sólo vale dentro de su clase (logro Visibilidad
+    // chequeada); el por defecto es público.
     @Override
     public Tipo chequear(TablaSimbolos tabla) {
         Token nombre = tipo.getToken();
@@ -58,6 +60,7 @@ public class NodoCreacionObjeto extends NodoPrimario {
                 .filter(c -> c.getParams().size() == argumentos.size())
                 .findFirst()
                 .orElseThrow(() -> new ExcepcionSemantica(nombre, "ERR_CONSTRUCTOR_NO_ENCONTRADO"));
+        ChequeoVisibilidad.exigirAcceso(tabla, constructor.isPrivado(), clase, clase, nombre);
         List<Tipo> tiposArgumentos = ChequeoLlamada.chequearArgumentos(tabla, argumentos);
         ChequeoLlamada.exigirConformidad(
                 tabla, constructor.getParams(), tabla.instanciacionDe(creado), tiposArgumentos, nombre);

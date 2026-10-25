@@ -18,6 +18,10 @@ public class Constructor implements Chequeable{
     // null en el constructor por defecto y hasta que el parser enganche el
     // AST.
     private NodoBloque cuerpo;
+    // Logro Visibilidad chequeada: true si se declaró private. Sin
+    // modificador o con public es público, como el por defecto. Sólo lo mira el
+    // chequeo de cuerpos (ChequeoVisibilidad); la Etapa 3 lo ignora.
+    private boolean privado;
 
     public Constructor(Token nombre, List<Parametro> parametros){
         this.nombre = nombre;
@@ -38,6 +42,14 @@ public class Constructor implements Chequeable{
 
     public void setClaseDeclarante(Clase claseDeclarante) {
         this.claseDeclarante = claseDeclarante;
+    }
+
+    public boolean isPrivado() {
+        return privado;
+    }
+
+    public void setPrivado(boolean privado) {
+        this.privado = privado;
     }
 
     public NodoBloque getCuerpo() {

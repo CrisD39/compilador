@@ -28,7 +28,8 @@ public class NodoAccesoVar extends NodoPrimario {
     // heredado se ve desde la clase actual: en "Final extends
     // Intermedia<String>", el T dato de Base es String (semIICorrecto13, D10).
     // Una local cuyo var falló no tiene tipo para seguir: la sentencia se
-    // corta sin otro error (semIIMultiErrorError03).
+    // corta sin otro error (semIIMultiErrorError03). Un atributo private
+    // heredado no se ve desde la subclase (logro Visibilidad chequeada).
     @Override
     public Tipo chequear(TablaSimbolos tabla) {
         Variable variable = tabla.buscarVariable(nombre.getLexema());
@@ -37,6 +38,10 @@ public class NodoAccesoVar extends NodoPrimario {
         }
         if (variable instanceof VariableLocal local && local.esSinTipo()) {
             throw ExcepcionSemantica.enCascada(nombre);
+        }
+        if (variable instanceof Atributo atributo) {
+            ChequeoVisibilidad.exigirAcceso(tabla, atributo.isPrivado(), atributo.getClaseDeclarante(),
+                    tabla.getClaseActual(), nombre);
         }
         if (variable instanceof Atributo && tabla.enContextoEstatico()) {
             throw new ExcepcionSemantica(nombre, "ERR_ATRIBUTO_EN_ESTATICO");

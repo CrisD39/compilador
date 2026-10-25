@@ -489,9 +489,10 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     // colisionaban como si fueran el mismo método.
     // Devuelve el método para que quien lo crea le enganche el cuerpo al
     // terminar de parsear el <Bloque>.
-    private Metodo crearMetodo(Token nombre, boolean estatico, boolean esFinal) {
+    private Metodo crearMetodo(Token nombre, boolean estatico, boolean esFinal, boolean privado) {
         Metodo metodo = new Metodo(nombre, null, estatico, new ArrayList<>());
         metodo.setFinal(esFinal);
+        metodo.setPrivado(privado);
         tablaSimbolo.setMetodoActual(metodo);
         return metodo;
     }
@@ -584,20 +585,24 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
 
     // <Miembro> ::= <Visibilidad> <FinalOpcional> <CuerpoMiembro>
     private void miembro() {
-        visibilidad();
+        boolean privado = visibilidad();
         boolean esFinal = finalOpcional();
-        cuerpoMiembro(esFinal);
+        cuerpoMiembro(esFinal, privado);
     }
 
     // <Visibilidad> ::= public | private | ϵ
-    private void visibilidad() {
+    // Devuelve true sólo con private: sin modificador el miembro es público,
+    // igual que con public (logro Visibilidad chequeada).
+    private boolean visibilidad() {
         if (actualEs(TokenType.PR_PUBLIC)) {
             match(TokenType.PR_PUBLIC);
         } else if (actualEs(TokenType.PR_PRIVATE)) {
             match(TokenType.PR_PRIVATE);
+            return true;
         } else {
-            // ϵ — no hace nada
+            // ϵ — público
         }
+        return false;
     }
 
     // <FinalOpcional> ::= final | ϵ
@@ -624,23 +629,24 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     // punto donde se sabe si esto termina siendo un método (se guarda en el
     // Metodo real) o un atributo/constructor (no hay dónde guardarlo todavía:
     // 'final' ahí es error sintáctico, ver restoMiembro()/trasIdClaseMiembro()).
-    private void cuerpoMiembro(boolean esFinal) {
+    // privado viaja igual, desde <Visibilidad>, y sí vale para los tres.
+    private void cuerpoMiembro(boolean esFinal, boolean privado) {
         if (actualEs(TokenType.PR_STATIC)) {
             match(TokenType.PR_STATIC);
             List<Token> parametrosTipoMetodo = genericidadOpcional();
-            metodoConGenericidadPropia(true, esFinal, parametrosTipoMetodo);
+            metodoConGenericidadPropia(true, esFinal, privado, parametrosTipoMetodo);
         } else if (actualEs(TokenType.OP_MENOR)) {
             // Método de instancia con parámetro(s) de tipo propio(s):
             // <T> TipoMetodo idMetVar(...) {...}. Dispara directo con '<':
             // nunca puede terminar siendo atributo ni constructor, así que no
             // pasa por restoMiembro()/trasIdClaseMiembro().
             List<Token> parametrosTipoMetodo = genericidadOpcional();
-            metodoConGenericidadPropia(false, esFinal, parametrosTipoMetodo);
+            metodoConGenericidadPropia(false, esFinal, privado, parametrosTipoMetodo);
         } else if (actualEs(TokenType.PR_VOID)) {
             match(TokenType.PR_VOID);
             Token nombreMetodo = tokenActual;
             match(TokenType.ID_MET_VAR);
-            Metodo metodo = crearMetodo(nombreMetodo, false, esFinal);
+            Metodo metodo = crearMetodo(nombreMetodo, false, esFinal, privado);
             List<Parametro> params = argsFormales();
             tablaSimbolo.setParametrosAMetodoActual(params);
             tablaSimbolo.agregarMetodoActualAClaseActual();
@@ -650,18 +656,18 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
             int dimensiones = dimensionesOpcionales();
             Token nombreMiembro = tokenActual;
             match(TokenType.ID_MET_VAR);
-            restoMiembro(nombreMiembro, new Tipo(tipoTok, null, dimensiones), esFinal);
+            restoMiembro(nombreMiembro, new Tipo(tipoTok, null, dimensiones), esFinal, privado);
         } else if (actualEs(TokenType.ID_GEN)) {
             Token tipoTok = tokenActual;
             match(TokenType.ID_GEN);
             int dimensiones = dimensionesOpcionales();
             Token nombreMiembro = tokenActual;
             match(TokenType.ID_MET_VAR);
-            restoMiembro(nombreMiembro, new Tipo(tipoTok, null, dimensiones), esFinal);
+            restoMiembro(nombreMiembro, new Tipo(tipoTok, null, dimensiones), esFinal, privado);
         } else if (actualEs(TokenType.ID_CLASE)) {
             Token idClaseTok = tokenActual;
             match(TokenType.ID_CLASE);
-            trasIdClaseMiembro(idClaseTok, esFinal);
+            trasIdClaseMiembro(idClaseTok, esFinal, privado);
         } else {
             error("un miembro de clase (\"static\", \"void\", \"<\" o un tipo)");
         }
@@ -670,11 +676,12 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     // Cuerpo común a "static <GenericidadOpcional> <TipoMetodo> ..." y
     // "<GenericidadOpcional> <TipoMetodo> ..." (sin 'static') -- ambas ramas
     // solo difieren en 'estatico' y en si matchearon 'static' antes.
-    private void metodoConGenericidadPropia(boolean estatico, boolean esFinal, List<Token> parametrosTipoMetodo) {
+    private void metodoConGenericidadPropia(boolean estatico, boolean esFinal, boolean privado,
+                                            List<Token> parametrosTipoMetodo) {
         Tipo tipoRetorno = tipoMetodo();
         Token nombreMetodo = tokenActual;
         match(TokenType.ID_MET_VAR);
-        Metodo metodo = crearMetodo(nombreMetodo, estatico, esFinal);
+        Metodo metodo = crearMetodo(nombreMetodo, estatico, esFinal, privado);
         List<Parametro> params = argsFormales();
         tablaSimbolo.setTipoRetornoAMetodoActual(tipoRetorno);
         tablaSimbolo.setParametrosAMetodoActual(params);
@@ -689,7 +696,7 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     // cualquier otra cosa => era un atributo o método cuyo tipo es esa clase
     // (Foo bar; | Foo<X> bar; | Foo bar(...) {...}), con <TipoGenericoOpcional>
     // y <DimensionesOpcionales> anulables hasta idMetVar.
-    private void trasIdClaseMiembro(Token idClassToken, boolean esFinal) {
+    private void trasIdClaseMiembro(Token idClassToken, boolean esFinal, boolean privado) {
         if (actualEs(TokenType.PAR_A)) {
             // "(" pegado, es el constructor. 'final' no aplica a constructores
             // (no son métodos ni se redefinen) — igual que en atributo, error
@@ -700,6 +707,7 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
             }
             List<Parametro> params = argsFormales();
             Constructor constructor = new Constructor(idClassToken, params);
+            constructor.setPrivado(privado);
             constructor.setCuerpo(bloque());
             // D3: el nombre se controla al registrarlo, mientras se parsea
             // (Clase.agregarConstructor()); uno con otro nombre no se registra.
@@ -709,7 +717,7 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
             Tipo tipo = new Tipo(idClassToken, argumento, dimensionesOpcionales());
             Token nombreMiembro = tokenActual;
             match(TokenType.ID_MET_VAR);
-            restoMiembro(nombreMiembro, tipo, esFinal);
+            restoMiembro(nombreMiembro, tipo, esFinal, privado);
         }
     }
 
@@ -723,7 +731,7 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     // cuerpoMiembro()/trasIdClaseMiembro(): son el tipo y el idMetVar ya
     // consumidos antes de saber si es atributo o método — recién acá se
     // construye el objeto (Estrategia B, ver analizador-semantico.md).
-    private void restoMiembro(Token nombreMiembro, Tipo tipo, boolean esFinal) {
+    private void restoMiembro(Token nombreMiembro, Tipo tipo, boolean esFinal, boolean privado) {
         if (actualEs(TokenType.PUNTO_COMA)) {
             // 'final' no aplica a atributos (solo clase/interfaz/método, ver
             // Logro 1 en analizador-semantico.md) — error sintáctico en vez de
@@ -733,9 +741,11 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
                 return;
             }
             match(TokenType.PUNTO_COMA);
-            tablaSimbolo.getClaseActual().agregarAtributo(new Atributo(nombreMiembro, tipo));
+            Atributo atributo = new Atributo(nombreMiembro, tipo);
+            atributo.setPrivado(privado);
+            tablaSimbolo.getClaseActual().agregarAtributo(atributo);
         } else if (actualEs(TokenType.PAR_A)) {
-            Metodo metodo = crearMetodo(nombreMiembro, false, esFinal);
+            Metodo metodo = crearMetodo(nombreMiembro, false, esFinal, privado);
             List<Parametro> params = argsFormales();
             tablaSimbolo.setParametrosAMetodoActual(params);
             tablaSimbolo.setTipoRetornoAMetodoActual(tipo);
@@ -750,6 +760,7 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
             NodoExpresion inicializador = expresionCompuesta();
             matchCierre(TokenType.PUNTO_COMA);
             Atributo atributo = new Atributo(nombreMiembro, tipo);
+            atributo.setPrivado(privado);
             atributo.setInicializador(inicializador);
             tablaSimbolo.getClaseActual().agregarAtributo(atributo);
         } else {

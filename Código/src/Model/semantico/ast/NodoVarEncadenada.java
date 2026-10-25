@@ -31,7 +31,8 @@ public class NodoVarEncadenada extends NodoEncadenado {
     // §10.1: x se busca en el tipo estático del receptor (ver
     // entidadDelReceptor()), con los atributos heredados ya copiados por
     // consolidar(), y no en la clase del objeto (semIIError09). Una interfaz
-    // no tiene atributos. La visibilidad se ignora (D11). El único atributo
+    // no tiene atributos. Un private sólo vale desde su clase y con un
+    // receptor de esa clase (logro Visibilidad chequeada). El único atributo
     // de un arreglo es length, de tipo int (⚠10); otro nombre se busca en
     // Object, que no tiene atributos. Con tipo estático Object tampoco hay
     // length (semIIError73). El tipo del atributo se ve desde el receptor:
@@ -47,6 +48,7 @@ public class NodoVarEncadenada extends NodoEncadenado {
         if (atributo == null) {
             throw new ExcepcionSemantica(nombre, "ERR_ATRIBUTO_NO_ENCONTRADO");
         }
+        ChequeoVisibilidad.exigirAcceso(tabla, atributo.isPrivado(), atributo.getClaseDeclarante(), entidad, nombre);
         return chequearSiguiente(tabla, atributo.getTipo().sustituir(tabla.instanciacionDe(tipoIzquierdo)));
     }
 }

@@ -15,6 +15,10 @@ public class Atributo implements Chequeable, Variable {
     // Expresión de "= ..." (logro Atributos inicializados); null si se
     // declaró sin inicializador.
     private NodoExpresion inicializador;
+    // Logro Visibilidad chequeada: true si se declaró private. Sin
+    // modificador o con public es público (Parte I §6.1). Sólo lo mira el
+    // chequeo de cuerpos (ChequeoVisibilidad); la Etapa 3 lo ignora.
+    private boolean privado;
 
     public Atributo(Token nombre, Tipo tipo) {
         this.nombre = nombre;
@@ -37,6 +41,14 @@ public class Atributo implements Chequeable, Variable {
 
     public void setClaseDeclarante(Clase claseDeclarante) {
         this.claseDeclarante = claseDeclarante;
+    }
+
+    public boolean isPrivado() {
+        return privado;
+    }
+
+    public void setPrivado(boolean privado) {
+        this.privado = privado;
     }
 
     public NodoExpresion getInicializador() {
