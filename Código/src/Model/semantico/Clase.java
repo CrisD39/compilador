@@ -1,7 +1,6 @@
 package Model.semantico;
 
 import Model.lexico.Token;
-import Model.semantico.ast.Flujo;
 
 import java.util.*;
 
@@ -523,27 +522,13 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
             }
             unidades.add(new UnidadAChequear(metodo.getNombre(), () -> {
                 tabla.setUnidadActual(metodo, null, null);
-                exigirRetorno(metodo, tabla);
+                metodo.exigirRetorno(tabla);
                 metodo.getCuerpo().chequear(tabla);
             }));
         }
         unidades.sort(Comparator.comparingInt(u -> u.nombre().getLinea()));
         for (UnidadAChequear unidad : unidades) {
             unidad.chequeo().run();
-        }
-    }
-
-    // Logro Caminos de retorno (spec 0004, D4): un método no void cuyo cuerpo
-    // sale VIVO termina normalmente por algún camino, y le falta el retorno.
-    // Si sale RECUPERANDO, el final está en un tramo inalcanzable ya
-    // reportado, y no se reporta en cascada. Se calcula antes de chequear el
-    // cuerpo: el error va sobre el nombre, que está antes que los errores del
-    // cuerpo en el programa (semIIRetornoError18).
-    private static void exigirRetorno(Metodo metodo, TablaSimbolos tabla) {
-        if (metodo.getTipoRetorno() != null && metodo.getCuerpo().salida(Flujo.VIVO) == Flujo.VIVO) {
-            Token nombreMetodo = metodo.getNombre();
-            tabla.agregarError(new ErrorSemantico(
-                    "ERR_FALTA_RETORNO", nombreMetodo.getLinea(), nombreMetodo.getLexema()));
         }
     }
 

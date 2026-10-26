@@ -53,7 +53,7 @@ si el cuerpo sale vivo, calculada antes de chequear el cuerpo). ADR 0008.
 escritos en la carpeta del logro y, con el logro habilitado, dejaban
 `./test.sh` en rojo. Los que todavía fallan esperan en
 `logros/caminosRetornoSinCodigoMuerto/pendientes/{conErrores,sinErrores}/`,
-que `TesterLogrosSem2` no lee: Error 07–17 y 21 (ticket 02), Error 11 y
+que `TesterLogrosSem2` no lee: Error 07–10, 12–17 y 21 (ticket 02), Error 11 y
 Correcto 04 (ticket 03). Correcto 05, 06, 08 y 09 ya pasan y quedaron en su
 lugar. En los casos 19 y 20, la línea de la etiqueta `var` es por ahora un
 comentario, para no correr la numeración. `./test.sh`: Sem2 con 92 casos

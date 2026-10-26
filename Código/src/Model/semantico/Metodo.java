@@ -1,6 +1,7 @@
 package Model.semantico;
 
 import Model.lexico.Token;
+import Model.semantico.ast.Flujo;
 import Model.semantico.ast.NodoBloque;
 
 import java.util.ArrayList;
@@ -102,6 +103,19 @@ public class Metodo implements Chequeable, OrigenParametroTipo {
 
     public NodoBloque getCuerpo() {
         return cuerpo;
+    }
+
+    // Logro Caminos de retorno (spec 0004, D4): un método no void cuyo cuerpo
+    // sale VIVO termina normalmente por algún camino, y le falta el retorno.
+    // Si sale RECUPERANDO, el final está en un tramo inalcanzable ya
+    // reportado, y no se reporta en cascada. Clase.chequearSentencias lo
+    // llama antes de chequear el cuerpo: el error va sobre el nombre, que
+    // está antes que los errores del cuerpo en el programa
+    // (semIIRetornoError18).
+    public void exigirRetorno(TablaSimbolos tabla) {
+        if (tipoRetorno != null && cuerpo.salida(Flujo.VIVO) == Flujo.VIVO) {
+            tabla.agregarError(new ErrorSemantico("ERR_FALTA_RETORNO", nombre.getLinea(), nombre.getLexema()));
+        }
     }
 
     public void setCuerpo(NodoBloque cuerpo) {
