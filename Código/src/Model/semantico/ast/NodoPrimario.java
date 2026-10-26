@@ -34,8 +34,8 @@ public abstract class NodoPrimario extends NodoOperando {
         return false;
     }
 
-    // Le pasa al encadenado el tipo del primario; sin encadenado, ése es el
-    // tipo de toda la expresión.
+    // Le pasa al encadenado el tipo del primario; sin encadenado,
+    // ése es el tipo de toda la expresión.
     protected Tipo chequearEncadenado(TablaSimbolos tabla, Tipo tipoPrimario) {
         return encadenado != null ? encadenado.chequear(tabla, tipoPrimario) : tipoPrimario;
     }

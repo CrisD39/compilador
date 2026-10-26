@@ -25,6 +25,7 @@ public class NodoExpBinaria extends NodoExpCompuesta {
     public Tipo chequear(TablaSimbolos tabla) {
         Tipo izq = ladoIzq.chequear(tabla);
         Tipo der = ladoDer.chequear(tabla);
+        //Aca tengo que agreagar la coersión para los floats.
         return switch (operador.getTipo()) {
             case OP_MAS, OP_MENOS, OP_MULT, OP_DIV, OP_MOD -> exigir(izq, der, Tipo.INT, Tipo.INT);
             case OP_MENOR, OP_MAYOR, OP_MENOR_IGUAL, OP_MAYOR_IGUAL -> exigir(izq, der, Tipo.INT, Tipo.BOOLEAN);

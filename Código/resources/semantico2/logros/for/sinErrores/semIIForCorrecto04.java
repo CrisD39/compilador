@@ -14,6 +14,11 @@ class A1 {
     void m2() {
         for (var i = 0; ; i = i + 1)
             a1 = i;
+    }
+
+    // En su propio metodo: despues del for infinito de m2 seria inalcanzable
+    // (logro caminosRetornoSinCodigoMuerto).
+    void m3() {
         for (var i = 0; i < 3;) {
             i = i + 1;
         }

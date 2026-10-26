@@ -991,7 +991,7 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
             if (sentencia != null) {
                 bloque.agregarSentencia(sentencia);
             }
-            listaSentencias(bloque);
+            listaSentencias(bloque); //recursividad para argregar mas sentencias la bloque
         } else {
             // ϵ — no hace nada
         }

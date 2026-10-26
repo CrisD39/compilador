@@ -185,6 +185,34 @@ unidad o el inicializador de un atributo, junto con la clase que lo
 declara.
 _Evitar_: unidad actual (para incluir atributos)
 
+### Flujo de ejecución
+
+**Termina normalmente**:
+Una sentencia termina normalmente cuando la ejecución puede seguir con la
+sentencia que viene después. Un `return` nunca termina normalmente, y un
+bucle cuya condición es la constante `true` tampoco, porque MiniJava no
+tiene `break`.
+_Evitar_: completa, llega al final
+
+**Sentencia inalcanzable**:
+Sentencia a la que ninguna ejecución puede llegar. Por ejemplo, la que viene
+después, en el mismo bloque, de una sentencia que no termina normalmente, o
+el cuerpo de un bucle cuya condición es la constante `false`. Ver
+`adr/0008-caminos-de-retorno-reemplaza-base.md`.
+_Evitar_: código muerto (salvo al nombrar el logro)
+
+**Expresión constante**:
+Expresión cuyo valor se conoce sin ejecutar el programa: sólo literales
+`int`, `boolean`, `char` o `String`, operadores y paréntesis, como `true`,
+`!false` o `1 < 2`. `null` no es constante, y una división o un módulo por
+cero hacen que la expresión deje de serlo. MiniJava no tiene variables
+constantes, porque `final` no se aplica a atributos ni a locales.
+
+**Falta de retorno**:
+Método no void cuyo cuerpo termina normalmente, es decir, que tiene algún
+camino que llega al final sin pasar por un `return`.
+_Evitar_: retorno parcial
+
 ### Nombres
 
 **Nombre invalidado**:
