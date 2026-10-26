@@ -301,7 +301,7 @@ En `0004-caminos-de-retorno/tickets/`, uno por archivo.
 
 | # | Ticket | Bloqueado por | Estado |
 |---|---|---|---|
-| 01 | Falta de retorno | — | ready-for-agent |
+| 01 | Falta de retorno | — | hecho |
 | 02 | Sentencia inalcanzable | 01 | ready-for-agent |
 | 03 | Expresiones constantes completas | 02 | ready-for-agent |
 | 04 | Cierre | 03 | ready-for-agent |

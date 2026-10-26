@@ -121,6 +121,8 @@ public final class ErrorSemantico {
             case "ERR_ACCESO_PRIVADO" -> "no se puede acceder a " + x + ": es private y sólo se usa dentro de su clase";
             case "ERR_INSTANCEOF_GENERICO" -> "el tipo a la derecha de " + x + " no puede ser genérico";
             case "ERR_RETORNO_INCORRECTO" -> "el " + x + " no corresponde con el tipo de retorno de la unidad";
+            // Logro Caminos de retorno (spec 0004).
+            case "ERR_FALTA_RETORNO" -> "el método " + x + " no retorna un valor en todos sus caminos";
             // Lo usan los nodos de logro (D11), que todavía no se chequean.
             case "ERR_NO_SOPORTADO" -> "la construcción en " + x + " todavía no se soporta";
             default -> codigo + " (" + x + ")";

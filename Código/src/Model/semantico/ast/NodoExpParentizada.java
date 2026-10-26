@@ -23,6 +23,13 @@ public class NodoExpParentizada extends NodoPrimario {
         return false;
     }
 
+    // (true) es constante; con encadenado ((x).m()) ya no es la expresión de
+    // adentro.
+    @Override
+    public Object valorConstante() {
+        return encadenado == null ? expresion.valorConstante() : null;
+    }
+
     @Override
     public Tipo chequear(TablaSimbolos tabla) {
         return chequearEncadenado(tabla, expresion.chequear(tabla));

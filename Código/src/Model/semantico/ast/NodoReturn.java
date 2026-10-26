@@ -20,8 +20,8 @@ public class NodoReturn extends NodoSentencia {
     // return con expresión void también es error, semIIError103). En un
     // método no void la expresión es obligatoria y conforma con el retorno
     // declarado. La expresión se chequea primero, así un error adentro de
-    // ella se reporta en su propio token. No se exige retorno en todos los
-    // caminos (semIICorrecto31; logro aparte).
+    // ella se reporta en su propio token. El retorno en todos los caminos lo
+    // controla el logro Caminos de retorno (salida(), ADR 0008).
     @Override
     public void chequear(TablaSimbolos tabla) {
         Tipo tipo = expresion != null ? expresion.chequear(tabla) : null;
@@ -31,5 +31,10 @@ public class NodoReturn extends NodoSentencia {
         if (!correcto) {
             throw new ExcepcionSemantica(tokenReturn, "ERR_RETORNO_INCORRECTO");
         }
+    }
+
+    @Override
+    public Flujo salida(Flujo entrada) {
+        return Flujo.MUERTO;
     }
 }

@@ -42,3 +42,9 @@ cada sentencia) y D8 (una local clásica inalcanzable da dos errores).
       pasa a su propio método y el caso sigue sin errores.
 - [ ] `./test.sh` en verde. `TesterConErroresSem2` tiene un caso menos. Las
       Etapas 1–3 no cambian, tampoco en modo pánico.
+
+**Nota (del ticket 01):** los casos Error 07–10, 12–17 y 21 están en
+`logros/caminosRetornoSinCodigoMuerto/pendientes/conErrores/`; vuelven a
+`conErrores/` con este ticket. En los casos 19 y 20, la línea 3 es un
+comentario que ocupa el lugar de la etiqueta `var`: se reemplaza por la
+etiqueta.

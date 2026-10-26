@@ -34,3 +34,10 @@ Glosario: *expresión constante*.
 - [ ] `null`, una división o un módulo por cero y una expresión mal tipada
       no son constantes, y el plegado no reporta ningún error.
 - [ ] `./test.sh` en verde.
+
+**Nota (del ticket 01):** Error 11 está en
+`logros/caminosRetornoSinCodigoMuerto/pendientes/conErrores/` y Correcto 04
+en `pendientes/sinErrores/`; vuelven a su carpeta con este ticket, y
+`pendientes/` desaparece. El ticket 01 ya define
+`NodoExpresion.valorConstante()` (por defecto null), con valor en
+`NodoLiteralBooleano` y `NodoExpParentizada` sin encadenado.

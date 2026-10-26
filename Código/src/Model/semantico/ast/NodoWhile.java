@@ -25,4 +25,12 @@ public class NodoWhile extends NodoSentencia {
         }
         chequearCuerpo(cuerpo, tabla);
     }
+
+    // D3: while (true) no termina normalmente; con cualquier otra condición
+    // el cuerpo puede no ejecutarse nunca. Sin break, el cuerpo no cambia la
+    // salida del bucle.
+    @Override
+    public Flujo salida(Flujo entrada) {
+        return esConstanteTrue(condicion) ? Flujo.MUERTO : entrada;
+    }
 }

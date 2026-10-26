@@ -27,4 +27,11 @@ public abstract class NodoExpresion implements ValorArreglo {
     public boolean esSentenciaValida() {
         return esLlamable();
     }
+
+    // Valor de la expresión si es una expresión constante (JLS §15.29, spec
+    // 0004, D6), o null si no lo es. Por defecto no lo es. Sólo lo usa el
+    // análisis de flujo, para las condiciones de while y for.
+    public Object valorConstante() {
+        return null;
+    }
 }

@@ -8,4 +8,9 @@ public class NodoLiteralBooleano extends NodoLiteral {
     public NodoLiteralBooleano(Token literal) {
         super(literal, Tipo.BOOLEAN);
     }
+
+    @Override
+    public Object valorConstante() {
+        return Boolean.valueOf(literal.getLexema().equals("true"));
+    }
 }

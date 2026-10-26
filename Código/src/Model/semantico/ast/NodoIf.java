@@ -32,4 +32,13 @@ public class NodoIf extends NodoSentencia {
             chequearCuerpo(sino, tabla);
         }
     }
+
+    // D3: sin else, el camino con la condición falsa sale como entró. El if
+    // no se trata como constante, ni con if (true), igual que en Java
+    // (JLS §14.22): if (true) return 1; puede terminar normalmente.
+    @Override
+    public Flujo salida(Flujo entrada) {
+        Flujo salidaEntonces = entonces.salida(entrada);
+        return sino == null ? entrada.unir(salidaEntonces) : salidaEntonces.unir(sino.salida(entrada));
+    }
 }

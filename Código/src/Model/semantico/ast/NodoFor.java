@@ -61,6 +61,12 @@ public class NodoFor extends NodoSentencia {
         }
     }
 
+    // D3: igual que NodoWhile; for (;;) cuenta como while (true).
+    @Override
+    public Flujo salida(Flujo entrada) {
+        return esConstanteTrue(condicion) ? Flujo.MUERTO : entrada;
+    }
+
     // Una asignación como sentencia llega envuelta en NodoSentenciaExpresion.
     private static boolean esAsignacion(NodoSentencia sentencia) {
         return sentencia instanceof NodoSentenciaExpresion sentenciaExpresion

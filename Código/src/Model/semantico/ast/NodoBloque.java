@@ -37,4 +37,20 @@ public class NodoBloque extends NodoSentencia {
             tabla.cerrarBloque();
         }
     }
+
+    // D3: las sentencias se recorren en orden. Una que llega con el estado
+    // MUERTO es inalcanzable, y se sigue desde ella con RECUPERANDO, así el
+    // resto del tramo muerto no vuelve a contar. Un bloque vacío sale como
+    // entró.
+    @Override
+    public Flujo salida(Flujo entrada) {
+        Flujo estado = entrada;
+        for (NodoSentencia sentencia : sentencias) {
+            if (estado == Flujo.MUERTO) {
+                estado = Flujo.RECUPERANDO;
+            }
+            estado = sentencia.salida(estado);
+        }
+        return estado;
+    }
 }

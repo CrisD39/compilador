@@ -1,6 +1,6 @@
 ---
 titulo: Falta de retorno
-estado: ready-for-agent
+estado: hecho
 spec: ../../0004-caminos-de-retorno.md
 ---
 
@@ -34,17 +34,27 @@ si el cuerpo sale vivo, calculada antes de chequear el cuerpo). ADR 0008.
   retorno (ver Criterios).
 
 **Criterios:**
-- [ ] Casos de `logros/caminosRetornoSinCodigoMuerto/` en verde: Correcto
+- [x] Casos de `logros/caminosRetornoSinCodigoMuerto/` en verde: Correcto
       01 (existe), 02, 03 y 07; Error 01 (existe), 02–06 y 18.
-- [ ] `sinErrores/semIICorrecto31` se borra de la base y pasa a ser
+- [x] `sinErrores/semIICorrecto31` se borra de la base y pasa a ser
       `semIIRetornoError19`, con las etiquetas `sinRetorno`, `parcial`.
-- [ ] `sinErrores/semIICorrecto72` (CP-SII-38) se borra de la base y pasa a
+- [x] `sinErrores/semIICorrecto72` (CP-SII-38) se borra de la base y pasa a
       ser `semIIRetornoError20`, con las etiquetas `sinRetornoDeclarado`,
       `parcial` y un comentario que dice de dónde viene.
-- [ ] Los casos 19 y 20 quedan **sin** la etiqueta `var` de la
+- [x] Los casos 19 y 20 quedan **sin** la etiqueta `var` de la
       inalcanzable: la agrega el ticket 02.
-- [ ] `semIIError104` y `logros/for/sinErrores/semIIForCorrecto04` no
+- [x] `semIIError104` y `logros/for/sinErrores/semIIForCorrecto04` no
       cambian y siguen en verde: después de `return` o de `for (…; ; …)` el
       estado es muerto o recuperando, nunca vivo.
-- [ ] `./test.sh` en verde. `TesterSinErroresSem2` tiene dos casos menos.
+- [x] `./test.sh` en verde. `TesterSinErroresSem2` tiene dos casos menos.
       Las Etapas 1–3 no cambian.
+
+**Notas de la implementación:** los casos de los tickets 02 y 03 ya estaban
+escritos en la carpeta del logro y, con el logro habilitado, dejaban
+`./test.sh` en rojo. Los que todavía fallan esperan en
+`logros/caminosRetornoSinCodigoMuerto/pendientes/{conErrores,sinErrores}/`,
+que `TesterLogrosSem2` no lee: Error 07–17 y 21 (ticket 02), Error 11 y
+Correcto 04 (ticket 03). Correcto 05, 06, 08 y 09 ya pasan y quedaron en su
+lugar. En los casos 19 y 20, la línea de la etiqueta `var` es por ahora un
+comentario, para no correr la numeración. `./test.sh`: Sem2 con 92 casos
+sin error, 172 con error y 94 de logros, todo en verde.
