@@ -974,9 +974,11 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     // Cada método de cuerpos devuelve su nodo a quien lo contiene (estrategia
     // B, un único punto de attach): el NodoBloque de un método o constructor
     // lo engancha quien llamó a bloque(), y uno anidado queda como sentencia.
+    // La "{" se guarda porque es el lexema del bloque inalcanzable.
     private NodoBloque bloque() {
+        Token llave = tokenActual;
         match(TokenType.LLAVE_A);
-        NodoBloque nodo = new NodoBloque();
+        NodoBloque nodo = new NodoBloque(llave);
         listaSentencias(nodo);
         match(TokenType.LLAVE_C);
         return nodo;
@@ -1010,8 +1012,9 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     //             |  <Expresion> ;                       (sólo si el lookahead ∈ FIRST(<Expresion>) \ { idClase })
     private NodoSentencia sentencia() {
         if (actualEs(TokenType.PUNTO_COMA)) {
+            Token puntoYComa = tokenActual;
             match(TokenType.PUNTO_COMA);
-            return new NodoSentenciaVacia();
+            return new NodoSentenciaVacia(puntoYComa);
         } else if (actualEs(TokenType.PR_VAR)) {
             NodoVarLocal nodo = varLocal();
             matchCierre(TokenType.PUNTO_COMA);

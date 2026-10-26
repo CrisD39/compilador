@@ -41,3 +41,7 @@ en `pendientes/sinErrores/`; vuelven a su carpeta con este ticket, y
 `pendientes/` desaparece. El ticket 01 ya define
 `NodoExpresion.valorConstante()` (por defecto null), con valor en
 `NodoLiteralBooleano` y `NodoExpParentizada` sin encadenado.
+
+**Nota (del ticket 02):** el flujo ya pregunta por `valorConstante()` en los
+dos sentidos (`NodoSentencia.esConstanteTrue` y `esConstanteFalse`), así que
+alcanza con darle valor a más nodos de expresión.

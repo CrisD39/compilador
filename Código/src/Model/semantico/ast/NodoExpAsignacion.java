@@ -19,6 +19,11 @@ public class NodoExpAsignacion extends NodoExpresion {
         this.ladoDer = ladoDer;
     }
 
+    @Override
+    public Token primerToken() {
+        return ladoIzq.primerToken();
+    }
+
     // §11.9: el destino tiene que ser asignable (una variable, .x o [i], sin
     // paréntesis) y el valor conformar con su tipo. Los dos errores van
     // sobre el "=". El resultado tiene el tipo del destino: if (a1 = 3) es

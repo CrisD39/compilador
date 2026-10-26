@@ -16,6 +16,11 @@ public abstract class NodoLiteral extends NodoOperando {
     }
 
     @Override
+    public Token primerToken() {
+        return literal;
+    }
+
+    @Override
     public Tipo chequear(TablaSimbolos tabla) {
         return tipo;
     }

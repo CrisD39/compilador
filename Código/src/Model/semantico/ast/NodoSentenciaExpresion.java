@@ -21,6 +21,13 @@ public class NodoSentenciaExpresion extends NodoSentencia {
         return expresion;
     }
 
+    // Spec 0004, D7: se deriva de la expresión, bajando por la izquierda
+    // (x = 2; da x, new A1().m(); da A1, (x).m(); da x).
+    @Override
+    public Token primerToken() {
+        return expresion.primerToken();
+    }
+
     @Override
     public void chequear(TablaSimbolos tabla) {
         expresion.chequear(tabla);

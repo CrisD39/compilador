@@ -17,11 +17,21 @@ public class NodoWhile extends NodoSentencia {
         this.cuerpo = cuerpo;
     }
 
-    // §12.4: misma regla de condición y de cuerpo que NodoIf.
+    @Override
+    public Token primerToken() {
+        return tokenWhile;
+    }
+
+    // §12.4: misma regla de condición y de cuerpo que NodoIf. Con la
+    // constante false el cuerpo es inalcanzable (spec 0004, D5): se reporta
+    // después de la condición, que va antes en el programa, y se chequea igual.
     @Override
     public void chequear(TablaSimbolos tabla) {
         if (!Tipo.BOOLEAN.equals(condicion.chequear(tabla))) {
             throw new ExcepcionSemantica(tokenWhile, "ERR_CONDICION_NO_BOOLEAN");
+        }
+        if (esConstanteFalse(condicion)) {
+            reportarInalcanzable(cuerpo, tabla);
         }
         chequearCuerpo(cuerpo, tabla);
     }

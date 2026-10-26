@@ -25,6 +25,11 @@ public class NodoExpInstanceof extends NodoExpCompuesta {
         this.tipoDestino = tipoDestino;
     }
 
+    @Override
+    public Token primerToken() {
+        return ladoIzq.primerToken();
+    }
+
     // Como en Java, la prueba tiene que poder dar true alguna vez: el
     // operando es una referencia (null incluido) y los dos tipos están
     // relacionados. No hace falta que sean iguales, para eso existe el

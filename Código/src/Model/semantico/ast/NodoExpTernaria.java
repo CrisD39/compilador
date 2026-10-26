@@ -22,6 +22,11 @@ public class NodoExpTernaria extends NodoExpCompuesta {
     }
 
     @Override
+    public Token primerToken() {
+        return condicion.primerToken();
+    }
+
+    @Override
     public Tipo chequear(TablaSimbolos tabla) {
         throw ExcepcionSemantica.noSoportado(operador);
     }

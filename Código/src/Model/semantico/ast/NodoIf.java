@@ -20,6 +20,11 @@ public class NodoIf extends NodoSentencia {
         this.sino = sino;
     }
 
+    @Override
+    public Token primerToken() {
+        return tokenIf;
+    }
+
     // §12.4: la condición es boolean, sin conversiones. Se chequean las dos
     // ramas aunque una no se ejecute (semIIError97).
     @Override

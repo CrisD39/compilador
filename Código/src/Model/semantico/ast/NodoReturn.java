@@ -16,6 +16,11 @@ public class NodoReturn extends NodoSentencia {
         this.expresion = expresion;
     }
 
+    @Override
+    public Token primerToken() {
+        return tokenReturn;
+    }
+
     // §12.5. En un constructor o un método void sólo vale "return;" (un
     // return con expresión void también es error, semIIError103). En un
     // método no void la expresión es obligatoria y conforma con el retorno

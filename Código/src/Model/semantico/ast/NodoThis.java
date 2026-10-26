@@ -13,6 +13,11 @@ public class NodoThis extends NodoPrimario {
         this.tokenThis = tokenThis;
     }
 
+    @Override
+    public Token primerToken() {
+        return tokenThis;
+    }
+
     // §10.4: un método estático no tiene objeto receptor, tampoco adentro de
     // paréntesis ((this).a1, semIIError31). Un constructor o el inicializador
     // de un atributo sí lo tienen. El tipo es el de la clase actual con su

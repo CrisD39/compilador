@@ -1,6 +1,6 @@
 ---
 titulo: Sentencia inalcanzable
-estado: ready-for-agent
+estado: hecho
 spec: ../../0004-caminos-de-retorno.md
 ---
 
@@ -32,15 +32,15 @@ cada sentencia) y D8 (una local clásica inalcanzable da dos errores).
 - `ERR_SENTENCIA_INALCANZABLE` en la tabla de códigos con su descripción.
 
 **Criterios:**
-- [ ] Casos de `logros/caminosRetornoSinCodigoMuerto/` en verde: Correcto
+- [x] Casos de `logros/caminosRetornoSinCodigoMuerto/` en verde: Correcto
       06, 08 y 09; Error 07–10, 12–17 y 21.
-- [ ] `semIIRetornoError19` y `semIIRetornoError20` suman al final la
+- [x] `semIIRetornoError19` y `semIIRetornoError20` suman al final la
       etiqueta `var` y quedan como dice la spec.
-- [ ] `conErrores/semIIError104` se borra de la base y pasa a ser
+- [x] `conErrores/semIIError104` se borra de la base y pasa a ser
       `semIIRetornoError16`, con las etiquetas `var` y `z`.
-- [ ] `logros/for/sinErrores/semIIForCorrecto04`: el segundo `for` de `m2`
+- [x] `logros/for/sinErrores/semIIForCorrecto04`: el segundo `for` de `m2`
       pasa a su propio método y el caso sigue sin errores.
-- [ ] `./test.sh` en verde. `TesterConErroresSem2` tiene un caso menos. Las
+- [x] `./test.sh` en verde. `TesterConErroresSem2` tiene un caso menos. Las
       Etapas 1–3 no cambian, tampoco en modo pánico.
 
 **Nota (del ticket 01):** los casos Error 07–10, 12–17 y 21 están en
@@ -48,3 +48,15 @@ cada sentencia) y D8 (una local clásica inalcanzable da dos errores).
 `conErrores/` con este ticket. En los casos 19 y 20, la línea 3 es un
 comentario que ocupa el lugar de la etiqueta `var`: se reemplaza por la
 etiqueta.
+
+**Notas de la implementación:** `NodoSentencia.primerToken()` y
+`NodoExpresion.primerToken()` son abstractos, así cada nodo nuevo tiene que
+decir su token (en las expresiones que no sirven como sentencia también:
+`return; 1 + x;` reporta `1` y después el `;` de `ERR_SENTENCIA_INVALIDA`).
+`NodoBloque.chequear` arranca siempre en vivo: que una sentencia salga muerta
+no depende de si entra viva o recuperando, así que el bloque no necesita el
+estado de quien lo contiene. `NodoFor` reporta el cuerpo inalcanzable después
+de las tres cláusulas, justo antes de chequearlo, para que un error de la
+actualización (sobre `for`) salga antes. `semIIForCorrecto04` ya tenía el
+segundo `for` en su propio método (`m3`). `./test.sh`: Sem2 con 92 casos sin
+error, 171 con error y 105 de logros, todo en verde.

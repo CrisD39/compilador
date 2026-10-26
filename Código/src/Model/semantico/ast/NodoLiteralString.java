@@ -14,6 +14,11 @@ public class NodoLiteralString extends NodoPrimario {
     }
 
     @Override
+    public Token primerToken() {
+        return literal;
+    }
+
+    @Override
     public Tipo chequear(TablaSimbolos tabla) {
         return chequearEncadenado(tabla, Tipo.STRING);
     }

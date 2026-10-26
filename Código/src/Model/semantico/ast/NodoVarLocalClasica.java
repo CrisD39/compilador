@@ -26,6 +26,13 @@ public class NodoVarLocalClasica extends NodoSentencia {
         return nombres.get(0);
     }
 
+    // El tipo (int, A1) va antes que el primer nombre (spec 0004, D7). Una
+    // local clásica inalcanzable da además su "no soportado" (D8).
+    @Override
+    public Token primerToken() {
+        return tipo.getToken();
+    }
+
     @Override
     public void chequear(TablaSimbolos tabla) {
         throw ExcepcionSemantica.noSoportado(getPrimerNombre());

@@ -17,6 +17,11 @@ public class NodoExpPostfija extends NodoExpCompuesta {
         this.operador = operador;
     }
 
+    @Override
+    public Token primerToken() {
+        return ladoIzq.primerToken();
+    }
+
     // Logro Postfijos (D12): el operando tiene que ser int y un destino
     // asignable, porque se modifica. El resultado es int y no es asignable
     // (hereda esAsignable() == false).

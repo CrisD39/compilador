@@ -1,5 +1,6 @@
 package Model.semantico.ast;
 
+import Model.lexico.Token;
 import Model.semantico.TablaSimbolos;
 import Model.semantico.Tipo;
 
@@ -11,6 +12,12 @@ import Model.semantico.Tipo;
 // la lista de un NodoInicializadorArreglo (⚠12).
 public abstract class NodoExpresion implements ValorArreglo {
     public abstract Tipo chequear(TablaSimbolos tabla);
+
+    // Primer token que guarda la expresión, bajando por la izquierda. Lo usa
+    // NodoSentenciaExpresion para reportar una sentencia inalcanzable (spec
+    // 0004, D7): el nombre en una variable o una llamada, this, la clase en
+    // una llamada estática o en un new, y lo de adentro de un paréntesis.
+    public abstract Token primerToken();
 
     public boolean esAsignable() {
         return false;

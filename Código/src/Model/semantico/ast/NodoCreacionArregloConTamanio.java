@@ -27,6 +27,11 @@ public class NodoCreacionArregloConTamanio extends NodoPrimario {
         this.tamanios = tamanios;
     }
 
+    @Override
+    public Token primerToken() {
+        return tipoBase.getToken();
+    }
+
     // §11.8: el tipo base es un primitivo, una clase o una interfaz (new
     // I1[5] crea referencias, no instancias: semIICorrecto17), con las
     // reglas de tipos de la Etapa 3 y sus códigos, como en NodoCreacionObjeto.

@@ -25,6 +25,11 @@ public class NodoVarLocal extends NodoSentencia {
         return var;
     }
 
+    @Override
+    public Token primerToken() {
+        return var;
+    }
+
     // §12.3. El inicializador se chequea antes de declarar, así var x = x no
     // se ve a sí mismo (semIIError90). Ocultamiento (§10.1): el nombre no
     // puede ser el de una local visible (de este bloque o de uno contenedor)

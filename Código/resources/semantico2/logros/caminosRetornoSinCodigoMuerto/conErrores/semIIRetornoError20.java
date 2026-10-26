@@ -1,6 +1,6 @@
 ///[Error:sinRetornoDeclarado|21]
 ///[Error:parcial|24]
-// (Ticket 02 de la spec 0004 agrega aca la etiqueta ///[Error:var|32].)
+///[Error:var|32]
 // Viene de semIICorrecto72 de la base, que es el CP-SII-38 de la catedra
 // ("variantes de return; no se exige retorno total ni se rechaza codigo
 // inalcanzable"). Con el logro deja de dar [SinErrores]: ERR_FALTA_RETORNO en

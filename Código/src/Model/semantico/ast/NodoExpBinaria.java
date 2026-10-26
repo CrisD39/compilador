@@ -19,6 +19,11 @@ public class NodoExpBinaria extends NodoExpCompuesta {
         this.ladoDer = ladoDer;
     }
 
+    @Override
+    public Token primerToken() {
+        return ladoIzq.primerToken();
+    }
+
     // §11.2: sin promoción ni concatenación ("a" + "b" y 'a' + 1 son error).
     // Un operando void no es int ni boolean, y no conforma con nada en ==.
     @Override

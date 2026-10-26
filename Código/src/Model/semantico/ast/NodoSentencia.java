@@ -1,5 +1,7 @@
 package Model.semantico.ast;
 
+import Model.lexico.Token;
+import Model.semantico.ErrorSemantico;
 import Model.semantico.ExcepcionSemantica;
 import Model.semantico.TablaSimbolos;
 
@@ -18,10 +20,27 @@ public abstract class NodoSentencia {
         return entrada;
     }
 
+    // Token sobre el que se reporta la sentencia si es inalcanzable (D7): el
+    // primero que el AST guarda de ella.
+    public abstract Token primerToken();
+
     // Una condición de bucle que es la constante true (D3, D6): el bucle no
     // termina normalmente. Sin condición, el for cuenta como true.
     protected static boolean esConstanteTrue(NodoExpresion condicion) {
         return condicion == null || Boolean.TRUE.equals(condicion.valorConstante());
+    }
+
+    // Con la constante false el cuerpo del bucle es inalcanzable (D3). Sin
+    // condición no: el for cuenta como true.
+    protected static boolean esConstanteFalse(NodoExpresion condicion) {
+        return condicion != null && Boolean.FALSE.equals(condicion.valorConstante());
+    }
+
+    // D5: se registra, no se lanza, así la sentencia se chequea igual (§12.5)
+    // y sus errores salen después, en orden de programa.
+    protected static void reportarInalcanzable(NodoSentencia sentencia, TablaSimbolos tabla) {
+        Token token = sentencia.primerToken();
+        tabla.agregarError(new ErrorSemantico("ERR_SENTENCIA_INALCANZABLE", token.getLinea(), token.getLexema()));
     }
 
     // Cuerpo de if, else, while o for (§12.3, ⚠9): una declaración local no puede ir

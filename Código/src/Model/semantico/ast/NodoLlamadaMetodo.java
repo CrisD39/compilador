@@ -20,6 +20,11 @@ public class NodoLlamadaMetodo extends NodoPrimario {
     }
 
     @Override
+    public Token primerToken() {
+        return nombre;
+    }
+
+    @Override
     protected boolean esLlamableSinEncadenado() {
         return true;
     }

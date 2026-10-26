@@ -17,6 +17,11 @@ public class NodoExpUnaria extends NodoExpCompuesta {
         this.ladoDer = ladoDer;
     }
 
+    @Override
+    public Token primerToken() {
+        return operador;
+    }
+
     // §11.2: + y - sobre int, ! sobre boolean; el resultado es del mismo tipo.
     @Override
     public Tipo chequear(TablaSimbolos tabla) {

@@ -1,5 +1,6 @@
 package Model.semantico.ast;
 
+import Model.lexico.Token;
 import Model.semantico.TablaSimbolos;
 import Model.semantico.Tipo;
 
@@ -11,6 +12,11 @@ public class NodoExpParentizada extends NodoPrimario {
 
     public NodoExpParentizada(NodoExpresion expresion) {
         this.expresion = expresion;
+    }
+
+    @Override
+    public Token primerToken() {
+        return expresion.primerToken();
     }
 
     @Override

@@ -29,6 +29,11 @@ public class NodoForEach extends NodoSentencia {
         this.cuerpo = cuerpo;
     }
 
+    @Override
+    public Token primerToken() {
+        return tokenFor;
+    }
+
     // Logro For: a diferencia de Java, la expresión tiene que conformar con
     // la predefinida MiniIterable<E>, y E con el tipo de la variable. Es lo
     // que hace falta para leer el for como "start(); while (hasNext()) {

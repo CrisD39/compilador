@@ -123,6 +123,7 @@ public final class ErrorSemantico {
             case "ERR_RETORNO_INCORRECTO" -> "el " + x + " no corresponde con el tipo de retorno de la unidad";
             // Logro Caminos de retorno (spec 0004).
             case "ERR_FALTA_RETORNO" -> "el método " + x + " no retorna un valor en todos sus caminos";
+            case "ERR_SENTENCIA_INALCANZABLE" -> "la sentencia que empieza en " + x + " es inalcanzable";
             // Lo usan los nodos de logro (D11), que todavía no se chequean.
             case "ERR_NO_SOPORTADO" -> "la construcción en " + x + " todavía no se soporta";
             default -> codigo + " (" + x + ")";

@@ -26,6 +26,11 @@ public class NodoCreacionObjeto extends NodoPrimario {
     }
 
     @Override
+    public Token primerToken() {
+        return tipo.getToken();
+    }
+
+    @Override
     protected boolean esLlamableSinEncadenado() {
         return true;
     }

@@ -24,6 +24,11 @@ public class NodoLlamadaEstatica extends NodoPrimario {
     }
 
     @Override
+    public Token primerToken() {
+        return clase;
+    }
+
+    @Override
     protected boolean esLlamableSinEncadenado() {
         return true;
     }

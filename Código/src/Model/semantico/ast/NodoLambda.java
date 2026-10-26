@@ -22,6 +22,11 @@ public class NodoLambda extends NodoOperando {
     }
 
     @Override
+    public Token primerToken() {
+        return parametros.isEmpty() ? flecha : parametros.get(0);
+    }
+
+    @Override
     public Tipo chequear(TablaSimbolos tabla) {
         throw ExcepcionSemantica.noSoportado(flecha);
     }

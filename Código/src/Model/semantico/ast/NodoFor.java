@@ -28,6 +28,11 @@ public class NodoFor extends NodoSentencia {
         this.cuerpo = cuerpo;
     }
 
+    @Override
+    public Token primerToken() {
+        return tokenFor;
+    }
+
     // Logro For: la inicialización es una asignación o un var (no una local
     // clásica, ni una llamada), la condición es boolean y la actualización es
     // una asignación (no un postfijo ni una llamada). Una cláusula vacía no
@@ -36,6 +41,9 @@ public class NodoFor extends NodoSentencia {
     // La variable de la inicialización vive en un scope propio que cubre las
     // cláusulas y el cuerpo, y se cierra en el finally: si no, una excepción
     // a mitad de camino deja la local visible después del for (⚠9).
+    // Con la condición constante false el cuerpo es inalcanzable, como en
+    // NodoWhile; se reporta justo antes de chequearlo, después de las
+    // cláusulas, que van antes en el programa.
     @Override
     public void chequear(TablaSimbolos tabla) {
         tabla.abrirBloque();
@@ -54,6 +62,9 @@ public class NodoFor extends NodoSentencia {
                     throw new ExcepcionSemantica(tokenFor, "ERR_FOR_ACTUALIZACION");
                 }
                 actualizacion.chequear(tabla);
+            }
+            if (esConstanteFalse(condicion)) {
+                reportarInalcanzable(cuerpo, tabla);
             }
             chequearCuerpo(cuerpo, tabla);
         } finally {

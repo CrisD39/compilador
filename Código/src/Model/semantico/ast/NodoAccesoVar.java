@@ -18,6 +18,11 @@ public class NodoAccesoVar extends NodoPrimario {
     }
 
     @Override
+    public Token primerToken() {
+        return nombre;
+    }
+
+    @Override
     protected boolean esAsignableSinEncadenado() {
         return true;
     }

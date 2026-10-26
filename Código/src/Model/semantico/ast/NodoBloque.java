@@ -1,5 +1,6 @@
 package Model.semantico.ast;
 
+import Model.lexico.Token;
 import Model.semantico.ExcepcionSemantica;
 import Model.semantico.TablaSimbolos;
 
@@ -10,9 +11,20 @@ import java.util.List;
 // (spec 0003, D7). Un error corta sólo su sentencia: se agrega a la tabla y
 // se sigue con la próxima (logro Multi-detección). El scope se cierra en un
 // finally: si no, una excepción que no sea ExcepcionSemantica dejaría la
-// pila desbalanceada y las locales visibles afuera del bloque.
+// pila desbalanceada y las locales visibles afuera del bloque. La "{" es el
+// lexema del bloque inalcanzable (spec 0004, D7).
 public class NodoBloque extends NodoSentencia {
+    private final Token llave;
     private final List<NodoSentencia> sentencias = new ArrayList<>();
+
+    public NodoBloque(Token llave) {
+        this.llave = llave;
+    }
+
+    @Override
+    public Token primerToken() {
+        return llave;
+    }
 
     public void agregarSentencia(NodoSentencia sentencia) {
         sentencias.add(sentencia);
@@ -22,16 +34,29 @@ public class NodoBloque extends NodoSentencia {
         return sentencias;
     }
 
+    // Logro Caminos de retorno (spec 0004, D5): el bloque lleva el estado del
+    // flujo mientras chequea. Una sentencia que llega MUERTO primero se
+    // reporta como inalcanzable, después se chequea igual y el tramo sigue
+    // RECUPERANDO, así el resto no se reporta en cascada. El estado arranca
+    // VIVO aunque el bloque entero sea inalcanzable: que una sentencia salga
+    // MUERTO no depende de si entra VIVO o RECUPERANDO, así que el bloque no
+    // necesita el estado de quien lo contiene.
     @Override
     public void chequear(TablaSimbolos tabla) {
         tabla.abrirBloque();
         try {
+            Flujo estado = Flujo.VIVO;
             for (NodoSentencia sentencia : sentencias) {
+                if (estado == Flujo.MUERTO) {
+                    reportarInalcanzable(sentencia, tabla);
+                    estado = Flujo.RECUPERANDO;
+                }
                 try {
                     sentencia.chequear(tabla);
                 } catch (ExcepcionSemantica e) {
                     tabla.registrarError(e);
                 }
+                estado = sentencia.salida(estado);
             }
         } finally {
             tabla.cerrarBloque();

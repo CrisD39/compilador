@@ -23,6 +23,11 @@ public class NodoCreacionArregloConInicializador extends NodoPrimario {
     }
 
     @Override
+    public Token primerToken() {
+        return tipoBase.getToken();
+    }
+
+    @Override
     public Tipo chequear(TablaSimbolos tabla) {
         throw ExcepcionSemantica.noSoportado(tokenNew);
     }
