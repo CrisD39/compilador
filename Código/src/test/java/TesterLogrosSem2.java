@@ -34,7 +34,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 @RunWith(Parameterized.class)
 public class TesterLogrosSem2 {
 
-    private static final String[] LOGROS_HABILITADOS = {"multiDeteccionErrores", "postfijos", "for", "instanceOf", "visibilidadChequeada", "caminosRetornoSinCodigoMuerto", "atributosInicializados"};
+    private static final String[] LOGROS_HABILITADOS = {"multiDeteccionErrores", "postfijos", "for", "instanceOf", "visibilidadChequeada", "caminosRetornoSinCodigoMuerto", "atributosInicializados", "superKeyword"};
     private static final String directorioLogros = "resources/semantico2/logros/";
     private static final String msgExito = "[SinErrores]";
     private static final Pattern etiquetaDeError = Pattern.compile("\\[Error:[^\\]]*\\]");

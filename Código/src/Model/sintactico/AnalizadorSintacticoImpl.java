@@ -81,10 +81,11 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
             TokenType.OP_MULT, TokenType.OP_DIV, TokenType.OP_MOD);
 
     // FIRST(<Operando>) = FIRST(<Primitivo>) ∪ FIRST(<Referencia>)
+    // super entra por el acceso con super (logro Super!, spec 0006, D3).
     private static final Set<TokenType> PRIMEROS_OPERANDO = EnumSet.of(
             TokenType.PR_TRUE, TokenType.PR_FALSE, TokenType.LIT_INT,
             TokenType.LIT_CHAR, TokenType.PR_NULL,
-            TokenType.PR_THIS, TokenType.LIT_STRING, TokenType.ID_MET_VAR,
+            TokenType.PR_THIS, TokenType.PR_SUPER, TokenType.LIT_STRING, TokenType.ID_MET_VAR,
             TokenType.PR_NEW, TokenType.ID_CLASE, TokenType.PAR_A);
 
     // FIRST(<Expresion>) = FIRST(<OperadorUnario>) ∪ FIRST(<Operando>)
@@ -92,7 +93,7 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
             TokenType.OP_MAS, TokenType.OP_MENOS, TokenType.OP_NOT,
             TokenType.PR_TRUE, TokenType.PR_FALSE, TokenType.LIT_INT,
             TokenType.LIT_CHAR, TokenType.PR_NULL,
-            TokenType.PR_THIS, TokenType.LIT_STRING, TokenType.ID_MET_VAR,
+            TokenType.PR_THIS, TokenType.PR_SUPER, TokenType.LIT_STRING, TokenType.ID_MET_VAR,
             TokenType.PR_NEW, TokenType.ID_CLASE, TokenType.PAR_A);
 
     // FIRST(<Sentencia>) = { ; var return if while for { } ∪ FIRST(<Tipo>) ∪ FIRST(<Expresion>)
@@ -105,7 +106,7 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
             TokenType.OP_MAS, TokenType.OP_MENOS, TokenType.OP_NOT,
             TokenType.PR_TRUE, TokenType.PR_FALSE, TokenType.LIT_INT,
             TokenType.LIT_CHAR, TokenType.PR_NULL,
-            TokenType.PR_THIS, TokenType.LIT_STRING, TokenType.ID_MET_VAR,
+            TokenType.PR_THIS, TokenType.PR_SUPER, TokenType.LIT_STRING, TokenType.ID_MET_VAR,
             TokenType.PR_NEW, TokenType.ID_CLASE, TokenType.PAR_A);
 
     // No es un FIRST: es el conjunto de sincronización del modo pánico (REQ-AS-008).
@@ -1006,12 +1007,13 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     //             |  <TipoPrimitivo> <RestoDeclLocal>    \
     //             |  idGen <RestoDeclLocal>              |  variable local clásica (REQ-AS-006)
     //             |  idClase <SentIdClase>              /
+    //             |  super <SentSuper>                   (logro Super!)
     //             |  <Return> ;
     //             |  <If>
     //             |  <While>
     //             |  <For>
     //             |  <Bloque>
-    //             |  <Expresion> ;                       (sólo si el lookahead ∈ FIRST(<Expresion>) \ { idClase })
+    //             |  <Expresion> ;                       (sólo si el lookahead ∈ FIRST(<Expresion>) \ { idClase, super })
     private NodoSentencia sentencia() {
         if (actualEs(TokenType.PUNTO_COMA)) {
             Token puntoYComa = tokenActual;
@@ -1034,6 +1036,13 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
             Token idClase = tokenActual;
             match(TokenType.ID_CLASE);
             return sentIdClase(idClase);
+        } else if (actualEs(TokenType.PR_SUPER)) {
+            // super se intercepta como idClase: el token siguiente decide
+            // entre el acceso con super y la llamada al constructor de la
+            // superclase (spec 0006, D3), en sentSuper().
+            Token tokenSuper = tokenActual;
+            match(TokenType.PR_SUPER);
+            return sentSuper(tokenSuper);
         } else if (actualEs(TokenType.PR_RETURN)) {
             NodoReturn nodo = sentenciaReturn();
             matchCierre(TokenType.PUNTO_COMA);
@@ -1047,8 +1056,8 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
         } else if (actualEs(TokenType.LLAVE_A)) {
             return bloque();
         } else if (actualEn(PRIMEROS_EXPRESION)) {
-            // idClase ya quedó tomado por la rama de arriba; acá sólo entra el
-            // resto de FIRST(<Expresion>).
+            // idClase y super ya quedaron tomados por las ramas de arriba;
+            // acá sólo entra el resto de FIRST(<Expresion>).
             return cerrarSentenciaExpresion(expresion());
         } else {
             error("una sentencia");
@@ -1094,6 +1103,16 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
         } else {
             return restoDeclLocal(new Tipo(idClase, tipoGenericoOpcional()));
         }
+    }
+
+    // <SentSuper> ::= <AccesoSuper> <PostfijoOpcional> <ExpresionCompuestaResto>
+    //                <TernarioOpcional> <RestoAsignacion> ;
+    // El "super" ya fue consumido por sentencia(). Igual que la rama "." de
+    // <SentIdClase>: arma el operando y sigue con la cola de <Expresion>
+    // (super.x = 3;, super.m().n();), así da el mismo árbol que si la
+    // sentencia hubiera entrado por <Expresion>.
+    private NodoSentencia sentSuper(Token tokenSuper) {
+        return cerrarSentenciaExpresion(colaDeExpresion(accesoSuper(tokenSuper)));
     }
 
     // Cola de <Expresion> después de un operando ya armado:
@@ -1461,6 +1480,7 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     //            |  <LlamadaMetodoEstatico> <ReferenciaResto>
     //            |  idMetVar <TrasId>
     //            |  ( <TrasParen>
+    //            |  super <AccesoSuper>                       (logro Super!)
     // Forma factorizada de "Gramática Expandida (Logros)": inlinea <Referencia>,
     // <Primario> y <ExpresionParentizada> para poder repartir los prefijos "("
     // (expresión parentizada vs. lambda) e "idMetVar" (variable vs. lambda de 1
@@ -1473,6 +1493,10 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
             NodoThis nodo = new NodoThis(tokenActual);
             match(TokenType.PR_THIS);
             return conReferenciaResto(nodo);
+        } else if (actualEs(TokenType.PR_SUPER)) {
+            Token tokenSuper = tokenActual;
+            match(TokenType.PR_SUPER);
+            return accesoSuper(tokenSuper);
         } else if (actualEs(TokenType.LIT_STRING)) {
             NodoLiteralString nodo = new NodoLiteralString(tokenActual);
             match(TokenType.LIT_STRING);
@@ -1505,6 +1529,20 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
             primario.setEncadenado(encadenado);
         }
         return primario;
+    }
+
+    // <AccesoSuper> ::= . idMetVar <ArgsActualesOpcional> <ReferenciaResto>
+    // El "super" ya fue consumido. A diferencia de this, el primer eslabón
+    // es obligatorio y tiene que ser ".": super suelto (super;, x = super;),
+    // super[0] y super(...) dentro de una expresión no son valores, y el
+    // error va sobre el token que sigue a super (spec 0006, D3). Desde el
+    // "." es el <ReferenciaResto> de siempre, que arma ese primer eslabón.
+    private NodoPrimario accesoSuper(Token tokenSuper) {
+        if (!actualEs(TokenType.PUNTO)) {
+            error("\".\" (acceso a un miembro de la superclase con super)");
+            return null;
+        }
+        return conReferenciaResto(new NodoSuper(tokenSuper));
     }
 
     // <TrasId> ::= -> <Expresion>                    (lambda de 1 parámetro: x -> e)

@@ -8,7 +8,7 @@ public enum TokenType {
     PR_CHAR("pr_char"), PR_INT("pr_int"), PR_VOID("pr_void"), PR_PUBLIC("pr_public"),
     PR_PRIVATE("pr_private"),
     PR_IF("pr_if"), PR_ELSE("pr_else"), PR_WHILE("pr_while"), PR_FOR("pr_for"), PR_RETURN("pr_return"),
-    PR_VAR("pr_var"), PR_THIS("pr_this"), PR_NEW("pr_new"), PR_NULL("pr_null"),
+    PR_VAR("pr_var"), PR_THIS("pr_this"), PR_SUPER("pr_super"), PR_NEW("pr_new"), PR_NULL("pr_null"),
     PR_TRUE("pr_true"), PR_FALSE("pr_false"),
     PR_SEALED("pr_sealed"), PR_PERMITS("pr_permits"), PR_NONSEALED("pr_nonsealed"),
     PR_FINAL("pr_final"), PR_INSTANCEOF("pr_instanceof"),

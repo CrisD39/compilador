@@ -86,6 +86,8 @@ public final class ErrorSemantico {
             case "ERR_ATRIBUTO_EN_ESTATICO" -> "el atributo " + x + " no se puede usar en un método estático";
             case "ERR_REFERENCIA_ADELANTADA" -> "el atributo " + x + " se usa en un inicializador antes de su declaración";
             case "ERR_THIS_EN_ESTATICO" -> "this no se puede usar en un método estático";
+            // Logro Super! (spec 0006, D6): mismo control que this.
+            case "ERR_SUPER_EN_ESTATICO" -> "no se puede acceder a super desde un contexto estático";
             case "ERR_PARAMETRO_TIPO_EN_ESTATICO" ->
                     "el parámetro de tipo " + x + " de la clase no se puede usar en un método estático";
             case "ERR_ATRIBUTO_NO_ENCONTRADO" -> "el atributo " + x + " no existe en el tipo del receptor";

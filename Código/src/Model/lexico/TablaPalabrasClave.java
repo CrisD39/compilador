@@ -28,6 +28,7 @@ public final class TablaPalabrasClave {
         PALABRAS_CLAVE.put("return", TokenType.PR_RETURN);
         PALABRAS_CLAVE.put("var", TokenType.PR_VAR);
         PALABRAS_CLAVE.put("this", TokenType.PR_THIS);
+        PALABRAS_CLAVE.put("super", TokenType.PR_SUPER); // logro Super!
         PALABRAS_CLAVE.put("new", TokenType.PR_NEW);
         PALABRAS_CLAVE.put("null", TokenType.PR_NULL);
         PALABRAS_CLAVE.put("true", TokenType.PR_TRUE);

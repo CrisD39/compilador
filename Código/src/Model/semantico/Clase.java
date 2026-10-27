@@ -256,6 +256,17 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
         return herencia;
     }
 
+    // Tipo de super (logro Super!, spec 0006, D5): el 'extends' tal como se
+    // escribió, con su argumento (A<String>), así el encadenado ve los
+    // miembros instanciados desde ahí; sin 'extends', Object. Sólo lo usa el
+    // chequeo de sentencias, que no corre si hubo errores de declaración: el
+    // 'extends' existe, es una clase y no está en un ciclo. Una clase con
+    // 'implements' no tiene 'extends' (ADR 0005), así que su superclase es
+    // Object, nunca la interfaz.
+    public Tipo getTipoSuperclase() {
+        return herencia != null ? herencia : new Tipo(tablaSimbolos.getObject().getNombre());
+    }
+
     public List<Token> getParametrosTipo() {
         return parametrosTipo;
     }
