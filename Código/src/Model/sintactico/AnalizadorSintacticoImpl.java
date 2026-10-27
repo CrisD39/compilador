@@ -1105,13 +1105,22 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
         }
     }
 
-    // <SentSuper> ::= <AccesoSuper> <PostfijoOpcional> <ExpresionCompuestaResto>
+    // <SentSuper> ::= <ArgsActuales> ;
+    //             |  <AccesoSuper> <PostfijoOpcional> <ExpresionCompuestaResto>
     //                <TernarioOpcional> <RestoAsignacion> ;
-    // El "super" ya fue consumido por sentencia(). Igual que la rama "." de
-    // <SentIdClase>: arma el operando y sigue con la cola de <Expresion>
-    // (super.x = 3;, super.m().n();), así da el mismo árbol que si la
-    // sentencia hubiera entrado por <Expresion>.
+    // El "super" ya fue consumido por sentencia(). Con "(" es la llamada al
+    // constructor de la superclase: una sentencia, no una expresión (ADR
+    // 0010), así que después de los argumentos va el ";" y super(1).m(); es
+    // error sobre el ".". Si no, igual que la rama "." de <SentIdClase>: arma
+    // el operando y sigue con la cola de <Expresion> (super.x = 3;,
+    // super.m().n();), así da el mismo árbol que si la sentencia hubiera
+    // entrado por <Expresion>. Si no sigue ".", accesoSuper() da el error.
     private NodoSentencia sentSuper(Token tokenSuper) {
+        if (actualEs(TokenType.PAR_A)) {
+            List<NodoExpresion> argumentos = argsActuales();
+            matchCierre(TokenType.PUNTO_COMA);
+            return new NodoLlamadaSuperConstructor(tokenSuper, argumentos);
+        }
         return cerrarSentenciaExpresion(colaDeExpresion(accesoSuper(tokenSuper)));
     }
 

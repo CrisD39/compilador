@@ -2,6 +2,7 @@ package Model.semantico;
 
 import Model.lexico.Token;
 import Model.semantico.ast.NodoBloque;
+import Model.semantico.ast.NodoLlamadaSuperConstructor;
 
 import java.util.HashSet;
 import java.util.List;
@@ -56,8 +57,16 @@ public class Constructor implements Chequeable{
         return cuerpo;
     }
 
+    // Logro Super! (spec 0006, D7): super(...) sólo está en lugar si es
+    // literalmente la primera sentencia del cuerpo, como en JDK 21 (ADR
+    // 0010). Un ; o un bloque antes, o la llamada dentro de { } o de un if,
+    // la dejan sin marcar, y al chequearse da ERR_SUPER_FUERA_DE_LUGAR.
     public void setCuerpo(NodoBloque cuerpo) {
         this.cuerpo = cuerpo;
+        if (cuerpo != null && !cuerpo.getSentencias().isEmpty()
+                && cuerpo.getSentencias().get(0) instanceof NodoLlamadaSuperConstructor llamada) {
+            llamada.marcarEnLugar();
+        }
     }
 
     // Clave del constructor: la aridad (D4, mismo criterio que

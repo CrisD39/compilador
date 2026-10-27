@@ -2,7 +2,6 @@ package Model.semantico.ast;
 
 import Model.lexico.Token;
 import Model.semantico.Clase;
-import Model.semantico.Constructor;
 import Model.semantico.EntidadDeclarada;
 import Model.semantico.ExcepcionSemantica;
 import Model.semantico.TablaSimbolos;
@@ -36,17 +35,12 @@ public class NodoCreacionObjeto extends NodoPrimario {
     }
 
     // §10.3, §11.7: la clase tiene que existir (ERR_TIPO_NO_DECLARADO, el de
-    // la Etapa 3) y no ser una interfaz. El constructor se elige por aridad
-    // entre los de la clase: el por defecto sólo existe si no declaró
-    // ninguno (semIIError25), y los de los ancestros no cuentan porque los
-    // constructores no se heredan (semIIError26). Todos los errores van
-    // sobre el nombre de la clase. Los argumentos de tipo siguen las reglas
-    // de la Etapa 3, con sus códigos (Tipo.resolverEnCuerpo()): una clase
-    // genérica sin argumento es un tipo raw (ADR 0007, semIIError24) y una no
-    // genérica no admite uno. Los parámetros del constructor se ven desde el
-    // tipo creado: en new Caja<String>(5), T es String (D10, semIIError28).
-    // Un constructor private sólo vale dentro de su clase (logro Visibilidad
-    // chequeada); el por defecto es público.
+    // la Etapa 3) y no ser una interfaz. Todos los errores van sobre el
+    // nombre de la clase. Los argumentos de tipo siguen las reglas de la
+    // Etapa 3, con sus códigos (Tipo.resolverEnCuerpo()): una clase genérica
+    // sin argumento es un tipo raw (ADR 0007, semIIError24) y una no
+    // genérica no admite uno. El constructor se resuelve desde el tipo creado
+    // (ChequeoLlamada.chequearConstructor()), igual que en super(...).
     @Override
     public Tipo chequear(TablaSimbolos tabla) {
         Token nombre = tipo.getToken();
@@ -61,14 +55,7 @@ public class NodoCreacionObjeto extends NodoPrimario {
             throw new ExcepcionSemantica(nombre, "ERR_NEW_INTERFAZ");
         }
         Tipo creado = tipo.resolverEnCuerpo(tabla);
-        Constructor constructor = clase.getConstructores().stream()
-                .filter(c -> c.getParams().size() == argumentos.size())
-                .findFirst()
-                .orElseThrow(() -> new ExcepcionSemantica(nombre, "ERR_CONSTRUCTOR_NO_ENCONTRADO"));
-        ChequeoVisibilidad.exigirAcceso(tabla, constructor.isPrivado(), clase, clase, nombre);
-        List<Tipo> tiposArgumentos = ChequeoLlamada.chequearArgumentos(tabla, argumentos);
-        ChequeoLlamada.exigirConformidad(
-                tabla, constructor.getParams(), tabla.instanciacionDe(creado), tiposArgumentos, nombre);
+        ChequeoLlamada.chequearConstructor(tabla, clase, creado, argumentos, nombre);
         return chequearEncadenado(tabla, creado);
     }
 }

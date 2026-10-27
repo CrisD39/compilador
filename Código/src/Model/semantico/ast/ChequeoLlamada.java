@@ -1,6 +1,8 @@
 package Model.semantico.ast;
 
 import Model.lexico.Token;
+import Model.semantico.Clase;
+import Model.semantico.Constructor;
 import Model.semantico.ExcepcionSemantica;
 import Model.semantico.Metodo;
 import Model.semantico.OrigenParametroTipo;
@@ -30,6 +32,26 @@ final class ChequeoLlamada {
             tipos.add(argumento.chequear(tabla));
         }
         return tipos;
+    }
+
+    // Resolución de un constructor de 'clase', compartida por new C(...) y
+    // super(...) (logro Super!, spec 0006, D8). Se elige por aridad: el por
+    // defecto sólo existe si la clase no declaró ninguno (semIIError25), y
+    // los de los ancestros no cuentan porque no se heredan (semIIError26). Un
+    // constructor private sólo vale dentro de su clase (logro Visibilidad
+    // chequeada). Los parámetros se ven desde 'tipo': en new Caja<String>(5)
+    // o en super(5) con extends Caja<String>, T es String (D10,
+    // semIIError28). Todos los errores van sobre 'token': el nombre de la
+    // clase en new, super en la llamada al constructor de la superclase.
+    static void chequearConstructor(TablaSimbolos tabla, Clase clase, Tipo tipo,
+                                    List<NodoExpresion> argumentos, Token token) {
+        Constructor constructor = clase.getConstructores().stream()
+                .filter(c -> c.getParams().size() == argumentos.size())
+                .findFirst()
+                .orElseThrow(() -> new ExcepcionSemantica(token, "ERR_CONSTRUCTOR_NO_ENCONTRADO"));
+        ChequeoVisibilidad.exigirAcceso(tabla, constructor.isPrivado(), clase, clase, token);
+        List<Tipo> tiposArgumentos = chequearArgumentos(tabla, argumentos);
+        exigirConformidad(tabla, constructor.getParams(), tabla.instanciacionDe(tipo), tiposArgumentos, token);
     }
 
     // Tipo de la llamada a un método ya resuelto. 'vista' es el mapa con que

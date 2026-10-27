@@ -88,6 +88,8 @@ public final class ErrorSemantico {
             case "ERR_THIS_EN_ESTATICO" -> "this no se puede usar en un método estático";
             // Logro Super! (spec 0006, D6): mismo control que this.
             case "ERR_SUPER_EN_ESTATICO" -> "no se puede acceder a super desde un contexto estático";
+            case "ERR_SUPER_FUERA_DE_LUGAR" ->
+                    "la llamada al constructor de la superclase debe ser la primera sentencia de un constructor";
             case "ERR_PARAMETRO_TIPO_EN_ESTATICO" ->
                     "el parámetro de tipo " + x + " de la clase no se puede usar en un método estático";
             case "ERR_ATRIBUTO_NO_ENCONTRADO" -> "el atributo " + x + " no existe en el tipo del receptor";
@@ -95,11 +97,15 @@ public final class ErrorSemantico {
                     "no se puede seleccionar " + x + ": el receptor no es de una clase ni de una interfaz";
             case "ERR_METODO_NO_ENCONTRADO" -> "no existe un método " + x + " con esa cantidad de argumentos";
             case "ERR_METODO_NO_ESTATICO" -> "el método " + x + " no es estático y no hay un objeto receptor";
-            case "ERR_ARGUMENTO_INCOMPATIBLE" ->
-                    "los argumentos de " + x + " no conforman con los tipos de sus parámetros";
+            // Con super (spec 0006, D8) el lexema hace de nombre de la clase
+            // de new, y el texto nombra al constructor de la superclase.
+            case "ERR_ARGUMENTO_INCOMPATIBLE" -> esSuper()
+                    ? "los argumentos de super(...) no conforman con los parámetros del constructor de la superclase"
+                    : "los argumentos de " + x + " no conforman con los tipos de sus parámetros";
             case "ERR_NEW_INTERFAZ" -> "no se puede crear un objeto de la interfaz " + x;
-            case "ERR_CONSTRUCTOR_NO_ENCONTRADO" ->
-                    "la clase " + x + " no tiene un constructor con esa cantidad de argumentos";
+            case "ERR_CONSTRUCTOR_NO_ENCONTRADO" -> esSuper()
+                    ? "la superclase no tiene un constructor con esa cantidad de argumentos"
+                    : "la clase " + x + " no tiene un constructor con esa cantidad de argumentos";
             case "ERR_ASIGNACION_INCOMPATIBLE" -> "el valor asignado no conforma con el tipo del destino";
             case "ERR_DESTINO_NO_ASIGNABLE" -> "el lado izquierdo de " + x + " no es un destino asignable";
             case "ERR_OPERADOR_INCOMPATIBLE" -> "el operador " + x + " no admite los tipos de sus operandos";
@@ -120,8 +126,12 @@ public final class ErrorSemantico {
             case "ERR_FOREACH_NO_ITERABLE" -> "la expresión del " + x + " no conforma con MiniIterable";
             case "ERR_FOREACH_TIPO_INCOMPATIBLE" ->
                     "los elementos que recorre el " + x + " no conforman con el tipo de su variable";
-            // En new, x es el nombre de la clase, cuyo constructor es el private.
-            case "ERR_ACCESO_PRIVADO" -> "no se puede acceder a " + x + ": es private y sólo se usa dentro de su clase";
+            // En new, x es el nombre de la clase, cuyo constructor es el
+            // private; con super, el constructor es el de la superclase (un
+            // acceso con super lo reporta sobre el nombre del miembro).
+            case "ERR_ACCESO_PRIVADO" -> esSuper()
+                    ? "no se puede llamar con super(...) al constructor de la superclase: es private y sólo se usa dentro de su clase"
+                    : "no se puede acceder a " + x + ": es private y sólo se usa dentro de su clase";
             case "ERR_INSTANCEOF_GENERICO" -> "el tipo a la derecha de " + x + " no puede ser genérico";
             case "ERR_RETORNO_INCORRECTO" -> "el " + x + " no corresponde con el tipo de retorno de la unidad";
             // Logro Caminos de retorno (spec 0004).
@@ -131,5 +141,11 @@ public final class ErrorSemantico {
             case "ERR_NO_SOPORTADO" -> "la construcción en " + x + " todavía no se soporta";
             default -> codigo + " (" + x + ")";
         };
+    }
+
+    // Logro Super! (spec 0006, D8): super hace de nombre de la clase en los
+    // errores de super(...), y el texto genérico no se leería bien con él.
+    private boolean esSuper() {
+        return "super".equals(lexema);
     }
 }
