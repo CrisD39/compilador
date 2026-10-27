@@ -16,7 +16,7 @@ Es el contrato de la spec 0003 (D7): todos los casos con error lo cumplen. El c�
 | Variable no declarada (incluye `var x = x;`) | el nombre | `ERR_VAR_NO_DECLARADA` |
 | Atributo implícito desde un método estático | el nombre | `ERR_ATRIBUTO_EN_ESTATICO` |
 | `e.x` inexistente en el tipo estático de `e` (incluye `length` sobre `Object`) | el nombre del atributo | `ERR_ATRIBUTO_NO_ENCONTRADO` |
-| Asignación incompatible | `=` | `ERR_ASIGNACION_INCOMPATIBLE` |
+| Asignación incompatible (incluye un inicializador de atributo que no conforma; logro Atributos inicializados) | `=` | `ERR_ASIGNACION_INCOMPATIBLE` |
 | Destino no asignable | `=` (o `++`/`--`) | `ERR_DESTINO_NO_ASIGNABLE` |
 | Método inexistente o aridad sin match (incluye `clone` sobre un arreglo) | nombre del método | `ERR_METODO_NO_ENCONTRADO` |
 | Argumento que no conforma (método o constructor) | nombre del método o de la clase | `ERR_ARGUMENTO_INCOMPATIBLE` |
@@ -45,6 +45,7 @@ Es el contrato de la spec 0003 (D7): todos los casos con error lo cumplen. El c�
 | Acceso a un miembro private fuera de su clase o con un receptor de otra clase (logro Visibilidad chequeada) | el nombre del miembro (en `new`, el de la clase) | `ERR_ACCESO_PRIVADO` |
 | Método no void cuyo cuerpo termina normalmente (logro Todos los caminos llevan al retorno) | nombre del método | `ERR_FALTA_RETORNO` |
 | Sentencia inalcanzable (logro Todos los caminos llevan al retorno) | primer token de la sentencia: `var`, el tipo de una local clásica, `return`, `if`, `while`, `for`, `{`, `;` o, en una expresión, el primer nombre bajando por la izquierda (`x = 2;` da `x`, `new A1().m();` y `A1.m();` dan `A1`, `(x).m();` da `x`; spec 0004, D7) | `ERR_SENTENCIA_INALCANZABLE` |
+| Referencia adelantada o autorreferencia en el inicializador de un atributo (logro Atributos inicializados) | el nombre usado | `ERR_REFERENCIA_ADELANTADA` |
 | Construcción de un logro no implementado | ver la spec 0003, D11 | `ERR_NO_SOPORTADO` |
 
 Una local cuyo `var` falló (inicializador con error, `null` o `void`) queda declarada sin tipo: usarla corta la sentencia sin reportar nada más, así un solo error no se repite en cada uso (`semIIMultiErrorError03`).
@@ -54,6 +55,34 @@ Extiende la de los casos de referencia (no declarada → nombre; asignación →
 ## Casos mudados al logro de caminos de retorno
 
 §12.5 del documento base no exige retorno en todos los caminos ni rechaza código inalcanzable. El logro *Todos los caminos llevan al retorno sin código muerto* reemplaza esa regla (ADR 0008), así que tres casos base que se apoyaban en ella dejaron la base y pasaron a `logros/caminosRetornoSinCodigoMuerto/conErrores/`: `semIICorrecto31` → `semIIRetornoError19`, `semIICorrecto72` (CP-SII-38 de la cátedra) → `semIIRetornoError20` y `semIIError104` → `semIIRetornoError16`. Sus números no se reusan.
+
+## Casos del logro Atributos inicializados
+
+Están en `logros/atributosInicializados/` (spec 0005) y los corre `TesterLogrosSem2`. Ningún caso base usa un atributo inicializado, así que habilitar el logro no cambió ninguna etiqueta de la base.
+
+| Caso | Etiquetas | Qué prueba |
+|---|---|---|
+| `semIIAtribInicCorrecto01` | — | `int` y `boolean` inicializados con literales. |
+| `semIIAtribInicCorrecto02` | — | Conformidad: `char`, `String`, `null` en una referencia, una subclase en un atributo del padre, una clase en un atributo de su interfaz, `int[]` con `new int[3]`, `Caja<A>` con `new Caja<A>()` y `T t = null;` en `Caja<T>`. |
+| `semIIAtribInicCorrecto03` | — | Contexto de instancia: `this`, `this.x`, un atributo anterior, uno heredado de un padre escrito más abajo, uno heredado de un padre genérico ya instanciado, una llamada sin receptor a un método de instancia, un método estático y un atributo `private` propio. |
+| `semIIAtribInicCorrecto04` | — | Lo que no es referencia adelantada: `this.b`, `new A1().b`, un método que lee un atributo posterior y `(b = 3)` con `b` posterior. |
+| `semIIAtribInicCorrecto05` | — | Métodos y constructores usan un atributo declarado al final de la clase. |
+| `semIIAtribInicError01` | `=` | `int` inicializado con un `boolean`. |
+| `semIIAtribInicError02` | `=` | `int a = null;`. |
+| `semIIAtribInicError03` | `=` | Llamada a un método `void`. |
+| `semIIAtribInicError04` | `=` | Padre en un atributo de la subclase. |
+| `semIIAtribInicError05` | `=`, `=` | Argumentos genéricos invariantes y dimensiones distintas, en dos atributos. |
+| `semIIAtribInicError06` | `+` | Error adentro del inicializador, sin un segundo error de conformidad. |
+| `semIIAtribInicError07` | `z` | Variable no declarada. |
+| `semIIAtribInicError08` | `b` | Referencia adelantada, sobre la línea del inicializador. |
+| `semIIAtribInicError09` | `x` | Autorreferencia: `int x = x + 1;`. |
+| `semIIAtribInicError10` | `b` | Referencia adelantada con los dos atributos en una línea. |
+| `semIIAtribInicError11` | `b` | `b++` con `b` posterior. |
+| `semIIAtribInicError12` | `b`, `v`, `o` | Atributo posterior como argumento, indexado y con encadenado. |
+| `semIIAtribInicError13` | `b`, `v` | Sólo el destino directo se salva: `(c = b)` marca `b` y no `c`; `(v[0] = 1)` marca `v`. |
+| `semIIAtribInicError14` | `secreto` | Atributo `private` de otra clase (logro Visibilidad chequeada). |
+| `semIIAtribInicError15` | `?` | Ternario en el inicializador: logro no implementado, sin otro error del atributo. |
+| `semIIAtribInicError16` | `=`, `=`, `d` | Multi-detección: inicializadores y un método mezclados en el orden del programa. |
 
 ## Índice
 

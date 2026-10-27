@@ -109,7 +109,7 @@ errores que tenga el programa fuente en una corrida. Como mínimo se
 espera que el compilador pueda continuar con el análisis de la próxima
 sentencia
 
-### Atributos Inicializados
+### Atributos Inicializados - Chequeado
 
 El compilador controla que los atributos inicializados son
 correctamente tipados (los controles son los mismos que en Java)
@@ -252,9 +252,10 @@ encarar esta etapa.
   propios" compara `m.getMiClase() == this`, pero hoy el campo queda en
   `null`. Hay que setearlo al registrar el método, igual que la clase
   declarante de `Atributo` y `Constructor`.
-- Quedan como están los ejemplos de atributos `static` de "Atributos
-  inicializados" (la gramática sólo admite `static` en métodos, §6.1) y
-  los nodos de inicializadores de arreglo (⚠11, ⚠12).
+- Quedan como están los nodos de inicializadores de arreglo (⚠11, ⚠12).
+  Los ejemplos de atributos `static` de "Atributos inicializados" (la
+  gramática sólo admite `static` en métodos, §6.1) se reemplazaron en la
+  spec 0005.
 
 ## Decisiones de la spec 0003 (2026-10-24)
 
@@ -308,9 +309,45 @@ difíciles de revertir están en dos ADR:
   Conviene confirmar con la cátedra esta diferencia con el "al igual que en
   Java" del logro.
 
+## Decisiones de la spec 0005 (2026-10-26)
+
+El logro *Atributos inicializados* se cerró en una entrevista de diseño y se
+planifica en `specs/0005-atributos-inicializados.md`. No hay ADR: nada se
+aparta de Java. El detalle está en "Atributos inicializados" (sección NODOS).
+
+- **Conformidad.** El inicializador se chequea con las reglas base
+  (§9–§11) y su tipo tiene que conformar con el del atributo, igual que el
+  lado derecho de una asignación simple cuyo destino es el atributo: `void`
+  no conforma, `null` sólo con referencias, argumentos genéricos y
+  dimensiones exactos.
+- **Error de conformidad.** `ERR_ASIGNACION_INCOMPATIBLE` con lexema `=`.
+  `Atributo` guarda el token `=`, que hoy el parser descarta.
+- **Contexto de instancia.** No hay atributos `static` (§6.1), así que en un
+  inicializador valen `this`, `this.x`, un atributo implícito declarado
+  antes o heredado y las llamadas sin receptor a métodos de instancia. La
+  visibilidad se controla como en cualquier cuerpo de la clase.
+- **Referencia adelantada (JLS §8.3.3).** Es error que un nombre suelto
+  (`NodoAccesoVar`) del inicializador resuelva a un atributo **declarado por
+  la clase actual** que no está declarado estrictamente antes del que se
+  inicializa, el propio incluido (`int x = x + 1;`). No cuentan los accesos
+  con receptor (`this.b`, `obj.b`), lo que lea un método llamado (`m()`), ni
+  los atributos heredados. El orden es el del fuente: un índice de
+  declaración en `Atributo` (la línea no alcanza con dos atributos en una
+  línea, y `atributos` es un `HashMap`). En cuerpos de métodos y
+  constructores la regla no aplica.
+- **Excepción del destino.** Como en Java, el nombre suelto que es destino
+  directo de `=` no es referencia adelantada (`int a = (b = 3); int b;` es
+  válido). `b++`/`b--` sí lo son.
+- **Error de referencia adelantada.** Código nuevo
+  `ERR_REFERENCIA_ADELANTADA`, también para la autorreferencia; lexema y
+  línea del nombre usado.
+- **Sintaxis de otros logros** dentro del inicializador (ternario, lambda,
+  diamante, `new T[]{...}`) sigue dando `ERR_NO_SOPORTADO` en su token, sin
+  un segundo error del atributo.
+
 ## Estado de la implementación (2026-10-26)
 
-Las specs 0003 y 0004 están cerradas. Quedó implementado:
+Las specs 0003, 0004 y 0005 están cerradas. Quedó implementado:
 
 - **Lo base de §9–§12.** Todos los casos de `resources/semantico2/{sinErrores,conErrores}`
   pasan con `ModuloPrincipalET4`, que es el main del jar. La tercera pasada es `TablaSimbolos.chequearSentencias()`, y sólo
@@ -423,6 +460,33 @@ Las specs 0003 y 0004 están cerradas. Quedó implementado:
   `semIIRetornoError01`–`21`. `semIICorrecto31`, `semIICorrecto72`
   (CP-SII-38) y `semIIError104` dejaron la base y son `semIIRetornoError19`,
   `20` y `16`.
+- **Logro *Atributos inicializados*** (2026-10-26, spec 0005). Siempre
+  activo en `ModuloPrincipalET4`. `Clase.chequearSentencias` encola los
+  atributos propios con inicializador junto con constructores y métodos,
+  por línea (y, en una misma línea, por índice de declaración), setea
+  `atributoActual` y atrapa el error del inicializador.
+  `Atributo.chequearInicializador` chequea la expresión y exige que su tipo
+  conforme con el del atributo, con la misma conformidad que
+  `NodoExpAsignacion`: si no, `ERR_ASIGNACION_INCOMPATIBLE` sobre el `=`,
+  que el parser ahora guarda en `Atributo`. Un error adentro del
+  inicializador es el único error del atributo, y su tipo declarado sigue
+  valiendo en sus usos. El inicializador es un contexto de instancia (no hay
+  atributos `static`): valen `this`, `this.x`, los atributos anteriores o
+  heredados y las llamadas sin receptor a métodos de instancia, y la
+  visibilidad se controla como en cualquier cuerpo. La referencia
+  adelantada (JLS §8.3.3) da `ERR_REFERENCIA_ADELANTADA` sobre el nombre:
+  `NodoAccesoVar`, con `atributoActual` seteado, rechaza un atributo de la
+  clase actual cuyo índice de declaración (`Atributo.getIndiceDeclaracion()`,
+  asignado por `Clase.agregarAtributo()` en orden del fuente) no es menor
+  que el del atributo que se inicializa, el propio incluido. No cuentan
+  `this.b`, `obj.b`, los heredados ni lo que lea un método llamado. El
+  destino directo de un `=` se salva (`NodoExpAsignacion` llama a
+  `chequearComoDestino`, que sólo `NodoAccesoVar` sin encadenado
+  redefine), pero `b++`, `b[0] = 1` y `b.x = 1` no. En métodos y
+  constructores la regla no aplica. La sintaxis de otros logros en el
+  inicializador sigue dando `ERR_NO_SOPORTADO` sobre su propio token.
+  `atributosInicializados` está en `LOGROS_HABILITADOS`. Casos:
+  `semIIAtribInicCorrecto01`–`05` y `semIIAtribInicError01`–`16`.
 
 Correcciones posteriores al cierre de la spec 0003 (code review,
 2026-10-24):
@@ -445,8 +509,8 @@ Siguen pendientes, cada uno para una spec propia. El parser ya los acepta y
 arma sus nodos, pero el chequeo reporta `ERR_NO_SOPORTADO` (spec 0003, D11):
 
 - *Minilambdas*, *Ternarios*, *Variables Locales Clásicas
-  Controladas*, *Atributos Inicializados*, *Métodos Genéricos E4* y
-  *Genericidad Avanzada* (diamante).
+  Controladas*, *Métodos Genéricos E4* y *Genericidad Avanzada*
+  (diamante).
 - *Super!*: la gramática todavía no lo tiene.
 - *Floats y coerción*: además hay que decidir qué pasa con los casos base
   que lo contradicen (`semIIError33`, `34`, `52`, `59`, `70`).
@@ -965,102 +1029,46 @@ lugares:
 
 ## Atributos inicializados
 
-Las clase Atributo debería un atributo inicilizador de tipo NodoExpresión.
-El cual debería determinar si el atributo está inicilizado o no.
+Decisiones en "Decisiones de la spec 0005". Este boceto reemplaza al
+anterior, que tenía ejemplos con atributos `static` (la gramática no los
+admite, §6.1) y detectaba sólo `x = x` comparando con `atributoActual`.
 
-Lo más limpio es reusar el mismo mapa o lista de atributos (`this.atributos`) que ya tenés en la Clase, y que cada objeto Atributo tenga adentro un campo opcional 
-`private NodoExpresion inicializador;` (que será null si el atributo se declaró sin `= ...`).
+`Atributo` guarda el inicializador (`NodoExpresion`, null si se declaró sin
+`= ...`), el token `=` y un índice de declaración que asigna
+`Clase.agregarAtributo()` en orden del fuente. `Clase.chequearSentencias()`
+ya encola sólo los atributos propios con inicializador, ordenados por línea
+junto con constructores y métodos, setea `atributoActual` (los otros dos
+campos en null) y atrapa el error: un atributo mal inicializado no corta el
+resto de la clase.
 
 ```java
-public class Atributo {
-    private Token token;
-    private Tipo tipo;
-    private boolean esEstatico;
-    // ... visibilidad, etc.
-
-    // Nuevo campo para la Etapa 4 (es null si hicieron "int x;" sin asignar)
-    private NodoExpresion inicializador; 
-
-    // Clase que lo declaró: consolidar() comparte este mismo objeto con las
-    // subclases, así que hace falta para chequearlo sólo en su clase de origen.
-    private Clase claseDeclarante;
-
-    public void chequearSentencias(TablaSimbolos tabla) {
-        if (this.inicializador != null) {
-            // 1. Chequeo la expresión del lado derecho del '='
-            Tipo tipoExpr = this.inicializador.chequear(tabla);
-            
-            // 2. Verifico que el tipo de la expresión conforme con el tipo del atributo
-            // (o aplico las reglas de coerción si corresponden)
-            if (!tipoExpr.conformaCon(this.tipo)) {
-                throw new ExcepcionSemantica(this.token, 
-                    "El tipo del inicializador no conforma con el tipo del atributo " + token.getLexema());
-            }
-        }
+// Atributo
+public void chequearInicializador(TablaSimbolos tabla) {
+    Tipo tipoInicializador = inicializador.chequear(tabla);
+    if (!tipoInicializador.conformaCon(tipo)) {
+        throw new ExcepcionSemantica(asignacion, "ERR_ASIGNACION_INCOMPATIBLE");
     }
 }
 ```
 
-### Cómo queda Clase.chequearSentencias()
-
-La versión vigente está en "Chequeos de nodos". Primero se recorren los atributos inicializados,
-después los constructores y al final los métodos. Siempre se chequean **sólo los propios**
-(`attr.getClaseDeclarante() == this`, `m.getMiClase() == this`). No es sólo prolijidad: el
-atributo heredado es el mismo objeto, y chequearlo desde la subclase repetiría sus errores con
-la clase actual equivocada.
-
-l concepto de `atributoActual` se usa únicamente durante el Paso 2 del bloque de código anterior: el instante en que el compilador está chequeando 
-el AST de la expresión que está a la derecha del `=` de un atributo (`int edad = ...`)
-
-**1. Cuando se chequea NodoThis (this)**
-
-Imaginate que tenés:
+Referencia adelantada: cuando `NodoAccesoVar` resuelve su nombre a un
+atributo y `atributoActual != null`, es error si el atributo encontrado es
+de la clase actual (`getClaseDeclarante() == claseActual`) y su índice no es
+menor que el de `atributoActual`, salvo que el nodo sea el destino directo
+de un `NodoExpAsignacion`.
 
 ```java
-class A {
-    int x = 10;
-    static int a = this.x; // ¡ERROR! 'a' es static, no puede usar 'this'
-    int b = this.x;        // VÁLIDO: 'b' no es static
+class A extends P {      // P declara p
+    int a = 1;
+    int b = a + p;       // válido: a está antes, p es heredado
+    int c = d;           // ERROR: referencia adelantada a d
+    int d = this.e;      // válido: acceso con receptor
+    int e = e + 1;       // ERROR: autorreferencia
+    int f = (g = 3);     // válido: g es destino directo de =
+    int g = h++;         // ERROR: ++ lee h
+    int h = m();         // válido aunque m lea atributos posteriores
+    int m() { return h; }
 }
-```
-
-Cuando se ejecuta `NodoThis.chequear()`: Si `metodoActual` es null y no tenés `atributoActual`, ¿cómo sabe `NodoThis` si está adentro de `static int a` (donde `this` es ilegal) o adentro de `int b` (donde `this` es válido)? No tiene forma de saberlo. En cambio, si guardaste `atributoActual`, `NodoThis` pregunta: "¿`atributoActual` es static? Entonces tiro error semántico".
-
-**2. Cuando se chequea NodoLlamadaMetodo (m()) sin receptor explícito**
-
-```java
-class A {
-    int m() { return 1; }
-    static int a = m(); // ¡ERROR! No podés llamar a un método dinámico desde un atributo static
-    int b = m();        // VÁLIDO
-}
-```
-
-Igual que antes: cuando `NodoLlamadaMetodo.chequear()` ve que `m()` es un método dinámico (no estático), necesita verificar que no lo estén llamando desde un contexto estático.
-Si `metodoActual` es null, mira a `atributoActual.esEstatic`
-
-**3. Cuando se chequea NodoAccesoVar (x)**
-
-```java
-class A {
-    int x = x + 1; // ¡ERROR en Java! Un atributo no puede inicializarse usando su propio valor
-}
-```
-
-Cuando `NodoAccesoVar.chequear()` busca `"x"` en la tabla de símbolos, lo va a encontrar en `claseActual.getAtributos()`. Para darse cuenta de que están intentando hacer `x = x + 1` (o sea, leyéndose a sí mismo antes de terminar de declararse), 
-`NodoAccesoVar` compara:
-
-```java
-if (atributoEncontrado == tablaSimbolos.getAtributoActual()) {
-    throw new ExcepcionSemantica(token, "No se puede referenciar al atributo en su propia inicialización");
-}
-```
-
-```java
-// En Clase.chequearSentencias(tabla), sólo para los atributos propios con inicializador:
-tabla.setUnidadActual(null, null, a); // <--- Acá empieza a existir atributoActual (metodo/constructor en null)
-a.chequearSentencias(tabla);          // <--- Acá adentro se chequea el AST del '='
-// La próxima unidad (otro atributo, un constructor o un método) vuelve a setear los tres campos.
 ```
 
 ## Mapeo no terminal → nodo

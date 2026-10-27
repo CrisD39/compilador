@@ -167,7 +167,6 @@ Reemplaza el `sustituir(nombreParam, argumento)` del boceto de
 | `for` / for-each | `for` |
 | ternario | `?` |
 | local clásica (`int x = …;`) | nombre de la primera local |
-| atributo inicializado | nombre del atributo |
 | lambda | `->` |
 | arreglo con inicializador | `new` |
 | llamada a un método genérico (con parámetros de tipo propios) | nombre del método |
@@ -178,6 +177,11 @@ tiene nodo ni regla queda así: la **visibilidad** se ignora (todo es
 accesible; el parser ni siquiera la guarda), y los **genéricos anidados**
 (`Caja<Caja<String>>`) se aceptan sin trato especial, porque salen solos de
 la recursión de `Tipo`.
+
+La tabla tenía una fila "atributo inicializado" (sobre el nombre del
+atributo). La spec 0005 implementó el logro y la reemplazó: el inicializador
+se chequea, y sólo la sintaxis de otros logros adentro de él da
+`ERR_NO_SOPORTADO`, sobre su propio token.
 
 **D12 · Postfijos.** `NodoExpPostfija` exige un operando asignable de tipo
 `int`. El resultado es `int` y no es asignable, así que `a++++` es error.

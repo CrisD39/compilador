@@ -36,9 +36,9 @@ redefiniciones válidas y conserva o instancia los parámetros de tipo según
 la relación de herencia.
 
 **Chequeo de sentencias**:
-La fase de Etapa 4. Valida los cuerpos de métodos y constructores, cada uno
-en su clase de origen: variables locales, resolución de nombres, tipos de
-expresiones y contexto estático.
+La fase de Etapa 4. Valida los cuerpos de métodos y constructores y los
+inicializadores de atributos, cada uno en su clase de origen: variables
+locales, resolución de nombres, tipos de expresiones y contexto estático.
 _Evitar_: chequeo de cuerpos
 
 ### Tipos declarados
@@ -221,3 +221,10 @@ programa. Ninguna de sus declaraciones entra en la tabla de símbolos, sin
 importar cuántas veces se repita. El nombre de un tipo predefinido nunca se
 invalida.
 _Evitar_: nombre descartado, nombre duplicado
+
+**Referencia adelantada**:
+Uso, por su nombre suelto y dentro del inicializador de un atributo, de un
+atributo de la misma clase que no está declarado antes que el que se
+inicializa (el propio atributo incluido). Es incorrecta, como en Java,
+salvo como destino directo de una asignación.
+_Evitar_: autorreferencia (es un caso de esta), uso antes de declarar
