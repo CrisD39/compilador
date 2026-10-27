@@ -34,7 +34,10 @@ public class NodoAccesoVar extends NodoPrimario {
     // Intermedia<String>", el T dato de Base es String (semIICorrecto13, D10).
     // Una local cuyo var falló no tiene tipo para seguir: la sentencia se
     // corta sin otro error (semIIMultiErrorError03). Un atributo private
-    // heredado no se ve desde la subclase (logro Visibilidad chequeada).
+    // heredado no se ve desde la subclase (logro Visibilidad chequeada). En
+    // los argumentos de super(...) el atributo también es this.x, y el objeto
+    // todavía no está construido (spec 0006, D9); un parámetro del
+    // constructor con el mismo nombre resuelve antes y vale.
     @Override
     public Tipo chequear(TablaSimbolos tabla) {
         return chequear(tabla, false);
@@ -62,6 +65,9 @@ public class NodoAccesoVar extends NodoPrimario {
                     tabla.getClaseActual(), nombre);
             if (tabla.enContextoEstatico()) {
                 throw new ExcepcionSemantica(nombre, "ERR_ATRIBUTO_EN_ESTATICO");
+            }
+            if (tabla.enContextoPrevioAConstruccion()) {
+                throw new ExcepcionSemantica(nombre, "ERR_REFERENCIA_ANTES_DE_SUPER");
             }
             if (!esDestinoDirecto) {
                 exigirDeclaradoAntes(tabla, atributo);

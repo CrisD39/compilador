@@ -1,6 +1,6 @@
 ---
 titulo: Acceso con super
-estado: ready-for-agent
+estado: hecho
 spec: ../../0006-super.md
 ---
 
@@ -54,12 +54,12 @@ Glosario: *superclase*, *acceso con super*.
 - Casos nuevos en `logros/superKeyword/` (tabla de la spec).
 
 **Criterios:**
-- [ ] ADR escrito, con el número siguiente a los existentes.
-- [ ] Casos de `logros/superKeyword/` en verde: Correcto 01 (existe) y 02;
+- [x] ADR escrito, con el número siguiente a los existentes.
+- [x] Casos de `logros/superKeyword/` en verde: Correcto 01 (existe) y 02;
       Error 01 (existe), 02–08, 19 y 20.
-- [ ] `class B2 extends A1 { void m2() { super.m1(); } }` (con `m1` en
+- [x] `class B2 extends A1 { void m2() { super.m1(); } }` (con `m1` en
       `A1`) da `[SinErrores]` con el jar.
-- [ ] Ningún caso base de `semantico2/{sinErrores,conErrores}` ni de las
+- [x] Ningún caso base de `semantico2/{sinErrores,conErrores}` ni de las
       Etapas 1–3 cambia de etiqueta.
-- [ ] Siguen en verde los demás logros habilitados.
-- [ ] `./test.sh` en verde.
+- [x] Siguen en verde los demás logros habilitados.
+- [x] `./test.sh` en verde.

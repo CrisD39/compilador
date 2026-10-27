@@ -51,6 +51,15 @@ public class NodoLlamadaSuperConstructor extends NodoSentencia {
         }
         Tipo tipoSuperclase = tabla.getClaseActual().getTipoSuperclase();
         Clase superclase = (Clase) tabla.buscarClase(tipoSuperclase.getToken().getLexema());
-        ChequeoLlamada.chequearConstructor(tabla, superclase, tipoSuperclase, argumentos, tokenSuper);
+        // D9: los argumentos se chequean en el contexto previo a la
+        // construcción. La marca se apaga aunque un argumento lance, así el
+        // resto del constructor usa el objeto actual normalmente. Cubre toda
+        // la resolución, pero sólo los argumentos miran la marca.
+        tabla.setContextoPrevioAConstruccion(true);
+        try {
+            ChequeoLlamada.chequearConstructor(tabla, superclase, tipoSuperclase, argumentos, tokenSuper);
+        } finally {
+            tabla.setContextoPrevioAConstruccion(false);
+        }
     }
 }

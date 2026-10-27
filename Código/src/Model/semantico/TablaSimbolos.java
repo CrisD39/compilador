@@ -38,6 +38,11 @@ public class TablaSimbolos {
     // Un mapa por bloque abierto, el tope es el más interno. Lo abren y
     // cierran los nodos que abren un scope, siempre en un finally.
     private final Deque<Map<String, VariableLocal>> bloques = new ArrayDeque<>();
+    // Contexto previo a la construcción (spec 0006, D9): prendido sólo
+    // mientras NodoLlamadaSuperConstructor chequea sus argumentos, que lo
+    // apaga en un finally. No es el contexto estático: el constructor tiene
+    // objeto, pero todavía no está construido.
+    private boolean antesDeConstruccion;
 
     public TablaSimbolos() {
         this.clases = new LinkedHashMap<>();
@@ -434,6 +439,17 @@ public class TablaSimbolos {
     // estáticos (la gramática sólo admite static en métodos, §6.1).
     public boolean enContextoEstatico() {
         return metodoActual != null && metodoActual.isEstatico();
+    }
+
+    // En los argumentos de super(...) no se puede usar el objeto actual
+    // (JLS §8.8.7.1): this, super.x, un atributo por su nombre suelto ni una
+    // llamada sin receptor a un método de instancia.
+    public boolean enContextoPrevioAConstruccion() {
+        return antesDeConstruccion;
+    }
+
+    public void setContextoPrevioAConstruccion(boolean valor) {
+        antesDeConstruccion = valor;
     }
 
     public void abrirBloque() {

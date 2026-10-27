@@ -22,7 +22,8 @@ public class NodoSuper extends NodoPrimario {
         return tokenSuper;
     }
 
-    // D6: sólo vale donde vale this (un método estático no tiene objeto). De
+    // D6: sólo vale donde vale this (un método estático no tiene objeto, y
+    // en los argumentos de super(...) todavía no está construido, D9). De
     // ahí en más es un receptor de tipo superclase y el encadenado de siempre
     // hace el resto: miembros heredados, sustitución genérica, visibilidad
     // (un private de la superclase no es de la clase actual) y
@@ -32,6 +33,9 @@ public class NodoSuper extends NodoPrimario {
     public Tipo chequear(TablaSimbolos tabla) {
         if (tabla.enContextoEstatico()) {
             throw new ExcepcionSemantica(tokenSuper, "ERR_SUPER_EN_ESTATICO");
+        }
+        if (tabla.enContextoPrevioAConstruccion()) {
+            throw new ExcepcionSemantica(tokenSuper, "ERR_REFERENCIA_ANTES_DE_SUPER");
         }
         return chequearEncadenado(tabla, tabla.getClaseActual().getTipoSuperclase());
     }

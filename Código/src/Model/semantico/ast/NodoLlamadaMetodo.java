@@ -34,7 +34,9 @@ public class NodoLlamadaMetodo extends NodoPrimario {
     // que sólo sirve otro estático (semIIError17). Un heredado se ve desde la
     // clase actual: en "Final extends Intermedia<String>", el T obtener() de
     // Base devuelve String (semIICorrecto13, D10). Un método private heredado
-    // no se ve desde la subclase (logro Visibilidad chequeada).
+    // no se ve desde la subclase (logro Visibilidad chequeada). En los
+    // argumentos de super(...) un método de instancia tampoco tiene objeto
+    // construido (spec 0006, D9).
     @Override
     public Tipo chequear(TablaSimbolos tabla) {
         Metodo metodo = tabla.getClaseActual().buscarMetodo(Metodo.clave(nombre.getLexema(), argumentos.size()));
@@ -44,6 +46,9 @@ public class NodoLlamadaMetodo extends NodoPrimario {
         ChequeoVisibilidad.exigirAcceso(tabla, metodo.isPrivado(), metodo.getMiClase(), tabla.getClaseActual(), nombre);
         if (!metodo.isEstatico() && tabla.enContextoEstatico()) {
             throw new ExcepcionSemantica(nombre, "ERR_METODO_NO_ESTATICO");
+        }
+        if (!metodo.isEstatico() && tabla.enContextoPrevioAConstruccion()) {
+            throw new ExcepcionSemantica(nombre, "ERR_REFERENCIA_ANTES_DE_SUPER");
         }
         List<Tipo> tiposArgumentos = ChequeoLlamada.chequearArgumentos(tabla, argumentos);
         Tipo tipo = ChequeoLlamada.tipoDeLlamada(

@@ -1,6 +1,6 @@
 ---
 titulo: Llamada al constructor de la superclase
-estado: ready-for-agent
+estado: hecho
 spec: ../../0006-super.md
 ---
 
@@ -53,10 +53,10 @@ superclase*. JLS §8.8.7.
 - Casos nuevos en `logros/superKeyword/` (tabla de la spec).
 
 **Criterios:**
-- [ ] Casos de `logros/superKeyword/` en verde: Correcto 03 y 04;
+- [x] Casos de `logros/superKeyword/` en verde: Correcto 03 y 04;
       Error 09–16.
-- [ ] Siguen en verde los casos del ticket 01, `semIICorrecto22` y
+- [x] Siguen en verde los casos del ticket 01, `semIICorrecto22` y
       `semIIVisibilidadCorrecto04`.
-- [ ] `new` da las mismas etiquetas que antes del prefactor.
-- [ ] Siguen en verde los demás logros habilitados.
-- [ ] `./test.sh` en verde. Las Etapas 1–3 no cambian.
+- [x] `new` da las mismas etiquetas que antes del prefactor.
+- [x] Siguen en verde los demás logros habilitados.
+- [x] `./test.sh` en verde. Las Etapas 1–3 no cambian.

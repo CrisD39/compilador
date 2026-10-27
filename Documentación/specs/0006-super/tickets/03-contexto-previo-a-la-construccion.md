@@ -1,6 +1,6 @@
 ---
 titulo: Contexto previo a la construcción
-estado: ready-for-agent
+estado: hecho
 spec: ../../0006-super.md
 ---
 
@@ -38,11 +38,11 @@ la construcción* (no es el contexto estático). JLS §8.8.7.1.
 - Casos nuevos en `logros/superKeyword/` (tabla de la spec).
 
 **Criterios:**
-- [ ] Casos de `logros/superKeyword/` en verde: Correcto 05 y 06;
+- [x] Casos de `logros/superKeyword/` en verde: Correcto 05 y 06;
       Error 17 y 18.
-- [ ] Un error en los argumentos no deja la marca prendida: lo que sigue
+- [x] Un error en los argumentos no deja la marca prendida: lo que sigue
       en el constructor se chequea normalmente.
-- [ ] Siguen en verde los casos de los tickets 01 y 02 y los demás logros
+- [x] Siguen en verde los casos de los tickets 01 y 02 y los demás logros
       habilitados (en particular `atributosInicializados` y
       `multiDeteccionErrores`).
-- [ ] `./test.sh` en verde. Las Etapas 1–3 no cambian.
+- [x] `./test.sh` en verde. Las Etapas 1–3 no cambian.
