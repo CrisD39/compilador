@@ -31,13 +31,15 @@ public class NodoExpAsignacion extends NodoExpresion {
     // va antes de chequear el destino: en m9() = 3 el error es el destino, no
     // que m9 no exista. Se vuelve a preguntar después de chequearlo porque
     // v.length depende del tipo de v: recién entonces se sabe que es el
-    // length de un arreglo, de sólo lectura (⚠10, semIIError67).
+    // length de un arreglo, de sólo lectura (⚠10, semIIError67). El destino
+    // se chequea "como destino": en un inicializador, (b = 3) con b posterior
+    // no es una referencia adelantada (spec 0005, D7).
     @Override
     public Tipo chequear(TablaSimbolos tabla) {
         if (!ladoIzq.esAsignable()) {
             throw new ExcepcionSemantica(operador, "ERR_DESTINO_NO_ASIGNABLE");
         }
-        Tipo destino = ladoIzq.chequear(tabla);
+        Tipo destino = ladoIzq.chequearComoDestino(tabla);
         if (!ladoIzq.esAsignable()) {
             throw new ExcepcionSemantica(operador, "ERR_DESTINO_NO_ASIGNABLE");
         }

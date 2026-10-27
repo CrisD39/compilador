@@ -84,6 +84,7 @@ public final class ErrorSemantico {
             // de etapa4-semantico2/casos-de-prueba.md.
             case "ERR_VAR_NO_DECLARADA" -> "la variable " + x + " no está declarada";
             case "ERR_ATRIBUTO_EN_ESTATICO" -> "el atributo " + x + " no se puede usar en un método estático";
+            case "ERR_REFERENCIA_ADELANTADA" -> "el atributo " + x + " se usa en un inicializador antes de su declaración";
             case "ERR_THIS_EN_ESTATICO" -> "this no se puede usar en un método estático";
             case "ERR_PARAMETRO_TIPO_EN_ESTATICO" ->
                     "el parámetro de tipo " + x + " de la clase no se puede usar en un método estático";

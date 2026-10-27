@@ -11,6 +11,9 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
     // la clase no escribe 'extends' (el padre efectivo es Object igual).
     private Tipo herencia;
     private HashMap<String, Atributo> atributos;
+    // Atributos propios registrados hasta ahora: da el índice de declaración
+    // del siguiente (spec 0005, D5).
+    private int atributosDeclarados = 0;
     private HashMap<String, Metodo> metodos;
     private List<Constructor> constructores ;
     // Interfaz implementada: a lo sumo una (ADR 0005, la gramática ya no
@@ -166,6 +169,7 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
         else
         {
             atributo.setClaseDeclarante(this);
+            atributo.setIndiceDeclaracion(atributosDeclarados++);
             atributos.put(clave,atributo);
         }
     }
@@ -494,10 +498,18 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
     // error: un atributo mal inicializado no corta el resto de la clase.
     public void chequearSentencias(TablaSimbolos tabla) {
         List<UnidadAChequear> unidades = new ArrayList<>();
+        // Los atributos se encolan por índice de declaración y no en el orden
+        // del HashMap: el ordenamiento por línea es estable, así varios
+        // atributos en una misma línea quedan en el orden del fuente
+        // (Multi-detección, spec 0005, D5).
+        List<Atributo> propios = new ArrayList<>();
         for (Atributo atributo : atributos.values()) {
-            if (atributo.getClaseDeclarante() != this || atributo.getInicializador() == null) {
-                continue;
+            if (atributo.getClaseDeclarante() == this && atributo.getInicializador() != null) {
+                propios.add(atributo);
             }
+        }
+        propios.sort(Comparator.comparingInt(Atributo::getIndiceDeclaracion));
+        for (Atributo atributo : propios) {
             unidades.add(new UnidadAChequear(atributo.getNombre(), () -> {
                 tabla.setUnidadActual(null, null, atributo);
                 try {

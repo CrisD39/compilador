@@ -37,6 +37,18 @@ public class NodoAccesoVar extends NodoPrimario {
     // heredado no se ve desde la subclase (logro Visibilidad chequeada).
     @Override
     public Tipo chequear(TablaSimbolos tabla) {
+        return chequear(tabla, false);
+    }
+
+    // Sólo el nombre sin encadenado es el destino directo del "=": en
+    // b[0] = 1 o b.x = 1 se lee b para llegar al componente o al atributo, y
+    // sigue siendo una referencia adelantada (spec 0005, D7).
+    @Override
+    public Tipo chequearComoDestino(TablaSimbolos tabla) {
+        return chequear(tabla, encadenado == null);
+    }
+
+    private Tipo chequear(TablaSimbolos tabla, boolean esDestinoDirecto) {
         Variable variable = tabla.buscarVariable(nombre.getLexema());
         if (variable == null) {
             throw new ExcepcionSemantica(nombre, "ERR_VAR_NO_DECLARADA");
@@ -44,17 +56,32 @@ public class NodoAccesoVar extends NodoPrimario {
         if (variable instanceof VariableLocal local && local.esSinTipo()) {
             throw ExcepcionSemantica.enCascada(nombre);
         }
+        Tipo tipo = variable.getTipo();
         if (variable instanceof Atributo atributo) {
             ChequeoVisibilidad.exigirAcceso(tabla, atributo.isPrivado(), atributo.getClaseDeclarante(),
                     tabla.getClaseActual(), nombre);
-        }
-        if (variable instanceof Atributo && tabla.enContextoEstatico()) {
-            throw new ExcepcionSemantica(nombre, "ERR_ATRIBUTO_EN_ESTATICO");
-        }
-        Tipo tipo = variable.getTipo();
-        if (variable instanceof Atributo) {
+            if (tabla.enContextoEstatico()) {
+                throw new ExcepcionSemantica(nombre, "ERR_ATRIBUTO_EN_ESTATICO");
+            }
+            if (!esDestinoDirecto) {
+                exigirDeclaradoAntes(tabla, atributo);
+            }
             tipo = tipo.sustituir(tabla.getClaseActual().getInstanciacion());
         }
         return chequearEncadenado(tabla, tipo);
+    }
+
+    // Referencia adelantada (spec 0005, D6; JLS §8.3.3): en el inicializador
+    // de un atributo, un atributo de la misma clase declarante que no está
+    // declarado antes (el propio incluido: int x = x + 1;). Va antes del
+    // encadenado, así b.x, b[0] y m(b) cuentan. this.b y obj.b no pasan por
+    // acá (son NodoVarEncadenada), un heredado lo declara otra clase y no se
+    // puede ocultar, y en métodos y constructores atributoActual es null.
+    private void exigirDeclaradoAntes(TablaSimbolos tabla, Atributo atributo) {
+        Atributo inicializado = tabla.getAtributoActual();
+        if (inicializado != null && atributo.getClaseDeclarante() == tabla.getClaseActual()
+                && atributo.getIndiceDeclaracion() >= inicializado.getIndiceDeclaracion()) {
+            throw new ExcepcionSemantica(nombre, "ERR_REFERENCIA_ADELANTADA");
+        }
     }
 }

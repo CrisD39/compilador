@@ -13,6 +13,13 @@ import Model.semantico.Tipo;
 public abstract class NodoExpresion implements ValorArreglo {
     public abstract Tipo chequear(TablaSimbolos tabla);
 
+    // Chequeo del lado izquierdo de un "=" (spec 0005, D7). Sólo lo redefine
+    // NodoAccesoVar: el nombre suelto que es destino directo no es una
+    // referencia adelantada. Cualquier otro destino se chequea como siempre.
+    public Tipo chequearComoDestino(TablaSimbolos tabla) {
+        return chequear(tabla);
+    }
+
     // Primer token que guarda la expresión, bajando por la izquierda. Lo usa
     // NodoSentenciaExpresion para reportar una sentencia inalcanzable (spec
     // 0004, D7): el nombre en una variable o una llamada, this, la clase en

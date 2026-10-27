@@ -23,6 +23,13 @@ public class Atributo implements Chequeable, Variable {
     // modificador o con public es público (Parte I §6.1). Sólo lo mira el
     // chequeo de cuerpos (ChequeoVisibilidad); la Etapa 3 lo ignora.
     private boolean privado;
+    // Orden de declaración dentro de su clase (spec 0005, D5): lo asigna
+    // Clase.agregarAtributo() con un contador, en el orden del fuente. Sirve
+    // para la referencia adelantada: atributos es un HashMap y Token no
+    // guarda la columna, así que con la línea sola no se resuelve
+    // "int a = b; int b = 1;" en una línea. -1 si es un duplicado que no se
+    // registró. Sólo se compara entre atributos de la misma clase declarante.
+    private int indiceDeclaracion = -1;
 
     public Atributo(Token nombre, Tipo tipo) {
         this.nombre = nombre;
@@ -45,6 +52,14 @@ public class Atributo implements Chequeable, Variable {
 
     public void setClaseDeclarante(Clase claseDeclarante) {
         this.claseDeclarante = claseDeclarante;
+    }
+
+    public int getIndiceDeclaracion() {
+        return indiceDeclaracion;
+    }
+
+    public void setIndiceDeclaracion(int indiceDeclaracion) {
+        this.indiceDeclaracion = indiceDeclaracion;
     }
 
     public boolean isPrivado() {
