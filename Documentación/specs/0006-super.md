@@ -1,6 +1,6 @@
 ---
 titulo: Logro Super! (Etapa 4)
-estado: ready-for-agent
+estado: hecho
 origen: entrevista de diseño (grill with docs, 2026-10-27)
 fecha: 2026-10-27
 ---
@@ -49,7 +49,7 @@ La regla de la primera sentencia es la de JDK 21 y no la de JDK 25 (JEP 513,
 *flexible constructor bodies*, que admite sentencias antes de `super(...)`).
 El compilador usa JDK 21 y la cátedra describe el lenguaje con esa versión.
 La alternativa se descartó porque complicaba la gramática y el análisis sin
-que el logro la pida (ver Further Notes, ADR propuesto).
+que el logro la pida (ADR 0010).
 
 ## User Stories
 
@@ -368,12 +368,11 @@ tiene un solo error, para que el modo pánico no agregue etiquetas.
   supertype constructor has been called".
 - Vocabulario: `GLOSARIO.md` (*superclase*, *acceso con super*, *llamada al
   constructor de la superclase*, *contexto previo a la construcción*).
-- **ADR propuesto, todavía sin escribir:** `adr/0010-super-constructor-primera-sentencia-jdk21.md`.
-  Registraría que `super(...)` es una sentencia (y no una expresión) y que
-  va primera, como en JDK 21 y no como en JDK 25. Cumple los tres
-  criterios: es difícil de revertir (gramática y casos), sorprende frente al
-  "como en Java" y hubo una alternativa real. Conviene escribirlo antes del
-  primer ticket.
+- **ADR 0010** (`adr/0010-super-constructor-primera-sentencia-jdk21.md`,
+  escrito en el ticket 01): `super(...)` es una sentencia (y no una
+  expresión) y va primera, como en JDK 21 y no como en JDK 25. Cumple los
+  tres criterios: es difícil de revertir (gramática y casos), sorprende
+  frente al "como en Java" y hubo una alternativa real.
 - Al cerrar hay que actualizar:
   - en `etapa4-semantico2/requerimientos.md`: una sección "Decisiones de la
     spec 0006", el "Estado de la implementación" (sacar el logro de los
@@ -384,3 +383,22 @@ tiene un solo error, para que el modo pánico no agregue etiquetas.
   - `casos-de-prueba.md` (convenciones e índice);
   - el `CLAUDE.md` (lista de logros chequeados y conteo de casos);
   - el índice de `Documentación/README.md`.
+
+## Tickets
+
+En `0006-super/tickets/`, uno por archivo.
+
+| # | Ticket | Bloqueado por | Estado |
+|---|---|---|---|
+| 01 | Acceso con super | — | hecho |
+| 02 | Llamada al constructor de la superclase | 01 | hecho |
+| 03 | Contexto previo a la construcción | 02 | hecho |
+| 04 | Cierre | 03 | hecho |
+
+Reparto de casos: 01 → Correcto 01 y 02, Error 01–08, 19 y 20; 02 →
+Correcto 03 y 04, Error 09–16; 03 → Correcto 05 y 06, Error 17 y 18.
+
+**Cierre (2026-10-27):** `./test.sh` en verde. Etapas 1–3 sin cambios
+(léxico 14 + 24, sintáctico 38 + 63 + 4 de modo pánico, semántico 37 + 104);
+Sem2 con 92 casos sin error, 171 con error y 154 de logros (26 de este
+logro: 6 correctos y 20 con error). La base no cambió.

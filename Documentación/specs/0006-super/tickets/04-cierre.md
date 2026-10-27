@@ -1,6 +1,6 @@
 ---
 titulo: Cierre
-estado: ready-for-agent
+estado: hecho
 spec: ../../0006-super.md
 ---
 
@@ -34,7 +34,25 @@ y cómo.
   `./test.sh`.
 
 **Criterios:**
-- [ ] Todos los archivos de arriba actualizados.
-- [ ] Ningún documento dice que `super` está pendiente o que la gramática
+- [x] Todos los archivos de arriba actualizados.
+- [x] Ningún documento dice que `super` está pendiente o que la gramática
       no lo tiene.
-- [ ] `./test.sh` en verde.
+- [x] `./test.sh` en verde.
+
+**Notas de la implementación:** sólo documentación. En
+`etapa4-semantico2/requerimientos.md` el logro pasó a "Chequeado", hay una
+sección "Decisiones de la spec 0006" (con dos notas para el informe), su
+entrada en "Estado de la implementación" y salió de los pendientes; la nota
+de visibilidad sobre constructores private se reescribió, `NodoSuper` y
+`NodoLlamadaSuperConstructor` pasaron de "Pendientes de gramática" al mapeo
+y perdieron el `[pendiente]` en el árbol. La gramática de Etapa 2 tiene las
+producciones `<SentSuper>` y `<AccesoSuper>` y una sección "Factorización de
+`super`" con los FIRST que cambian (se comprobó con el jar que en el `for`
+vale el acceso con super y `super(...)` es error sintáctico). En
+`casos-de-prueba.md` se agregaron las filas y lexemas nuevos de la
+convención, `super` en la fila de sentencia inalcanzable y "Casos del logro
+Super!" con los 26 casos y sus etiquetas. `CLAUDE.md`,
+`testers/guia-testers-sem2.md` y `Documentación/README.md` actualizados.
+`./test.sh`: Sem2 con 92 casos sin error, 171 con error y 154 de logros,
+todo en verde.
+

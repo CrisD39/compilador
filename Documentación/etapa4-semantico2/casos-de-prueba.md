@@ -19,17 +19,20 @@ Es el contrato de la spec 0003 (D7): todos los casos con error lo cumplen. El c�
 | Asignación incompatible (incluye un inicializador de atributo que no conforma; logro Atributos inicializados) | `=` | `ERR_ASIGNACION_INCOMPATIBLE` |
 | Destino no asignable | `=` (o `++`/`--`) | `ERR_DESTINO_NO_ASIGNABLE` |
 | Método inexistente o aridad sin match (incluye `clone` sobre un arreglo) | nombre del método | `ERR_METODO_NO_ENCONTRADO` |
-| Argumento que no conforma (método o constructor) | nombre del método o de la clase | `ERR_ARGUMENTO_INCOMPATIBLE` |
+| Argumento que no conforma (método o constructor) | nombre del método o de la clase (en `super(...)`, `super`; logro Super!) | `ERR_ARGUMENTO_INCOMPATIBLE` |
 | Llamada sin receptor o `Clase.m()` a un método de instancia | nombre del método | `ERR_METODO_NO_ESTATICO` |
 | `Clase.m()` o `new` de una clase inexistente | nombre de la clase | `ERR_TIPO_NO_DECLARADO` (de la Etapa 3) |
 | `new` de interfaz | nombre de la interfaz | `ERR_NEW_INTERFAZ` |
 | `new` de una genérica sin argumento | nombre de la clase | `ERR_TIPO_SIN_ARGUMENTO` (de la Etapa 3) |
-| `new` sin constructor de esa aridad | nombre de la clase | `ERR_CONSTRUCTOR_NO_ENCONTRADO` |
+| `new` o `super(...)` sin constructor de esa aridad | nombre de la clase (en `super(...)`, `super`; logro Super!) | `ERR_CONSTRUCTOR_NO_ENCONTRADO` |
 | Miembro sobre un primitivo o un `T` sin instanciar | el nombre del miembro | `ERR_RECEPTOR_SIN_MIEMBROS` |
 | Operador con tipos incorrectos u operando void (incluye `++`/`--` sobre algo que no es `int`, y un `instanceof` con operando primitivo o tipos sin relación) | el operador | `ERR_OPERADOR_INCOMPATIBLE` |
 | Condición no boolean | `if` / `while` / `for` | `ERR_CONDICION_NO_BOOLEAN` |
 | Return incorrecto (incluye retorno no conformante) | `return` | `ERR_RETORNO_INCORRECTO` |
 | `this` en contexto estático | `this` | `ERR_THIS_EN_ESTATICO` |
+| Acceso con super (`super.x`, `super.m()`) en contexto estático (logro Super!) | `super` | `ERR_SUPER_EN_ESTATICO` |
+| `super(...)` que no es la primera sentencia de un constructor (logro Super!) | `super` | `ERR_SUPER_FUERA_DE_LUGAR` |
+| Uso del objeto actual en los argumentos de `super(...)`: `this`, un acceso con super, un atributo por su nombre suelto o una llamada sin receptor a un método de instancia (logro Super!) | el token del uso: `this`, `super`, el nombre del atributo o del método | `ERR_REFERENCIA_ANTES_DE_SUPER` |
 | Uso de `T` en contexto estático | `T` | `ERR_PARAMETRO_TIPO_EN_ESTATICO` |
 | Índice o tamaño no int | `[` | `ERR_INDICE_NO_ENTERO` |
 | Indexar algo que no es arreglo | `[` | `ERR_NO_ES_ARREGLO` |
@@ -42,9 +45,9 @@ Es el contrato de la spec 0003 (D7): todos los casos con error lo cumplen. El c�
 | Expresión del for-each que no conforma con `MiniIterable` (arreglos incluidos; logro For) | `for` | `ERR_FOREACH_NO_ITERABLE` |
 | Elemento del for-each que no conforma con el tipo de la variable (logro For) | `for` | `ERR_FOREACH_TIPO_INCOMPATIBLE` |
 | Destino genérico de `instanceof`, con argumento o raw (logro Instanceof) | `instanceof` | `ERR_INSTANCEOF_GENERICO` |
-| Acceso a un miembro private fuera de su clase o con un receptor de otra clase (logro Visibilidad chequeada) | el nombre del miembro (en `new`, el de la clase) | `ERR_ACCESO_PRIVADO` |
+| Acceso a un miembro private fuera de su clase o con un receptor de otra clase (logro Visibilidad chequeada) | el nombre del miembro, también en un acceso con super (en `new`, el de la clase; en `super(...)`, `super`) | `ERR_ACCESO_PRIVADO` |
 | Método no void cuyo cuerpo termina normalmente (logro Todos los caminos llevan al retorno) | nombre del método | `ERR_FALTA_RETORNO` |
-| Sentencia inalcanzable (logro Todos los caminos llevan al retorno) | primer token de la sentencia: `var`, el tipo de una local clásica, `return`, `if`, `while`, `for`, `{`, `;` o, en una expresión, el primer nombre bajando por la izquierda (`x = 2;` da `x`, `new A1().m();` y `A1.m();` dan `A1`, `(x).m();` da `x`; spec 0004, D7) | `ERR_SENTENCIA_INALCANZABLE` |
+| Sentencia inalcanzable (logro Todos los caminos llevan al retorno) | primer token de la sentencia: `var`, el tipo de una local clásica, `return`, `if`, `while`, `for`, `{`, `;`, `super` (acceso con super o `super(...)`; logro Super!) o, en una expresión, el primer nombre bajando por la izquierda (`x = 2;` da `x`, `new A1().m();` y `A1.m();` dan `A1`, `(x).m();` da `x`; spec 0004, D7) | `ERR_SENTENCIA_INALCANZABLE` |
 | Referencia adelantada o autorreferencia en el inicializador de un atributo (logro Atributos inicializados) | el nombre usado | `ERR_REFERENCIA_ADELANTADA` |
 | Construcción de un logro no implementado | ver la spec 0003, D11 | `ERR_NO_SOPORTADO` |
 
@@ -83,6 +86,39 @@ Están en `logros/atributosInicializados/` (spec 0005) y los corre `TesterLogros
 | `semIIAtribInicError14` | `secreto` | Atributo `private` de otra clase (logro Visibilidad chequeada). |
 | `semIIAtribInicError15` | `?` | Ternario en el inicializador: logro no implementado, sin otro error del atributo. |
 | `semIIAtribInicError16` | `=`, `=`, `d` | Multi-detección: inicializadores y un método mezclados en el orden del programa. |
+
+## Casos del logro Super!
+
+Están en `logros/superKeyword/` (spec 0006) y los corre `TesterLogrosSem2`. Ningún caso base usa `super`, así que convertirlo en palabra clave no cambió ninguna etiqueta de la base; `semIICorrecto22` y `semIIVisibilidadCorrecto04`, que dependen de que no haya llamada implícita a `super()` (§6.3), siguen sin errores. Los errores sintácticos (`07`–`09`) van acá porque `ModuloPrincipalET4` los imprime con la misma etiqueta, y cada uno tiene un solo error para que el modo pánico no agregue etiquetas.
+
+| Caso | Etiquetas | Qué prueba |
+|---|---|---|
+| `semIISuperCorrecto01` | — | `super.m1()` llama a un método del ancestro. |
+| `semIISuperCorrecto02` | — | Acceso: `super.x` leído y asignado, `super.v[0]`, `super.get().y`, `super.get().n();` como sentencia, miembros del abuelo, un método redefinido llamado con `super`, `super.mEstatico()` en un método de instancia y `super.toString()` en una clase sin `extends`. |
+| `semIISuperCorrecto03` | — | Genéricos: en `B2 extends A1<String>`, `super.dato` y `super.get()` son `String`, y `super("hola")` elige `A1(T t)`. |
+| `semIISuperCorrecto04` | — | Llamada en lugar: `super()` sin `extends`, `super(1, true)` por aridad entre sobrecargados, `super()` con una superclase sin constructores declarados, y un constructor sin `super(...)` cuya superclase sólo tiene constructores con parámetros (§6.3). |
+| `semIISuperCorrecto05` | — | Lo que vale en los argumentos de `super(...)`: un parámetro con el nombre de un atributo heredado, literales, `A1.m()`, un método estático propio sin receptor, `new` de la clase actual, `p.x` y `p.m()`. |
+| `semIISuperCorrecto06` | — | Contextos de instancia: `super.b` en un inicializador (no es referencia adelantada) y accesos con super en un constructor, después de `super()` y en otro sin `super(...)`. |
+| `semIISuperError01` | `noExiste` | `super.noExiste()`. |
+| `semIISuperError02` | `x` | `super.x` con `x` declarado sólo en la clase actual. |
+| `semIISuperError03` | `m` | `super.m()` con `m` que sólo viene de la interfaz implementada. |
+| `semIISuperError04` | `secreto`, `privM` | Private de la superclase: `super.secreto` y `super.privM()` (logro Visibilidad chequeada). |
+| `semIISuperError05` | `super`, `super` | Acceso con super en un método estático: `super.x` y `super.m()`. |
+| `semIISuperError06` | `=`, `=` | Tipos: `int i = super.nombre;` con `String nombre`, y `int j = super.dato;` en `B extends A<String>`. |
+| `semIISuperError07` | `(` | Sintaxis: `x = super(1);`. |
+| `semIISuperError08` | `;` | Sintaxis: `super;`. |
+| `semIISuperError09` | `.` | Sintaxis: `super(1).m();`. |
+| `semIISuperError10` | `super` | Ubicación: `super()` en un método de instancia. |
+| `semIISuperError11` | `super`, `super` | Ubicación: `{ ; super(); }` y la segunda llamada de `{ super(); super(); }`. |
+| `semIISuperError12` | `super`, `super` | Ubicación: `{ { super(); } }` y `{ if (c) super(); }`. |
+| `semIISuperError13` | `super` | Ubicación en un método estático: gana a la de contexto estático. |
+| `semIISuperError14` | `super`, `super` | Aridad: `super(1)` con la superclase con sólo `A()`, y `super(1)` sin `extends`. |
+| `semIISuperError15` | `super`, `super` | Argumento incompatible: `super(true)` con `A(int)`, y `super(5)` en `B extends A<String>` con `A(T t)`. |
+| `semIISuperError16` | `super` | `super()` elige un constructor private de la superclase. |
+| `semIISuperError17` | `this`, `x`, `x` | Antes de la construcción: `super(this)`, `super(x)` con `x` heredado y `super((x))`. |
+| `semIISuperError18` | `m`, `super`, `this` | Antes de la construcción: `super(m())` con `m` de instancia, `super(super.x)` y `super(new C(this))`. |
+| `semIISuperError19` | `super` | Sentencia inalcanzable: `super.m();` después de un `return;`. |
+| `semIISuperError20` | `noExiste`, `=`, `+` | Multi-detección: `super.noExiste();`, `super.x = true;` con `int x` y `this.y = 1 + true;`. |
 
 ## Índice
 

@@ -84,7 +84,7 @@ variable asociada a la prueba de tipo.
 El compilador controla que los accesos sobre atributos, métodos y
 constructores respetan los modificadores de visibilidad como en Java
 
-### Super!
+### Super! - Chequeado
 
 El compilador permite utilizar super como en Java para acceder a
 métodos o atributos de un ancestro, o para invocar a su constructor
@@ -345,9 +345,55 @@ aparta de Java. El detalle está en "Atributos inicializados" (sección NODOS).
   diamante, `new T[]{...}`) sigue dando `ERR_NO_SOPORTADO` en su token, sin
   un segundo error del atributo.
 
-## Estado de la implementación (2026-10-26)
+## Decisiones de la spec 0006 (2026-10-27)
 
-Las specs 0003, 0004 y 0005 están cerradas. Quedó implementado:
+El logro *Super!* se cerró en una entrevista de diseño y se planificó en
+`specs/0006-super.md` (4 tickets). La decisión difícil de revertir está en
+el **ADR 0010** (`adr/0010-super-constructor-primera-sentencia-jdk21.md`):
+`super(...)` es una sentencia y no una expresión, y sólo vale como primera
+sentencia del cuerpo de un constructor, como en JDK 21 y no como en JDK 25
+(JEP 513).
+
+- **Léxico y gramática.** `super` es la palabra clave `PR_SUPER`, en todas
+  las etapas. Entra en los FIRST de `<Operando>`, `<Expresion>` y
+  `<Sentencia>` con dos formas: el acceso con super (`super.x`,
+  `super.m(...)`, con el primer eslabón `.` obligatorio) y la sentencia
+  `super <ArgsActuales> ;`. `super` suelto, `super[0]`, `x = super(1);` y
+  `super(1).m();` son errores sintácticos.
+- **Tipo de super.** El `extends` tal como se escribió (`A<String>`), o
+  `Object` si no hay `extends` (también con `implements`, ADR 0005). Desde
+  ahí, el encadenado se chequea como con cualquier receptor: miembros
+  heredados, sustitución genérica, visibilidad y asignabilidad. Un miembro
+  que sólo declara la clase actual o una interfaz implementada no existe en
+  la superclase.
+- **Contexto.** El acceso con super vale donde vale `this`: en un método
+  estático es `ERR_SUPER_EN_ESTATICO`. En un inicializador de atributo
+  vale, y `super.b` nunca es referencia adelantada.
+- **Ubicación.** La decide el AST: el constructor marca su primera
+  sentencia si es la llamada. Cualquier otra es `ERR_SUPER_FUERA_DE_LUGAR`,
+  también en un método estático (gana a la de contexto estático).
+- **Resolución.** Como `new`, sobre la superclase y con `super` en el papel
+  del nombre de la clase: aridad, visibilidad y conformidad de los
+  argumentos con los parámetros vistos desde el `extends`.
+- **Contexto previo a la construcción** (JLS §8.8.7.1). En los argumentos
+  de `super(...)` no se puede usar el objeto actual: `this`, un acceso con
+  super, un atributo por su nombre suelto o una llamada sin receptor a un
+  método de instancia dan `ERR_REFERENCIA_ANTES_DE_SUPER`, sobre el token
+  del uso.
+- **§6.3 se mantiene.** Un constructor sin `super(...)` no llama a ningún
+  constructor de la superclase, ni se le exige a ésta uno sin parámetros.
+
+### Para el informe de la Etapa 4
+
+- `super(...)` sigue la regla de JDK 21 (ADR 0010): una sentencia antes,
+  aunque no use el objeto actual, es error, y en JDK 25 no lo es.
+- Como MiniJava no agrega la llamada implícita a `super()` (§6.3), una
+  subclase cuya superclase sólo tiene constructores con parámetros compila
+  sin escribir `super(...)` (`semIISuperCorrecto04`), y javac la rechaza.
+
+## Estado de la implementación (2026-10-27)
+
+Las specs 0003, 0004, 0005 y 0006 están cerradas. Quedó implementado:
 
 - **Lo base de §9–§12.** Todos los casos de `resources/semantico2/{sinErrores,conErrores}`
   pasan con `ModuloPrincipalET4`, que es el main del jar. La tercera pasada es `TablaSimbolos.chequearSentencias()`, y sólo
@@ -422,8 +468,10 @@ Las specs 0003, 0004 y 0005 están cerradas. Quedó implementado:
   igual a uno private del padre se controla como redefinición, un private
   puede cumplir un método de interfaz, y reducir la visibilidad al
   redefinir no es error (en Java, las dos últimas sí lo son). Un
-  constructor private no molesta a una subclase, porque MiniJava no tiene
-  la llamada implícita a `super()` (Parte I §6.3). `visibilidadChequeada`
+  constructor private no molesta a una subclase que no escribe
+  `super(...)`, porque MiniJava no tiene la llamada implícita a `super()`
+  (Parte I §6.3). Si la subclase lo llama con `super(...)`, es
+  `ERR_ACCESO_PRIVADO` sobre `super` (spec 0006). `visibilidadChequeada`
   está en `LOGROS_HABILITADOS`. Casos: `semIIVisibilidadCorrecto01`–`04` y
   `semIIVisibilidadError01`–`11`.
 - **Logro *Todos los caminos llevan al retorno sin código muerto***
@@ -487,6 +535,33 @@ Las specs 0003, 0004 y 0005 están cerradas. Quedó implementado:
   inicializador sigue dando `ERR_NO_SOPORTADO` sobre su propio token.
   `atributosInicializados` está en `LOGROS_HABILITADOS`. Casos:
   `semIIAtribInicCorrecto01`–`05` y `semIIAtribInicError01`–`16`.
+- **Logro *Super!*** (2026-10-27, spec 0006). Siempre activo en
+  `ModuloPrincipalET4`. `super` es palabra clave (`PR_SUPER`) para todas
+  las etapas. El parser lo acepta en `operando()`, con `accesoSuper()`
+  (primer eslabón `.` obligatorio, después el `<ReferenciaResto>` de
+  siempre), y en `sentencia()`, que lo intercepta como a `idClase`:
+  `sentSuper()` arma con `(` la `NodoLlamadaSuperConstructor` y con `.` el
+  acceso con super seguido de la cola de `<Expresion>`. `NodoSuper` controla
+  el contexto estático (`ERR_SUPER_EN_ESTATICO`) y el previo a la
+  construcción, y chequea el encadenado sobre
+  `Clase.getTipoSuperclase()` (el `extends` tal como se escribió, u
+  `Object`), así que miembros heredados, sustitución genérica, visibilidad y
+  asignabilidad salen sin código nuevo. `Constructor.setCuerpo()` marca
+  como en lugar la llamada que es literalmente la primera sentencia; una
+  sin marcar da `ERR_SUPER_FUERA_DE_LUGAR` antes de mirar sus argumentos.
+  La resolución del constructor (aridad, visibilidad, conformidad vista
+  desde el tipo) pasó a `ChequeoLlamada.chequearConstructor()`, compartida
+  con `NodoCreacionObjeto`, y sus errores van sobre `super`.
+  `ErrorSemantico` ajusta el texto de `ERR_CONSTRUCTOR_NO_ENCONTRADO`,
+  `ERR_ARGUMENTO_INCOMPATIBLE` y `ERR_ACCESO_PRIVADO` cuando el lexema es
+  `super`. Mientras chequea sus argumentos, la llamada prende
+  `TablaSimbolos.setContextoPrevioAConstruccion()` (y la apaga en un
+  `finally`). Con la marca prendida, `NodoThis`, `NodoSuper`,
+  `NodoAccesoVar` (un atributo) y `NodoLlamadaMetodo` (un método de
+  instancia) dan `ERR_REFERENCIA_ANTES_DE_SUPER` sobre su token. Un
+  parámetro con el nombre de un atributo resuelve antes y vale.
+  `superKeyword` está en `LOGROS_HABILITADOS`. Casos:
+  `semIISuperCorrecto01`–`06` y `semIISuperError01`–`20`.
 
 Correcciones posteriores al cierre de la spec 0003 (code review,
 2026-10-24):
@@ -511,7 +586,6 @@ arma sus nodos, pero el chequeo reporta `ERR_NO_SOPORTADO` (spec 0003, D11):
 - *Minilambdas*, *Ternarios*, *Variables Locales Clásicas
   Controladas*, *Métodos Genéricos E4* y *Genericidad Avanzada*
   (diamante).
-- *Super!*: la gramática todavía no lo tiene.
 - *Floats y coerción*: además hay que decidir qué pasa con los casos base
   que lo contradicen (`semIIError33`, `34`, `52`, `59`, `70`).
 
@@ -1086,7 +1160,8 @@ class A extends P {      // P declara p
 | `<While> ::= while ( <Expresion> ) <Sentencia>` | `NodoWhile` | `Token while`, `condicion`, `cuerpo` |
 | `<For>` + `<ClausulasFor>` en su forma clásica (`; <CondFor> ; <ActFor>`, `<Expresion> ; …`, o declaración vía `<TrasIdForTipo> ::= <InitLocalOpc> ; …` / rama `.` de `<TrasIdClaseFor>`) | `NodoFor` ⚠9 | `NodoSentencia inicializacion`, `NodoExpresion condicion`, `NodoExpresion actualizacion` (las tres pueden ser null), `NodoSentencia cuerpo` |
 | `<For>` + `<TrasIdForTipo> ::= : <Expresion>` | `NodoForEach` | `Tipo tipo`, `Token nombre`, `NodoExpresion iterable`, `NodoSentencia cuerpo` |
-| `<Sentencia> ::= <Expresion> ;` y rama `.` de `<SentIdClase>` | `NodoSentenciaExpresion` ⚠1 | `NodoExpresion expresion` |
+| `<Sentencia> ::= <Expresion> ;`, rama `.` de `<SentIdClase>` y rama `<AccesoSuper>` de `<SentSuper>` | `NodoSentenciaExpresion` ⚠1 | `NodoExpresion expresion` |
+| `<Sentencia> ::= super <SentSuper>`, `<SentSuper> ::= <ArgsActuales> ;` (logro *Super!*) | `NodoLlamadaSuperConstructor` | `Token super`, `List<NodoExpresion> argumentos`, `boolean enLugar` (lo marca `Constructor.setCuerpo()`) |
 
 ### Expresiones
 
@@ -1108,6 +1183,7 @@ class A extends P {      // P declara p
 | `<Primitivo> ::= null` | `NodoLiteralNull` ⚠4 | `Token literal` |
 | `<Operando> ::= stringLiteral <ReferenciaResto>` | `NodoLiteralString` ⚠4 | `Token literal` |
 | `<Operando> ::= this <ReferenciaResto>` | `NodoThis` | `Token this` |
+| `<Operando> ::= super <AccesoSuper>`, `<AccesoSuper> ::= . idMetVar <ArgsActualesOpcional> <ReferenciaResto>` (logro *Super!*) | `NodoSuper` | `Token super` (siempre con encadenado) |
 | `<Operando> ::= idMetVar <TrasId>`, `<TrasId> ::= <ArgsActualesOpcional> <ReferenciaResto>` con `<ArgsActualesOpcional>` = ϵ | `NodoAccesoVar` | `Token nombre` |
 | ídem, con `<ArgsActuales>` | `NodoLlamadaMetodo` ⚠6 | `Token nombre`, `List<NodoExpresion> argumentos` (receptor implícito) |
 | `<Operando> ::= <LlamadaMetodoEstatico> <ReferenciaResto>`, `<LlamadaMetodoEstatico> ::= idClase . idMetVar <ArgsActuales>` | `NodoLlamadaEstatica` ⚠6 | `Token clase`, `Token nombre`, `List<NodoExpresion> argumentos` |
@@ -1129,8 +1205,6 @@ extender la gramática:
 
 | Logro | Nodo reservado | Hereda de |
 |---|---|---|
-| Super! (acceso / llamada) | `NodoSuper` | `NodoPrimario` |
-| Super! (`super(...)` en constructor) | `NodoLlamadaSuperConstructor` | `NodoSentencia` |
 | Floats y Coerción | `NodoLiteralFloat` (el léxico ya produce `LIT_FLOAT`) | `NodoLiteral` |
 
 ## Árbol de herencia
@@ -1150,7 +1224,7 @@ NodoSentencia (abstracta)
 ├── NodoWhile
 ├── NodoFor                         ⚠9
 ├── NodoForEach
-└── NodoLlamadaSuperConstructor     [pendiente]
+└── NodoLlamadaSuperConstructor
 
 NodoExpresion (abstracta)
 ├── NodoExpAsignacion               ladoIzq, ladoDer, operador
@@ -1178,7 +1252,7 @@ NodoExpresion (abstracta)
             ├── NodoCreacionArregloConTamanio                   ⚠11
             ├── NodoCreacionArregloConInicializador             ⚠11
             ├── NodoExpParentizada                              ⚠3
-            └── NodoSuper           [pendiente]
+            └── NodoSuper
 
 NodoEncadenado (abstracta)          siguienteEncadenado         ⚠2
 ├── NodoVarEncadenada                                           ⚠10

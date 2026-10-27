@@ -1038,12 +1038,13 @@ una `IOException` del `SourceManager` se re-lanza envuelta en
 <Sentencia> ::= <TipoPrimitivo> <RestoDeclLocal>
 <Sentencia> ::= idGen <RestoDeclLocal>
 <Sentencia> ::= idClase <SentIdClase>
+<Sentencia> ::= super <SentSuper>   # logro Super! (Etapa 4)
 <Sentencia> ::= <Return> ;
 <Sentencia> ::= <If>
 <Sentencia> ::= <While>
 <Sentencia> ::= <For>
 <Sentencia> ::= <Bloque>
-<Sentencia> ::= <Expresion> ;      # sólo si el lookahead ∈ FIRST(<Expresion>) \ { idClase }
+<Sentencia> ::= <Expresion> ;      # sólo si el lookahead ∈ FIRST(<Expresion>) \ { idClase, super }
 
 <VarLocal> ::= var idMetVar = <ExpresionCompuesta>
 
@@ -1056,6 +1057,14 @@ una `IOException` del `SourceManager` se re-lanza envuelta en
 
 <SentIdClase> ::= <TipoGenericoOpcional> <RestoDeclLocal>
 <SentIdClase> ::= . idMetVar <ArgsActuales> <ReferenciaResto> <PostfijoOpcional> <ExpresionCompuestaResto> <TernarioOpcional> <RestoAsignacion> ;
+
+# Logro Super! (Etapa 4, spec 0006): super se intercepta como idClase y el
+# token siguiente decide. "(" => llamada al constructor de la superclase, que
+# es una sentencia y no una expresión (ADR 0010): super(1).m(); es error sobre
+# el ".". "." => acceso con super, y la sentencia sigue con la cola de
+# <Expresion> (super.x = 3;, super.m().n();). Ver "Factorización de super".
+<SentSuper> ::= <ArgsActuales> ;
+<SentSuper> ::= <AccesoSuper> <PostfijoOpcional> <ExpresionCompuestaResto> <TernarioOpcional> <RestoAsignacion> ;
 
 <RestoDeclLocal> ::= idMetVar <MasIdsLocal> <InitLocalOpc> ;
 
@@ -1247,11 +1256,18 @@ una `IOException` del `SourceManager` se re-lanza envuelta en
 
 <Operando> ::= <Primitivo>
 <Operando> ::= this <ReferenciaResto>
+<Operando> ::= super <AccesoSuper>   # logro Super! (Etapa 4)
 <Operando> ::= stringLiteral <ReferenciaResto>
 <Operando> ::= new <RestoNew> <ReferenciaResto>
 <Operando> ::= <LlamadaMetodoEstatico> <ReferenciaResto>
 <Operando> ::= idMetVar <TrasId>
 <Operando> ::= ( <TrasParen>
+
+# <AccesoSuper>: a diferencia de this, el primer eslabón es obligatorio y
+# tiene que ser un miembro: super suelto (super;, x = super;), super[0] y
+# super(...) dentro de una expresión no son valores, y el error va sobre el
+# token que sigue a super. Desde ahí sigue el <ReferenciaResto> de siempre.
+<AccesoSuper> ::= . idMetVar <ArgsActualesOpcional> <ReferenciaResto>
 
 # <TrasId>: tras "idMetVar", "->" => lambda de 1 parámetro sin paréntesis (x -> e);
 #           cualquier otra cosa => referencia normal (x | x(a) | x.f ...).
@@ -1457,6 +1473,41 @@ posición de parámetro en la lambda).
 
 **Sin token nuevo.** No hace falta nada en el léxico: `<TipoPrimitivo>`,
 `idGen`, `idClase`, `,`, `=` y `;` ya existen.
+
+### Factorización de `super` (logro *Super!*, Etapa 4)
+
+`super` es la palabra clave `PR_SUPER` (spec 0006, D2) y entra en dos lugares:
+
+```
+<Operando>  ::= ... | super <AccesoSuper> | ...
+<Sentencia> ::= ... | super <SentSuper> | ... | <Expresion> ;
+
+<AccesoSuper> ::= . idMetVar <ArgsActualesOpcional> <ReferenciaResto>
+<SentSuper>   ::= <ArgsActuales> ;                                             # super(...);
+              |  <AccesoSuper> <PostfijoOpcional> <ExpresionCompuestaResto> <TernarioOpcional> <RestoAsignacion> ;   # super.x = 3;
+```
+
+- **FIRST que cambian.** `super` se suma a `FIRST(<Operando>)`, y con él a
+  `FIRST(<Expresion>)` y `FIRST(<Sentencia>)` (`PRIMEROS_OPERANDO`,
+  `PRIMEROS_EXPRESION` y `PRIMEROS_SENTENCIA` en el código). Es un terminal
+  nuevo, así que no choca con ninguna otra alternativa de `<Operando>`.
+- **Conflicto en `<Sentencia>`.** `super` está en `FIRST(<Expresion>)` (por
+  el acceso con super) y arranca también la llamada al constructor de la
+  superclase, que no es una expresión (ADR 0010). Se resuelve igual que con
+  `idClase`: `sentencia()` consume `super` en su propia rama, **antes** de la
+  de `<Expresion> ;`, y un token más decide. FIRST disjuntos: `{ ( }` para la
+  llamada y `{ . }` para el acceso. La rama `<Expresion> ;` sólo entra con
+  `FIRST(<Expresion>) \ { idClase, super }`.
+- **Misma cola.** La rama `.` de `<SentSuper>` reconstruye la cola de
+  `<Expresion>` (`colaDeExpresion()`, la misma de `<SentIdClase>`), así da el
+  mismo árbol que si la sentencia hubiera entrado por `expresion()`.
+- **Errores sintácticos.** `super(1).m();` falla sobre el `.` (después de los
+  argumentos se exige `;`); `super;`, `x = super;` y `super[0]` fallan sobre
+  el token que sigue a `super` (`accesoSuper()` exige `.`); `x = super(1);`
+  falla sobre el `(`, porque en una expresión `super` sólo admite `.`.
+- **Sin cambios en `<ClausulasFor>`.** `super` entra ahí por la rama
+  `<Expresion>`: `for (super.x = 0; ...)` vale como acceso, y `super(...)`
+  es error sintáctico.
 
 ### Factorización de `<Miembro>` — visibilidad opcional vs. prefijo `idClase` del constructor
 
