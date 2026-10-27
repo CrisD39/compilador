@@ -1,6 +1,8 @@
 # Sólo los literales true y false son condiciones constantes
 
-**Estado:** aceptado (2026-10-26, al revisar el ticket 03 de la spec 0004).
+**Estado:** aceptado, implementado (2026-10-26, al revisar el ticket 03 de
+la spec 0004, que lo implementó:
+`specs/0004-caminos-de-retorno/tickets/03-condiciones-constantes.md`).
 
 El logro *Todos los caminos llevan al retorno sin código muerto* sigue a
 Java: `while (true)` no termina y el cuerpo de un `while (false)` es

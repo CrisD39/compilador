@@ -1,6 +1,7 @@
 # El logro de caminos de retorno reemplaza a §12.5 de la base
 
-**Estado:** aceptado, sin implementar (grill del 2026-10-26).
+**Estado:** aceptado e implementado (grill del 2026-10-26; implementado en
+la spec 0004, `specs/0004-caminos-de-retorno.md`).
 
 El enunciado completo (§12.5 y §13) dice que MiniJava no exige retorno en
 todos los caminos y que no rechaza código inalcanzable. El logro *Todos los
@@ -27,3 +28,6 @@ error no le ahorra el resto de los chequeos.
   `semIIError104`. Además `logros/for/semIIForCorrecto04` tiene un `for`
   después de un `for (…; ; …)` infinito. Si la cátedra corre su tester base
   con CP-SII-38, ese caso va a fallar, y el informe tiene que decirlo.
+  Los tres casos base se mudaron al logro (`semIIRetornoError19`, `20` y
+  `16`), y en `semIIForCorrecto04` el segundo `for` quedó en su propio
+  método.

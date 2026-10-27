@@ -43,15 +43,17 @@ Es el contrato de la spec 0003 (D7): todos los casos con error lo cumplen. El c�
 | Elemento del for-each que no conforma con el tipo de la variable (logro For) | `for` | `ERR_FOREACH_TIPO_INCOMPATIBLE` |
 | Destino genérico de `instanceof`, con argumento o raw (logro Instanceof) | `instanceof` | `ERR_INSTANCEOF_GENERICO` |
 | Acceso a un miembro private fuera de su clase o con un receptor de otra clase (logro Visibilidad chequeada) | el nombre del miembro (en `new`, el de la clase) | `ERR_ACCESO_PRIVADO` |
+| Método no void cuyo cuerpo termina normalmente (logro Todos los caminos llevan al retorno) | nombre del método | `ERR_FALTA_RETORNO` |
+| Sentencia inalcanzable (logro Todos los caminos llevan al retorno) | primer token de la sentencia: `var`, el tipo de una local clásica, `return`, `if`, `while`, `for`, `{`, `;` o, en una expresión, el primer nombre bajando por la izquierda (`x = 2;` da `x`, `new A1().m();` y `A1.m();` dan `A1`, `(x).m();` da `x`; spec 0004, D7) | `ERR_SENTENCIA_INALCANZABLE` |
 | Construcción de un logro no implementado | ver la spec 0003, D11 | `ERR_NO_SOPORTADO` |
 
 Una local cuyo `var` falló (inicializador con error, `null` o `void`) queda declarada sin tipo: usarla corta la sentencia sin reportar nada más, así un solo error no se repite en cada uso (`semIIMultiErrorError03`).
 
 Extiende la de los casos de referencia (no declarada → nombre; asignación → `=`; parámetros → nombre del método; local repetida → nombre). Un caso nuevo tiene que seguir esta tabla; si una regla nueva necesita otro token, se agrega una fila.
 
-## Pendiente de confirmar
+## Casos mudados al logro de caminos de retorno
 
-§12.5 del documento base no exige retorno en todos los caminos ni rechaza código inalcanzable (`semIICorrecto` de §12.5). Si se implementa el logro *Todos los caminos llevan al retorno*, ese caso deja de ser válido.
+§12.5 del documento base no exige retorno en todos los caminos ni rechaza código inalcanzable. El logro *Todos los caminos llevan al retorno sin código muerto* reemplaza esa regla (ADR 0008), así que tres casos base que se apoyaban en ella dejaron la base y pasaron a `logros/caminosRetornoSinCodigoMuerto/conErrores/`: `semIICorrecto31` → `semIIRetornoError19`, `semIICorrecto72` (CP-SII-38 de la cátedra) → `semIIRetornoError20` y `semIIError104` → `semIIRetornoError16`. Sus números no se reusan.
 
 ## Índice
 
@@ -157,7 +159,6 @@ Extiende la de los casos de referencia (no declarada → nombre; asignación →
 | `semIIError101` | 12.5 | `return` | El retorno de subtipo invertido: se declara B2 y se devuelve A1. |
 | `semIIError102` | 12.5 | `return` | En un constructor no se permite return e;. |
 | `semIIError103` | 12.5 | `return` | Un return con expresion void es incorrecto incluso en un metodo void. |
-| `semIIError104` | 12.5 | `z` | El codigo inalcanzable igual se chequea: variable no declarada despues de un return. |
 | `semIIError105` | 12.3 | `x` | var no se infiere el tipo con null |
 | `semIIError106` | 12.3 | `x` | var no se infiere el tipo con una llamada void |
 | `semIIError107` | 12.3 | `dato` | var no puede coincidir con un parametro de la unidad |
@@ -256,7 +257,6 @@ Extiende la de los casos de referencia (no declarada → nombre; asignación →
 | `semIICorrecto28` | 11.2 | == entre char, entre referencias conformantes en alguna direccion, con null y entre String. |
 | `semIICorrecto29` | 12.4 | Condiciones boolean en if/else/while, asignacion boolean como condicion, cuerpos con bloque y sentencia vacia. |
 | `semIICorrecto30` | 12.5 | return; en metodo void y en constructor; return e con subtipo del retorno declarado. |
-| `semIICorrecto31` | 12.5 | Doc. base: no se exige retorno en todos los caminos ni se rechaza codigo inalcanzable (se chequea igual). Choca con el logro de caminos de retorno. |
 | `semIICorrecto32` | 12.3 | var toma exactamente el tipo del inicializador, conservando argumento generico y dimensiones. |
 | `semIICorrecto33` | 5 | Herencia sin argumento conserva T: el metodo heredado sigue retornando T (no Object). |
 | `semIICorrecto34` | 11.3 | this tiene tipo de la clase actual con su parametro: dentro de Caja<T> es Caja<T>. |
@@ -297,7 +297,6 @@ Extiende la de los casos de referencia (no declarada → nombre; asignación →
 | `semIICorrecto69` | — | en contexto estatico, acceso a miembros de instancia mediante receptor explicito |
 | `semIICorrecto70` | — | un metodo estatico puede usar tipos genericos instanciados |
 | `semIICorrecto71` | — | sentencias vacias, bloques, if/else y while; var requiere bloque |
-| `semIICorrecto72` | — | variantes de return; no se exige retorno total ni se rechaza codigo inalcanzable |
 | `semIICorrecto73` | — | == y != entre referencias del mismo tipo estatico y entre arreglos |
 | `semIICorrecto74` | — | conformidad transitiva entre clases (Especifica -> SubRaza -> Raza) |
 | `semIICorrecto75` | — | clase que implementa una interfaz generica con argumento conforma con ella |

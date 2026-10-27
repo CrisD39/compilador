@@ -1,6 +1,6 @@
 ---
 titulo: Logro Todos los caminos llevan al retorno sin código muerto (Etapa 4)
-estado: ready-for-agent
+estado: hecho
 origen: entrevista de diseño (grill with docs, 2026-10-26)
 fecha: 2026-10-26
 ---
@@ -297,8 +297,13 @@ En `0004-caminos-de-retorno/tickets/`, uno por archivo.
 | 01 | Falta de retorno | — | hecho |
 | 02 | Sentencia inalcanzable | 01 | hecho |
 | 03 | Condiciones constantes: sólo literales | 02 | hecho |
-| 04 | Cierre | 03 | ready-for-agent |
+| 04 | Cierre | 03 | hecho |
 
 Reparto de casos: 01 → Correcto 01–03 y 07, Error 01–06 y 18, y Error 19 y
 20 sin la etiqueta de la inalcanzable; 02 → Correcto 06, 08 y 09, Error
 07–10, 12–17 y 21, y completa 19 y 20; 03 → Correcto 04 y 05, Error 11.
+
+**Cierre (2026-10-26):** `./test.sh` en verde. Etapas 1–3 sin cambios
+(léxico 14 + 24, sintáctico 38 + 63 + 4 de modo pánico, semántico 37 + 104);
+Sem2 con 92 casos sin error, 171 con error y 107 de logros (30 de este
+logro: 9 correctos y 21 con error). La base pasó de 94 + 172 a 92 + 171.

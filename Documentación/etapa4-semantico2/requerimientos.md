@@ -225,18 +225,19 @@ encarar esta etapa.
   locales clásicas, en los tipos de `for`/`foreach` y en `new Caja()`
   (`semIIError24`), con el mismo `ERR_TIPO_SIN_ARGUMENTO` sobre el nombre
   del tipo.
-- **Pendiente: logros que cambian el resultado de casos base.** Hay dos
-  logros que contradicen al documento base, y los casos base esperan el
+- **Logros que cambian el resultado de casos base.** Hay dos logros que
+  contradicen al documento base, y sus casos base esperan (o esperaban) el
   comportamiento base:
   - *Todos los caminos llevan al retorno* contra §12.5 (no se exige retorno
-    en todos los caminos y el código inalcanzable se acepta):
-    `semIICorrecto31`, `semIIError104`.
+    en todos los caminos y el código inalcanzable se acepta). Resuelto en la
+    spec 0004: el logro reemplaza a la regla base (ADR 0008), y
+    `semIICorrecto31`, `semIICorrecto72` y `semIIError104` se mudaron al
+    logro.
   - *Floats y coerción* contra §9.1 y §11.2 (sin conversiones `char`↔`int`):
-    `semIIError33`, `34`, `52`, `59`, `70`.
-
-  Antes de implementarlos hay que decidir, idealmente con la cátedra, si el
-  logro reemplaza a la regla base (y se ajustan esos casos) o si las dos
-  conviven de algún modo.
+    `semIIError33`, `34`, `52`, `59`, `70`. **Pendiente:** antes de
+    implementarlo hay que decidir, idealmente con la cátedra, si el logro
+    reemplaza a la regla base (y se ajustan esos casos) o si las dos
+    conviven de algún modo.
 - **Prerrequisito: `Metodo.miClase` nunca se setea.** "Solo miembros
   propios" compara `m.getMiClase() == this`, pero hoy el campo queda en
   `null`. Hay que setearlo al registrar el método, igual que la clase
@@ -262,9 +263,40 @@ spec:
 - Las reglas de conformidad (D9), la vista desde el receptor (D10), los
   tokens de "no soportado" (D11) y la tabla de códigos `ERR_*`.
 
-## Estado de la implementación (2026-10-24)
+## Decisiones de la spec 0004 (2026-10-26)
 
-La spec 0003 está cerrada. Quedó implementado:
+El logro *Todos los caminos llevan al retorno sin código muerto* se
+planificó en `specs/0004-caminos-de-retorno.md` (4 tickets). Sus decisiones
+difíciles de revertir están en dos ADR:
+
+- **ADR 0008** (`adr/0008-caminos-de-retorno-reemplaza-base.md`): el logro
+  está siempre activo en `ModuloPrincipalET4` y reemplaza la parte de §12.5
+  y §13 que no controla el retorno ni el código inalcanzable. Se mantiene
+  que una sentencia inalcanzable se chequea igual.
+- **ADR 0009** (`adr/0009-condiciones-constantes-solo-literales.md`): sólo
+  el literal `true` o `false`, solo o entre paréntesis, es una condición
+  constante. No se evalúa ninguna expresión para decidir si un código es
+  alcanzable: calcular valores no es tarea del chequeo semántico, que mira
+  nombres, tipos y estructura. Se descartó plegar las expresiones
+  constantes como javac (JLS §15.29).
+
+### Para el informe de la Etapa 4
+
+- El logro reemplaza la parte de §12.5 y §13 que dice que MiniJava no exige
+  retorno en todos los caminos ni rechaza código inalcanzable (ADR 0008).
+  Por eso CP-SII-38 de la cátedra (`semIICorrecto72`, ahora
+  `semIIRetornoError20`) ya no da `[SinErrores]`: si la cátedra lo corre con
+  su tester base, va a fallar.
+- A diferencia de Java, sólo los literales `true` y `false` son condiciones
+  constantes (ADR 0009). `int m1() { while (!false) {} }` da falta de
+  retorno, y javac lo acepta (`semIIRetornoError11`); con
+  `while (1 < 2) {} return 1;` MiniJava acepta el `return`, y javac lo marca
+  como inalcanzable (`semIIRetornoCorrecto04`). Conviene confirmar con la cátedra esta diferencia
+  con el "al igual que en Java" del logro.
+
+## Estado de la implementación (2026-10-26)
+
+Las specs 0003 y 0004 están cerradas. Quedó implementado:
 
 - **Lo base de §9–§12.** Todos los casos de `resources/semantico2/{sinErrores,conErrores}`
   pasan con `ModuloPrincipalET4`, que es el main del jar. La tercera pasada es `TablaSimbolos.chequearSentencias()`, y sólo
@@ -343,8 +375,43 @@ La spec 0003 está cerrada. Quedó implementado:
   la llamada implícita a `super()` (Parte I §6.3). `visibilidadChequeada`
   está en `LOGROS_HABILITADOS`. Casos: `semIIVisibilidadCorrecto01`–`04` y
   `semIIVisibilidadError01`–`11`.
+- **Logro *Todos los caminos llevan al retorno sin código muerto***
+  (2026-10-26, spec 0004). Siempre activo en `ModuloPrincipalET4`, sin
+  opción para apagarlo (ADR 0008). El análisis de flujo sigue JLS §14.22,
+  recortado a las sentencias de MiniJava, y sus reglas son estructurales:
+  no miran tipos ni la tabla de símbolos. `NodoSentencia.salida(Flujo)` da el estado después de cada
+  sentencia, con los tres estados de la `Liveness` de javac (`Flujo`:
+  `VIVO`, `MUERTO`, `RECUPERANDO`). Un método no void cuyo cuerpo sale
+  `VIVO` da `ERR_FALTA_RETORNO` sobre su nombre (`Metodo.exigirRetorno`,
+  llamado desde `Clase.chequearSentencias` antes de chequear el cuerpo, así
+  el error sale antes que los del cuerpo y no depende de sus errores de
+  tipos). `NodoBloque.chequear` lleva el
+  estado: una sentencia que llega `MUERTO` registra
+  `ERR_SENTENCIA_INALCANZABLE` sobre su primer token
+  (`NodoSentencia.primerToken()`), se chequea igual (§12.5) y el bloque
+  sigue con `RECUPERANDO`. Así lo que sigue a una inalcanzable no se
+  reporta en cascada, salvo que ella misma no termine normalmente (como
+  javac, `return 1; return 2; x = 3;` da dos errores), y un cuerpo que sale
+  `RECUPERANDO` no suma una falta de retorno. Como las inalcanzables se
+  reportan durante el chequeo, una sentencia que corta por un error de
+  tipos antes de llegar a sus ramas (`if (1) { return; x = 2; }`) no busca
+  inalcanzables adentro (spec 0004, D5). Las
+  inalcanzables se buscan también en métodos void y constructores.
+  `NodoWhile` y `NodoFor` reportan el cuerpo como inalcanzable cuando la
+  condición es la constante `false`. Sólo el literal `true` o `false`, solo
+  o entre paréntesis, es una condición constante: `valorConstante()` sólo
+  da un valor en `NodoLiteralBooleano` y en `NodoExpParentizada` sin
+  encadenado, y no se evalúa ninguna operación (`while (1 < 2)` y
+  `while (!false)` son bucles comunes; ADR 0009). Un `for` sin condición
+  cuenta como `true`. Como en Java, el `if` nunca es constante y el
+  for-each siempre termina normalmente. `caminosRetornoSinCodigoMuerto`
+  está en `LOGROS_HABILITADOS`. Casos: `semIIRetornoCorrecto01`–`09` y
+  `semIIRetornoError01`–`21`. `semIICorrecto31`, `semIICorrecto72`
+  (CP-SII-38) y `semIIError104` dejaron la base y son `semIIRetornoError19`,
+  `20` y `16`.
 
-Correcciones posteriores al cierre (code review, 2026-10-24):
+Correcciones posteriores al cierre de la spec 0003 (code review,
+2026-10-24):
 
 - `new C<>[n]` se aceptaba en silencio: el parser perdía la marca de
   diamante en la forma de arreglo. Ahora da `ERR_NO_SOPORTADO` sobre el
@@ -367,10 +434,8 @@ arma sus nodos, pero el chequeo reporta `ERR_NO_SOPORTADO` (spec 0003, D11):
   Controladas*, *Atributos Inicializados*, *Métodos Genéricos E4* y
   *Genericidad Avanzada* (diamante).
 - *Super!*: la gramática todavía no lo tiene.
-- *Todos los caminos llevan al retorno* y *Floats y coerción*: además hay
-  que decidir qué pasa con los casos base que los contradicen
-  (`semIICorrecto31`, `semIIError104`; `semIIError33`, `34`, `52`, `59`,
-  `70`).
+- *Floats y coerción*: además hay que decidir qué pasa con los casos base
+  que lo contradicen (`semIIError33`, `34`, `52`, `59`, `70`).
 
 Para habilitar un logro: implementar su chequeo, poner en verde sus casos de
 `resources/semantico2/logros/<logro>/` y agregar el nombre a
