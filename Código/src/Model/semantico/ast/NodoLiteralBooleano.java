@@ -11,7 +11,7 @@ public class NodoLiteralBooleano extends NodoLiteral {
     }
 
     @Override
-    public Object valorConstante() {
+    public Boolean valorConstante() {
         return literal.getTipo() == TokenType.PR_TRUE;
     }
 }

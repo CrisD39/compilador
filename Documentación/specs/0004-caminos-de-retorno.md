@@ -57,7 +57,7 @@ regla vieja pasan al logro.
 12. Como estudiante, quiero que el cuerpo de un `while (false)` o de un `for` con condición `false` sea inalcanzable, igual que en Java.
 13. Como estudiante, quiero que `if (false) { … }` no sea un error, porque en Java el `if` no se trata como constante.
 14. Como estudiante, quiero que una condición con operadores, como `!false`, `1 < 2` o `'a' == 'a'`, se trate como un bucle común, porque calcular valores no es tarea de esta etapa (a diferencia de Java, ADR 0009).
-15. Como estudiante, quiero que `null == null` y `1 / 0 == 0` no se traten como constantes, igual que en Java.
+15. Como estudiante, quiero que `null == null` y `1 / 0 == 0` no se traten como constantes, porque tienen operadores (D6; acá Java coincide).
 16. Como estudiante, quiero que `(true)` y `(false)` cuenten igual que `true` y `false`, porque el paréntesis no cambia el literal.
 17. Como estudiante, quiero ver un solo error por cada tramo inalcanzable y no uno por sentencia, para que la salida no se llene de errores en cascada.
 18. Como estudiante, quiero que, si después de un tramo inalcanzable hay otro `return` y más código, ese segundo tramo también se reporte.
@@ -207,7 +207,7 @@ base siguen igual.
   | 01 | *(existe)* `if`/`else` con `return` en las dos ramas |
   | 02 | void y constructores: cuerpo vacío, sin `return`, con `return;` al final y adentro de un `if` |
   | 03 | Bucle infinito sin `return` después en un método `int`: `while (true) {}`, `for (;;) {}` y `for (var i = 0; ; i = i + 1) {}` |
-  | 04 | Condiciones con operadores, que no son constantes (D6): `!false`, `1 < 2`, `true && true`, `'a' == 'a'` y `"a" == "a"`, cada una con `return` después; y `(true)`, que sí es constante, sin `return` |
+  | 04 | Condiciones con operadores, que no son constantes (D6): `!false`, `1 < 2`, `true && true`, `'a' == 'a'` y `"a" == "a"`, cada una con `return` después; `(true)` y `for (; ((true)); )`, que sí son constantes, sin `return`; y `while (!true) { x = 1; }` y `while (1 > 2) { x = 1; }`, con el cuerpo alcanzable |
   | 05 | Condiciones no constantes, con código alcanzable después: `while (b)`, `while (null == null)`, `while (1 / 0 == 0)`, y `if (true) return 1;` seguido de `return 2;` |
   | 06 | `if (false) { x = 1; }` es válido |
   | 07 | Anidados: `if`/`else` con `if`/`else` adentro, `{ { return 1; } }`, y una rama con `return` y la otra con `while (true) {}` |
@@ -229,7 +229,7 @@ base siguen igual.
   | 08 | `if`/`else` con `return` en las dos ramas y después `return 3;` | `return\|L` |
   | 09 | `while (true) {} x = 1;` y `for (;;) {} x = 1;`, en dos métodos | `x`, `x` |
   | 10 | Cuerpo inalcanzable: `while (false) { x = 1; }` y `for (var i = 0; false; i = i + 1) x = i;` | `{`, `x` |
-  | 11 | Una condición con operadores no es constante (D6): `int m1() { while (!false) {} }` | `m1` |
+  | 11 | Sólo el literal es constante (D6): `int m1() { while (!false) {} }` (falta de retorno) y `while ((false)) { x = 1; }` (cuerpo inalcanzable) | `m1`, `{` |
   | 12 | Recuperación: `return 1; x = 2; y = 3;` (uno) y `return 1; x = 2; return 3; y = 4;` (dos) | `x`, `x`, `y` |
   | 13 | La recuperación tapa la falta de retorno: `int m() { return 1; x = 2; }` | `x` |
   | 14 | Inalcanzable adentro de una inalcanzable: `return 1; if (b) { return 2; z = 3; }` | `if`, `z` |

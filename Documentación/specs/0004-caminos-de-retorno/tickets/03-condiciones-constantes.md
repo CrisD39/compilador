@@ -44,4 +44,7 @@ condiciones con operadores, cada una seguida de un `return` (que en Java
 sería inalcanzable), y `(true)` sin `return`. Error 11 es
 `int m1() { while (!false) {} }`, con falta de retorno sobre `m1`.
 `./test.sh`: Sem2 con 92 casos sin error, 171 con error y 107 de logros,
-todo en verde.
+todo en verde. Después del code review se agregaron casos: en Correcto 04,
+`for (; ((true)); )` sin `return` y `while (!true)` y `while (1 > 2)` con el
+cuerpo alcanzable; en Error 11, `while ((false)) { x = 1; }` con el cuerpo
+inalcanzable. `valorConstante()` pasó a devolver `Boolean`.

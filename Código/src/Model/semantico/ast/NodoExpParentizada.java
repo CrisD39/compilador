@@ -32,7 +32,7 @@ public class NodoExpParentizada extends NodoPrimario {
     // (true) es constante; con encadenado ((x).m()) ya no es la expresión de
     // adentro.
     @Override
-    public Object valorConstante() {
+    public Boolean valorConstante() {
         return encadenado == null ? expresion.valorConstante() : null;
     }
 

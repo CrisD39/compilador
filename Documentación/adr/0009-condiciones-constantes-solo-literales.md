@@ -22,7 +22,10 @@ nodos que dan un valor constante.
   implementó en el ticket 03 y se descartó: evalúa operaciones (aritmética
   `int` con desborde, comparación de `char` y `String` por valor,
   decodificación de escapes). El código quedó en la rama
-  `respaldo/ticket03-plegado`, por si la cátedra lo pide.
+  `respaldo/ticket03-plegado`, por si la cátedra lo pide. La rama es sólo
+  local (no está en `origin`) y guarda dos commits: `7722262` (*expresiones
+  constantes completas*) y `0e72097` (*correcciones del code review*). Si
+  la rama se pierde, se recuperan con `git reflog` y `git cherry-pick`.
 - **Que nada sea constante, ni `true`.** No calcula nada, pero contradice
   más al "al igual que en Java" del logro: `int m() { while (true) {} }`
   daría falta de retorno, y javac lo acepta.
@@ -36,3 +39,7 @@ nodos que dan un valor constante.
   decirlo.
 - Los casos `semIIRetornoCorrecto04` y `semIIRetornoError11` fijan esta
   diferencia.
+- El logro dice "al igual que en Java" (`etapa4-semantico2/requerimientos.md`),
+  y esta decisión se aparta de Java. Conviene confirmarla con la cátedra,
+  como pide `requerimientos.md` para los conflictos entre un logro y Java o
+  el documento base.
