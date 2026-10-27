@@ -37,9 +37,16 @@ nodos que dan un valor constante.
 - Hay programas que javac y MiniJava tratan distinto.
   `int m() { while (1 < 2) {} }` da falta de retorno en MiniJava, y javac lo
   acepta. Con `while (!false) {} return 1;`, MiniJava acepta el `return`,
-  y javac lo marca como inalcanzable. El informe de la Etapa 4 tiene que
+  y javac lo marca como inalcanzable. Con el valor `false` pasa lo mismo:
+  `while (1 > 9) { x = 1; }` es válido en MiniJava, y javac lo rechaza
+  porque el cuerpo es inalcanzable. El informe de la Etapa 4 tiene que
   decirlo.
-- Los casos `semIIRetornoCorrecto04` y `semIIRetornoError11` fijan esta
+- La regla vale para toda la etapa, no sólo para este logro: ningún
+  chequeo semántico calcula valores ("Alcance" de
+  `etapa4-semantico2/requerimientos.md`). Un logro futuro que en Java
+  necesite un valor al compilar tiene que pasar por la misma decisión.
+- Los casos `semIIRetornoCorrecto04` (incluidos `m8` y `m9`, con
+  condiciones que valen `false`) y `semIIRetornoError11` fijan esta
   diferencia.
 - El logro dice "al igual que en Java" (`etapa4-semantico2/requerimientos.md`),
   y esta decisión se aparta de Java. Conviene confirmarla con la cátedra,

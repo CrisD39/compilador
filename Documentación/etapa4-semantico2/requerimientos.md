@@ -4,6 +4,16 @@ en esta etapa se realizará el chequeo de declaraciones.
 Es decir, los bloques, vamos a analizar si fueron declaradas la variables utilizadas, si son compatibles,
 si las sentencias están bien definidas.
 
+**En esta etapa no se evalúa nada.** El chequeo de sentencias controla
+tipos, declaraciones, el uso de las variables y la estructura de las
+sentencias. Nunca calcula el valor de una expresión, ni siquiera de una
+hecha sólo de literales (`1 > 9`, `!false`, `'a' == 'a'`). Cuando Java
+necesita un valor al compilar (las expresiones constantes de JLS §15.29,
+por ejemplo para decidir si un código es alcanzable), MiniJava no lo
+calcula y se aparta de Java. Reconocer un literal no es evaluar, es mirar
+qué token es: por eso `true` y `false` sí cuentan como condiciones
+constantes (ADR 0009).
+
 
 # Chequeo de tipos.
 
@@ -291,8 +301,12 @@ difíciles de revertir están en dos ADR:
   constantes (ADR 0009). `int m1() { while (!false) {} }` da falta de
   retorno, y javac lo acepta (`semIIRetornoError11`); con
   `while (1 < 2) {} return 1;` MiniJava acepta el `return`, y javac lo marca
-  como inalcanzable (`semIIRetornoCorrecto04`). Conviene confirmar con la cátedra esta diferencia
-  con el "al igual que en Java" del logro.
+  como inalcanzable (`semIIRetornoCorrecto04`). Con el valor `false` pasa
+  lo mismo: `while (1 > 9) { x = 1; }` es válido en MiniJava, y javac lo
+  rechaza porque el cuerpo es inalcanzable (`semIIRetornoCorrecto04`, `m9`).
+  La razón es que esta etapa no evalúa expresiones (ver "Alcance").
+  Conviene confirmar con la cátedra esta diferencia con el "al igual que en
+  Java" del logro.
 
 ## Estado de la implementación (2026-10-26)
 
