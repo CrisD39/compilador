@@ -15,6 +15,10 @@ public class Atributo implements Chequeable, Variable {
     // Expresión de "= ..." (logro Atributos inicializados); null si se
     // declaró sin inicializador.
     private NodoExpresion inicializador;
+    // El "=" de la declaración (spec 0005, D3): lexema de
+    // ERR_ASIGNACION_INCOMPATIBLE, igual que en NodoExpAsignacion. null si no
+    // hay inicializador.
+    private Token igual;
     // Logro Visibilidad chequeada: true si se declaró private. Sin
     // modificador o con public es público (Parte I §6.1). Sólo lo mira el
     // chequeo de cuerpos (ChequeoVisibilidad); la Etapa 3 lo ignora.
@@ -55,15 +59,23 @@ public class Atributo implements Chequeable, Variable {
         return inicializador;
     }
 
-    public void setInicializador(NodoExpresion inicializador) {
+    public void setInicializador(Token igual, NodoExpresion inicializador) {
+        this.igual = igual;
         this.inicializador = inicializador;
     }
 
-    // Logro Atributos inicializados: todavía no soportado (spec 0003, D11),
-    // se reporta sobre el nombre del atributo. Quien llama atrapa el error,
-    // porque el inicializador no pasa por un NodoBloque.
+    // Logro Atributos inicializados (spec 0005, D2): el valor tiene que
+    // conformar con el tipo del atributo, con la misma conformidad que el
+    // lado derecho de NodoExpAsignacion. Si una subexpresión lanza su propio
+    // error, ése es el único error del atributo (sin cascada, D9). Se chequea
+    // en contexto de instancia (D4): quien llama setea atributoActual, y
+    // enContextoEstatico() da false. Quien llama atrapa el error, porque el
+    // inicializador no pasa por un NodoBloque.
     public void chequearInicializador(TablaSimbolos tabla) {
-        throw ExcepcionSemantica.noSoportado(nombre);
+        Tipo valor = inicializador.chequear(tabla);
+        if (!valor.conformaCon(tipo, tabla)) {
+            throw new ExcepcionSemantica(igual, "ERR_ASIGNACION_INCOMPATIBLE");
+        }
     }
 
     // Clave del atributo: el nombre (los atributos no se sobrecargan).

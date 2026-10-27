@@ -756,12 +756,14 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
                 error("un método (\"final\" no se puede aplicar a un atributo)");
                 return;
             }
-            operadorAsignacion();
+            // El "=" es el lexema de ERR_ASIGNACION_INCOMPATIBLE del
+            // inicializador (spec 0005, D3).
+            Token igual = operadorAsignacion();
             NodoExpresion inicializador = expresionCompuesta();
             matchCierre(TokenType.PUNTO_COMA);
             Atributo atributo = new Atributo(nombreMiembro, tipo);
             atributo.setPrivado(privado);
-            atributo.setInicializador(inicializador);
+            atributo.setInicializador(igual, inicializador);
             tablaSimbolo.getClaseActual().agregarAtributo(atributo);
         } else {
             error("\";\", \"=\" (atributo) o \"(\" (método)");
