@@ -24,7 +24,7 @@ public abstract class NodoSentencia {
     // primero que el AST guarda de ella.
     public abstract Token primerToken();
 
-    // Una condición de bucle que es la constante true (D3, D6): el bucle no
+    // Una condición de bucle que es el literal true (D3, D6): el bucle no
     // termina normalmente. Sin condición, el for cuenta como true.
     protected static boolean esConstanteTrue(NodoExpresion condicion) {
         return condicion == null || Boolean.TRUE.equals(condicion.valorConstante());

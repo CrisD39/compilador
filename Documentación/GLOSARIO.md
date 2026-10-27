@@ -201,12 +201,12 @@ el cuerpo de un bucle cuya condición es la constante `false`. Ver
 `adr/0008-caminos-de-retorno-reemplaza-base.md`.
 _Evitar_: código muerto (salvo al nombrar el logro)
 
-**Expresión constante**:
-Expresión cuyo valor se conoce sin ejecutar el programa: sólo literales
-`int`, `boolean`, `char` o `String`, operadores y paréntesis, como `true`,
-`!false` o `1 < 2`. `null` no es constante, y una división o un módulo por
-cero hacen que la expresión deje de serlo. MiniJava no tiene variables
-constantes, porque `final` no se aplica a atributos ni a locales.
+**Condición constante**:
+Condición de un bucle que es el literal `true` o `false`, solo o entre
+paréntesis. Una condición con operadores, como `!false` o `1 < 2`, no es
+constante, aunque en Java sí lo sea, porque calcular valores no es tarea de
+esta etapa (`adr/0009-condiciones-constantes-solo-literales.md`).
+_Evitar_: expresión constante (en Java incluye las operaciones)
 
 **Falta de retorno**:
 Método no void cuyo cuerpo termina normalmente, es decir, que tiene algún

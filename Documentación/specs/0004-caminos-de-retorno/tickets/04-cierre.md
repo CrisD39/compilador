@@ -28,4 +28,7 @@ y cómo.
 - [ ] Todos los archivos de arriba actualizados.
 - [ ] Queda anotado para el informe de la Etapa 4 que el logro reemplaza
       esa parte de §12.5 y que CP-SII-38 ya no da `[SinErrores]`.
+- [ ] Queda anotado para el informe que, a diferencia de Java, sólo los
+      literales `true` y `false` son condiciones constantes (ADR 0009), y el
+      ADR 0009 figura donde se listan las decisiones de la etapa.
 - [ ] `./test.sh` en verde.

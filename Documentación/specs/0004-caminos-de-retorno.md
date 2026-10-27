@@ -30,9 +30,10 @@ según JLS §14.22, recortado a las sentencias de MiniJava:
 - Una **sentencia inalcanzable** es un error, sobre su primer token. Igual
   se chequea, como pide §12.5, así que puede dar más errores después del de
   inalcanzable.
-- Una condición de bucle que es una **expresión constante** cuenta como en
-  Java: `while (true)` y `for (;;)` no terminan, y el cuerpo de un
-  `while (false)` es inalcanzable.
+- Una condición de bucle que es el literal `true` o `false` (una
+  **condición constante**) cuenta como en Java: `while (true)` y `for (;;)`
+  no terminan, y el cuerpo de un `while (false)` es inalcanzable. No se
+  evalúa ninguna operación: `while (1 < 2)` es un bucle común (ADR 0009).
 - La recuperación copia la de javac: se reporta una sola vez por cada tramo
   muerto, sin errores en cascada, y en combinación con la *Multi-detección*.
 
@@ -55,9 +56,9 @@ regla vieja pasan al logro.
 11. Como estudiante, quiero que la sentencia que viene después de un `while (true)` o de un `for (;;)` sea inalcanzable.
 12. Como estudiante, quiero que el cuerpo de un `while (false)` o de un `for` con condición `false` sea inalcanzable, igual que en Java.
 13. Como estudiante, quiero que `if (false) { … }` no sea un error, porque en Java el `if` no se trata como constante.
-14. Como estudiante, quiero que condiciones como `!false`, `1 < 2`, `'a' == 'a'` o `"a" == "a"` se traten como constantes, igual que en Java.
+14. Como estudiante, quiero que una condición con operadores, como `!false`, `1 < 2` o `'a' == 'a'`, se trate como un bucle común, porque calcular valores no es tarea de esta etapa (a diferencia de Java, ADR 0009).
 15. Como estudiante, quiero que `null == null` y `1 / 0 == 0` no se traten como constantes, igual que en Java.
-16. Como estudiante, quiero que una expresión constante se evalúe con las reglas de MiniJava (sin precedencia entre binarios, `int` de 32 bits con desborde), para que el resultado coincida con lo que hace el chequeo de tipos.
+16. Como estudiante, quiero que `(true)` y `(false)` cuenten igual que `true` y `false`, porque el paréntesis no cambia el literal.
 17. Como estudiante, quiero ver un solo error por cada tramo inalcanzable y no uno por sentencia, para que la salida no se llene de errores en cascada.
 18. Como estudiante, quiero que, si después de un tramo inalcanzable hay otro `return` y más código, ese segundo tramo también se reporte.
 19. Como estudiante, quiero que un método con código inalcanzable al final no me dé además un error de falta de retorno, porque sería un error en cascada.
@@ -140,26 +141,17 @@ inalcanzables. Es el mismo corte que ya tienen los errores de tipos con
 *Multi-detección*. No se hace una pasada de flujo aparte porque `Token` no
 guarda la columna, y dos errores de la misma línea no se podrían ordenar.
 
-**D6 · Expresiones constantes.** Siguen a JLS §15.29 en lo que MiniJava
-tiene. Son constantes los literales `int`, `boolean`, `char` y `String`,
-combinados con los operadores binarios (`|| && == != < > <= >= + - * / %`),
-los unarios (`+ - !`) y paréntesis. Cada nodo de expresión puede dar su
-valor constante (por defecto, ninguno). Se pliega sobre el AST, así que se
-respeta la asociatividad a izquierda sin precedencia de MiniJava
-(`1 + 2 * 3 == 9` es `true`). Reglas:
-
-- La aritmética es `int` de 32 bits con desborde: `999999999 * 3 < 0` es `true`
-  (un literal tiene como mucho 9 dígitos, REQ-AL-09).
-- `==` y `!=` entre `char` comparan los valores; entre `String`, comparan el
-  contenido (las constantes `String` se internan, así que Java da lo mismo).
-- `null` no es constante.
-- Una división o un módulo por cero hacen que la expresión no sea constante,
-  igual que en javac (`while (1 / 0 == 0)` es un bucle común).
-- Si los operandos no tienen los tipos que pide el operador (una expresión
-  mal tipada), la expresión no es constante. El plegado no reporta errores:
-  eso es tarea del chequeo de tipos.
-- No hay variables constantes: `final` no se aplica a atributos ni a
-  locales (en un atributo es error sintáctico).
+**D6 · Condiciones constantes: sólo literales.** Una condición de bucle es
+constante sólo si es el literal `true` o `false`, solo o entre paréntesis
+(`(true)`, `((false))`). No se evalúa ninguna operación: calcular valores
+no es tarea de esta etapa (ADR 0009). Así, `!false`, `1 < 2`,
+`true && true`, `'a' == 'a'` o `"a" == "a"` son condiciones comunes, aunque
+javac las trate como constantes (JLS §15.29); con `null == null` y
+`1 / 0 == 0` MiniJava y javac coinciden. Cada nodo de expresión puede dar
+su valor constante (por defecto, ninguno), y sólo `NodoLiteralBooleano` y
+`NodoExpParentizada` sin encadenado lo tienen. No hay variables constantes:
+`final` no se aplica a atributos ni a locales (en un atributo es error
+sintáctico).
 
 **D7 · Primer token de una sentencia.** `NodoSentencia` da el token sobre el
 que se reporta si es inalcanzable. El AST guarda solo los tokens que
@@ -215,7 +207,7 @@ base siguen igual.
   | 01 | *(existe)* `if`/`else` con `return` en las dos ramas |
   | 02 | void y constructores: cuerpo vacío, sin `return`, con `return;` al final y adentro de un `if` |
   | 03 | Bucle infinito sin `return` después en un método `int`: `while (true) {}`, `for (;;) {}` y `for (var i = 0; ; i = i + 1) {}` |
-  | 04 | Constantes `true`: `!false`, `(true)`, `1 < 2`, `true && !false`, `'a' == 'a'`, `"a" == "a"`, `1 + 2 * 3 == 9` y `999999999 * 3 < 0` |
+  | 04 | Condiciones con operadores, que no son constantes (D6): `!false`, `1 < 2`, `true && true`, `'a' == 'a'` y `"a" == "a"`, cada una con `return` después; y `(true)`, que sí es constante, sin `return` |
   | 05 | Condiciones no constantes, con código alcanzable después: `while (b)`, `while (null == null)`, `while (1 / 0 == 0)`, y `if (true) return 1;` seguido de `return 2;` |
   | 06 | `if (false) { x = 1; }` es válido |
   | 07 | Anidados: `if`/`else` con `if`/`else` adentro, `{ { return 1; } }`, y una rama con `return` y la otra con `while (true) {}` |
@@ -237,7 +229,7 @@ base siguen igual.
   | 08 | `if`/`else` con `return` en las dos ramas y después `return 3;` | `return\|L` |
   | 09 | `while (true) {} x = 1;` y `for (;;) {} x = 1;`, en dos métodos | `x`, `x` |
   | 10 | Cuerpo inalcanzable: `while (false) { x = 1; }` y `for (var i = 0; false; i = i + 1) x = i;` | `{`, `x` |
-  | 11 | Constante no literal: `while (!false) {} return 1;` | `return` |
+  | 11 | Una condición con operadores no es constante (D6): `int m1() { while (!false) {} }` | `m1` |
   | 12 | Recuperación: `return 1; x = 2; y = 3;` (uno) y `return 1; x = 2; return 3; y = 4;` (dos) | `x`, `x`, `y` |
   | 13 | La recuperación tapa la falta de retorno: `int m() { return 1; x = 2; }` | `x` |
   | 14 | Inalcanzable adentro de una inalcanzable: `return 1; if (b) { return 2; z = 3; }` | `if`, `z` |
@@ -274,26 +266,27 @@ base siguen igual.
 - `break`, `continue`, `switch`, `throw` y `try`: MiniJava no los tiene.
 - Asignación definida de locales antes de su uso (JLS cap. 16): es otro
   análisis de flujo y no está pedido.
-- Literales `float` en las expresiones constantes: entran con el logro
-  *Floats y coerción*, que sigue pendiente.
+- Evaluar condiciones con operadores (JLS §15.29): calcular valores no es
+  tarea de esta etapa (ADR 0009).
 - Una opción para apagar el logro (ADR 0008).
 - Reportar inalcanzables adentro de las ramas de una sentencia que cortó
   por un error de tipos (D5).
 
 ## Further Notes
 
-- Referencias: JLS §14.22 (alcanzabilidad), §15.29 (expresiones
-  constantes) y la `Liveness` de javac (`com.sun.tools.javac.comp.Flow`)
-  para la recuperación.
+- Referencias: JLS §14.22 (alcanzabilidad) y la `Liveness` de javac
+  (`com.sun.tools.javac.comp.Flow`) para la recuperación.
 - Vocabulario: `GLOSARIO.md`, sección "Flujo de ejecución" (*termina
-  normalmente*, *sentencia inalcanzable*, *expresión constante*, *falta de
+  normalmente*, *sentencia inalcanzable*, *condición constante*, *falta de
   retorno*).
 - Al cerrar hay que actualizar: el "Estado de la implementación" de
   `etapa4-semantico2/requerimientos.md`, `casos-de-prueba.md` (códigos,
   índice y la nota "Pendiente de confirmar" sobre §12.5, que se borra), el
   estado del ADR 0008, el `CLAUDE.md` y el índice de `Documentación/README.md`.
 - El informe de la Etapa 4 tiene que decir que el logro reemplaza esa parte
-  de §12.5 y que CP-SII-38 ya no da `[SinErrores]`.
+  de §12.5 y que CP-SII-38 ya no da `[SinErrores]`, y que, a diferencia de
+  Java, sólo los literales `true` y `false` son condiciones constantes
+  (ADR 0009).
 
 ## Tickets
 
@@ -303,7 +296,7 @@ En `0004-caminos-de-retorno/tickets/`, uno por archivo.
 |---|---|---|---|
 | 01 | Falta de retorno | — | hecho |
 | 02 | Sentencia inalcanzable | 01 | hecho |
-| 03 | Expresiones constantes completas | 02 | ready-for-agent |
+| 03 | Condiciones constantes: sólo literales | 02 | hecho |
 | 04 | Cierre | 03 | ready-for-agent |
 
 Reparto de casos: 01 → Correcto 01–03 y 07, Error 01–06 y 18, y Error 19 y

@@ -35,8 +35,10 @@ public abstract class NodoExpresion implements ValorArreglo {
         return esLlamable();
     }
 
-    // Valor de la expresión si es una expresión constante (JLS §15.29, spec
-    // 0004, D6), o null si no lo es. Por defecto no lo es. Sólo lo usa el
+    // Valor de la expresión si es una condición constante (spec 0004, D6), o
+    // null si no lo es. Sólo lo son los literales true y false, solos o entre
+    // paréntesis: no se evalúa ninguna operación, así que !false o 1 < 2 no
+    // son constantes, a diferencia de Java (ADR 0009). Sólo lo usa el
     // análisis de flujo, para las condiciones de while y for.
     public Object valorConstante() {
         return null;
