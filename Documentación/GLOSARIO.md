@@ -69,6 +69,34 @@ _Evitar_: clase de librería
 **Supertipo directo**:
 Tipo declarado que aparece en el `extends` o en el `implements` de otro.
 
+**Superclase**:
+La clase que nombra el `extends` de una clase, con su argumento de tipo si
+lo tiene. Si la clase no tiene `extends`, su superclase es `Object`. Una
+interfaz implementada nunca es la superclase. `Object` es la única clase
+sin superclase.
+_Evitar_: padre (en el texto formal), supertipo directo (incluye interfaces)
+
+**Acceso con super**:
+Acceso a un atributo o llamada a un método (`super.x`, `super.m(...)`) que
+selecciona el miembro como se ve desde la superclase de la clase actual. El
+objeto sigue siendo el actual (`this`). Un método de instancia llamado así
+ejecuta la versión de la superclase, aunque la clase actual lo redefina:
+no hay despacho dinámico. Sólo es válido donde `this` lo es.
+_Evitar_: super (a secas), llamada a super
+
+**Llamada al constructor de la superclase**:
+Sentencia `super(...)` que ejecuta un constructor de la superclase sobre el
+objeto que se está construyendo. Sólo puede ser la primera sentencia del
+cuerpo de un constructor. Nunca se agrega sola: un constructor que no la
+escribe no llama a ningún constructor de la superclase.
+_Evitar_: llamada a super, super implícito
+
+**Contexto previo a la construcción**:
+Los argumentos de una llamada al constructor de la superclase. Ahí todavía
+no se puede usar el objeto actual: ni `this`, ni un acceso con super, ni un
+atributo o un método de instancia por su nombre suelto.
+_Evitar_: contexto estático (es otra regla, aunque prohíba cosas parecidas)
+
 **Herencia múltiple de interfaces**:
 Una interfaz que extiende varias interfaces. Una clase implementa como
 máximo una interfaz y extiende como máximo una clase, y nunca hace las dos
