@@ -370,7 +370,9 @@ public class AnalizadorLexicoImpl implements AnalizadorLexico
             // No se consume caracterActual: como en el resto de los literales
             // numéricos (spec 0008, D1), el carácter que corta queda para el token
             // siguiente. Consumirlo perdía la 'q' de "4.equals" o el ';' de "3e;".
-            reportarError(lexema.toString(), "se esperaba al menos un dígito en el exponente");
+            // Por eso nroColumna apunta a ese carácter y el caret va una antes,
+            // sobre la 'e' (o el signo), el último carácter del lexema.
+            reportarError(lexema.toString(), "se esperaba al menos un dígito en el exponente", nroColumna - 1);
         }
     }
 
