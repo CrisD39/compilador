@@ -44,11 +44,8 @@ public class NodoLlamadaMetodo extends NodoPrimario {
             throw new ExcepcionSemantica(nombre, "ERR_METODO_NO_ENCONTRADO");
         }
         ChequeoVisibilidad.exigirAcceso(tabla, metodo.isPrivado(), metodo.getMiClase(), tabla.getClaseActual(), nombre);
-        if (!metodo.isEstatico() && tabla.enContextoEstatico()) {
-            throw new ExcepcionSemantica(nombre, "ERR_METODO_NO_ESTATICO");
-        }
-        if (!metodo.isEstatico() && tabla.enContextoPrevioAConstruccion()) {
-            throw new ExcepcionSemantica(nombre, "ERR_REFERENCIA_ANTES_DE_SUPER");
+        if (!metodo.isEstatico()) {
+            tabla.exigirObjetoActual(nombre, "ERR_METODO_NO_ESTATICO");
         }
         List<Tipo> tiposArgumentos = ChequeoLlamada.chequearArgumentos(tabla, argumentos);
         Tipo tipo = ChequeoLlamada.tipoDeLlamada(

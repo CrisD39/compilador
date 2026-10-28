@@ -39,8 +39,9 @@ public class TablaSimbolos {
     // cierran los nodos que abren un scope, siempre en un finally.
     private final Deque<Map<String, VariableLocal>> bloques = new ArrayDeque<>();
     // Contexto previo a la construcción (spec 0006, D9): prendido sólo
-    // mientras NodoLlamadaSuperConstructor chequea sus argumentos, que lo
-    // apaga en un finally. No es el contexto estático: el constructor tiene
+    // mientras se chequean los argumentos de super(...)
+    // (ChequeoLlamada.chequearConstructor()), que en un finally lo restaura
+    // al valor anterior. No es el contexto estático: el constructor tiene
     // objeto, pero todavía no está construido.
     private boolean antesDeConstruccion;
 
@@ -441,15 +442,32 @@ public class TablaSimbolos {
         return metodoActual != null && metodoActual.isEstatico();
     }
 
-    // En los argumentos de super(...) no se puede usar el objeto actual
-    // (JLS §8.8.7.1): this, super.x, un atributo por su nombre suelto ni una
-    // llamada sin receptor a un método de instancia.
-    public boolean enContextoPrevioAConstruccion() {
-        return antesDeConstruccion;
+    // Devuelve el valor anterior, para restaurarlo y no apagar la marca: un
+    // chequeo anidado que también la prenda no la apaga mientras el externo
+    // sigue chequeando argumentos.
+    public boolean prenderContextoPrevioAConstruccion() {
+        boolean anterior = antesDeConstruccion;
+        antesDeConstruccion = true;
+        return anterior;
     }
 
-    public void setContextoPrevioAConstruccion(boolean valor) {
-        antesDeConstruccion = valor;
+    public void restaurarContextoPrevioAConstruccion(boolean anterior) {
+        antesDeConstruccion = anterior;
+    }
+
+    // La regla "el objeto actual no está disponible", en un solo lugar para
+    // los usos del receptor implícito: this, el acceso con super, un atributo
+    // por su nombre suelto y la llamada sin receptor a un método de
+    // instancia. Un método estático no tiene objeto (cada uso con su código,
+    // §10.1, §10.4, D6), y en los argumentos de super(...) todavía no está
+    // construido (JLS §8.8.7.1, D9). Si valen los dos, gana el estático.
+    public void exigirObjetoActual(Token token, String codigoEstatico) {
+        if (enContextoEstatico()) {
+            throw new ExcepcionSemantica(token, codigoEstatico);
+        }
+        if (antesDeConstruccion) {
+            throw new ExcepcionSemantica(token, "ERR_REFERENCIA_ANTES_DE_SUPER");
+        }
     }
 
     public void abrirBloque() {

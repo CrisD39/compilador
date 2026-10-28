@@ -1,7 +1,6 @@
 package Model.semantico.ast;
 
 import Model.lexico.Token;
-import Model.semantico.ExcepcionSemantica;
 import Model.semantico.TablaSimbolos;
 import Model.semantico.Tipo;
 
@@ -31,12 +30,7 @@ public class NodoSuper extends NodoPrimario {
     // interfaz implementada no está en la superclase: miembro inexistente.
     @Override
     public Tipo chequear(TablaSimbolos tabla) {
-        if (tabla.enContextoEstatico()) {
-            throw new ExcepcionSemantica(tokenSuper, "ERR_SUPER_EN_ESTATICO");
-        }
-        if (tabla.enContextoPrevioAConstruccion()) {
-            throw new ExcepcionSemantica(tokenSuper, "ERR_REFERENCIA_ANTES_DE_SUPER");
-        }
+        tabla.exigirObjetoActual(tokenSuper, "ERR_SUPER_EN_ESTATICO");
         return chequearEncadenado(tabla, tabla.getClaseActual().getTipoSuperclase());
     }
 }

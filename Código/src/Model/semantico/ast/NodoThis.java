@@ -1,7 +1,6 @@
 package Model.semantico.ast;
 
 import Model.lexico.Token;
-import Model.semantico.ExcepcionSemantica;
 import Model.semantico.TablaSimbolos;
 import Model.semantico.Tipo;
 
@@ -24,12 +23,7 @@ public class NodoThis extends NodoPrimario {
     // parámetro de tipo: Caja<T> dentro de Caja<T> (§11.3, semIICorrecto34).
     @Override
     public Tipo chequear(TablaSimbolos tabla) {
-        if (tabla.enContextoEstatico()) {
-            throw new ExcepcionSemantica(tokenThis, "ERR_THIS_EN_ESTATICO");
-        }
-        if (tabla.enContextoPrevioAConstruccion()) {
-            throw new ExcepcionSemantica(tokenThis, "ERR_REFERENCIA_ANTES_DE_SUPER");
-        }
+        tabla.exigirObjetoActual(tokenThis, "ERR_THIS_EN_ESTATICO");
         return chequearEncadenado(tabla, tabla.getClaseActual().comoTipo());
     }
 }

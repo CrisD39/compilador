@@ -1,6 +1,6 @@
 ---
 titulo: Contexto previo a la construcción en un solo lugar
-estado: ready-for-agent
+estado: hecho
 spec: ../../0006-super.md
 ---
 
@@ -32,13 +32,13 @@ constructor).
 **Origen:** `revision.md`, §2.3, §2.4 y §2.5.
 
 **Criterios:**
-- [ ] La marca se restaura al valor anterior, no a `false`.
-- [ ] La marca está prendida solo mientras se chequean los argumentos de
+- [x] La marca se restaura al valor anterior, no a `false`.
+- [x] La marca está prendida solo mientras se chequean los argumentos de
       `super(...)`; el comentario de `NodoLlamadaSuperConstructor` que
       admite lo contrario se reescribe.
-- [ ] Ningún nodo consulta las dos marcas por su cuenta: los cuatro usan
+- [x] Ningún nodo consulta las dos marcas por su cuenta: los cuatro usan
       el helper, y el error que gana en cada caso es el mismo que hoy
       (estático antes que previo a la construcción).
-- [ ] Ninguna salida cambia: `./test.sh` en verde, sin tocar casos (en
+- [x] Ninguna salida cambia: `./test.sh` en verde, sin tocar casos (en
       particular `superKeyword`, `atributosInicializados` y
       `multiDeteccionErrores`).

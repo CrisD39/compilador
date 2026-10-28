@@ -561,11 +561,14 @@ Las specs 0003, 0004, 0005 y 0006 están cerradas. Quedó implementado:
   con `NodoCreacionObjeto`, y sus errores van sobre `super`.
   `ErrorSemantico` ajusta el texto de `ERR_CONSTRUCTOR_NO_ENCONTRADO`,
   `ERR_ARGUMENTO_INCOMPATIBLE` y `ERR_ACCESO_PRIVADO` cuando el lexema es
-  `super`. Mientras chequea sus argumentos, la llamada prende
-  `TablaSimbolos.setContextoPrevioAConstruccion()` (y la apaga en un
-  `finally`). Con la marca prendida, `NodoThis`, `NodoSuper`,
-  `NodoAccesoVar` (un atributo) y `NodoLlamadaMetodo` (un método de
-  instancia) dan `ERR_REFERENCIA_ANTES_DE_SUPER` sobre su token. Un
+  `super`. Mientras chequea sus argumentos (y sólo ellos: la resolución
+  por aridad y la visibilidad quedan afuera), la llamada prende
+  `TablaSimbolos.prenderContextoPrevioAConstruccion()` y la restaura al
+  valor anterior en un `finally`. Con la marca prendida, `NodoThis`,
+  `NodoSuper`, `NodoAccesoVar` (un atributo) y `NodoLlamadaMetodo` (un
+  método de instancia) dan `ERR_REFERENCIA_ANTES_DE_SUPER` sobre su token;
+  los cuatro pasan por `TablaSimbolos.exigirObjetoActual()`, que controla
+  primero el contexto estático y después la marca. Un
   parámetro con el nombre de un atributo resuelve antes y vale.
   `superKeyword` está en `LOGROS_HABILITADOS`. Casos:
   `semIISuperCorrecto01`–`06` y `semIISuperError01`–`20`.

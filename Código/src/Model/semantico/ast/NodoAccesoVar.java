@@ -63,12 +63,7 @@ public class NodoAccesoVar extends NodoPrimario {
         if (variable instanceof Atributo atributo) {
             ChequeoVisibilidad.exigirAcceso(tabla, atributo.isPrivado(), atributo.getClaseDeclarante(),
                     tabla.getClaseActual(), nombre);
-            if (tabla.enContextoEstatico()) {
-                throw new ExcepcionSemantica(nombre, "ERR_ATRIBUTO_EN_ESTATICO");
-            }
-            if (tabla.enContextoPrevioAConstruccion()) {
-                throw new ExcepcionSemantica(nombre, "ERR_REFERENCIA_ANTES_DE_SUPER");
-            }
+            tabla.exigirObjetoActual(nombre, "ERR_ATRIBUTO_EN_ESTATICO");
             if (!esDestinoDirecto) {
                 exigirDeclaradoAntes(tabla, atributo);
             }

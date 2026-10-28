@@ -47,8 +47,13 @@ final class ChequeoLlamada {
     // o en super(5) con extends Caja<String>, T es String (D10,
     // semIIError28). Todos los errores van sobre 'token': el nombre de la
     // clase en new, super en la llamada al constructor de la superclase.
-    static void chequearConstructor(TablaSimbolos tabla, Tipo tipo,
-                                    List<NodoExpresion> argumentos, Token token) {
+    // 'previoAConstruccion' dice si los argumentos se chequean en el contexto
+    // previo a la construcción (super(...), D9): la marca se prende sólo
+    // alrededor de ellos y vuelve a su valor anterior aunque uno lance, así
+    // el resto del constructor usa el objeto actual normalmente y un new
+    // anidado (super(new C(this))) no la apaga.
+    static void chequearConstructor(TablaSimbolos tabla, Tipo tipo, List<NodoExpresion> argumentos,
+                                    Token token, boolean previoAConstruccion) {
         if (!(tabla.entidadDe(tipo) instanceof Clase clase)) {
             throw new IllegalStateException("Constructor de algo que no es una clase: " + tipo.getToken().getLexema());
         }
@@ -57,7 +62,17 @@ final class ChequeoLlamada {
                 .findFirst()
                 .orElseThrow(() -> new ExcepcionSemantica(token, "ERR_CONSTRUCTOR_NO_ENCONTRADO"));
         ChequeoVisibilidad.exigirAcceso(tabla, constructor.isPrivado(), clase, clase, token);
-        List<Tipo> tiposArgumentos = chequearArgumentos(tabla, argumentos);
+        List<Tipo> tiposArgumentos;
+        if (previoAConstruccion) {
+            boolean anterior = tabla.prenderContextoPrevioAConstruccion();
+            try {
+                tiposArgumentos = chequearArgumentos(tabla, argumentos);
+            } finally {
+                tabla.restaurarContextoPrevioAConstruccion(anterior);
+            }
+        } else {
+            tiposArgumentos = chequearArgumentos(tabla, argumentos);
+        }
         exigirConformidad(tabla, constructor.getParams(), tabla.instanciacionDe(tipo), tiposArgumentos, token);
     }
 

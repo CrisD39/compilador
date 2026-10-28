@@ -55,7 +55,7 @@ public class NodoCreacionObjeto extends NodoPrimario {
             throw new ExcepcionSemantica(nombre, "ERR_NEW_INTERFAZ");
         }
         Tipo creado = tipo.resolverEnCuerpo(tabla);
-        ChequeoLlamada.chequearConstructor(tabla, creado, argumentos, nombre);
+        ChequeoLlamada.chequearConstructor(tabla, creado, argumentos, nombre, false);
         return chequearEncadenado(tabla, creado);
     }
 }
