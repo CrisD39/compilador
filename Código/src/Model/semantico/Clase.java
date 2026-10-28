@@ -62,7 +62,9 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
         return padreEfectivo;
     }
 
-    // El padre efectivo como tipo de super (ver getTipoSuperclase()).
+    // Superclase como tipo, para super y para subir por la jerarquía (ver
+    // getTipoSuperclase()). Se fija junto con padreEfectivo, pero no siempre
+    // lo nombra: en D1/D7 queda el 'extends' escrito.
     private Tipo tipoSuperclase;
 
     // Instanciación genérica (spec 0001): para cada ancestro genérico, el
@@ -262,12 +264,17 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
     // Tipo de super (logro Super!, spec 0006, D5): el 'extends' tal como se
     // escribió, con su argumento (A<String>), así el encadenado ve los
     // miembros instanciados desde ahí; sin 'extends', Object, el padre
-    // efectivo. Se fija en consolidarHerencia() junto con el padre efectivo,
-    // así no se arma un Object nuevo en cada super. Sólo lo usa el chequeo de
-    // sentencias, que no corre si hubo errores de declaración: el 'extends'
-    // existe, es una clase y no está en un ciclo. Una clase con 'implements'
-    // no tiene 'extends' (ADR 0005), así que su superclase es Object, nunca
-    // la interfaz. null antes de consolidar, para Object y en un ciclo.
+    // efectivo. Una clase con 'implements' no tiene 'extends' (ADR 0005),
+    // así que su superclase es Object, nunca la interfaz. Se fija en
+    // consolidarHerencia() junto con el padre efectivo, así no se arma un
+    // Object nuevo en cada super, y en los mismos casos: es null antes de
+    // consolidar, para Object y para una clase en un ciclo (o que depende
+    // de uno). Con un 'extends' de una interfaz (D1) o de un nombre no
+    // declarado (D7) el padre efectivo es Object, pero esto queda en el
+    // 'extends' escrito, que no nombra una clase. El chequeo de sentencias
+    // no ve ese caso, porque no corre si hubo errores de declaración, y
+    // TablaSimbolos.supertiposDe() lo sigue igual que antes de existir este
+    // campo.
     public Tipo getTipoSuperclase() {
         return tipoSuperclase;
     }

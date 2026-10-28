@@ -560,8 +560,10 @@ Las specs 0003, 0004, 0005 y 0006 están cerradas. Quedó implementado:
   desde el tipo) pasó a `ChequeoLlamada.chequearConstructor()`, compartida
   con `NodoCreacionObjeto`, y sus errores van sobre `super`.
   `ErrorSemantico` ajusta el texto de `ERR_CONSTRUCTOR_NO_ENCONTRADO`,
-  `ERR_ARGUMENTO_INCOMPATIBLE` y `ERR_ACCESO_PRIVADO` cuando el lexema es
-  `super`. Mientras chequea sus argumentos (y sólo ellos: la resolución
+  `ERR_ARGUMENTO_INCOMPATIBLE` y `ERR_ACCESO_PRIVADO` cuando el campo
+  `detalle` es `ErrorSemantico.DETALLE_SUPER`, que pasa
+  `ChequeoLlamada.chequearConstructor()` para `super(...)` (no se deduce
+  del lexema). Mientras chequea sus argumentos (y sólo ellos: la resolución
   por aridad y la visibilidad quedan afuera), la llamada prende
   `TablaSimbolos.prenderContextoPrevioAConstruccion()` y la restaura al
   valor anterior en un `finally`. Con la marca prendida, `NodoThis`,
@@ -571,7 +573,7 @@ Las specs 0003, 0004, 0005 y 0006 están cerradas. Quedó implementado:
   primero el contexto estático y después la marca. Un
   parámetro con el nombre de un atributo resuelve antes y vale.
   `superKeyword` está en `LOGROS_HABILITADOS`. Casos:
-  `semIISuperCorrecto01`–`06` y `semIISuperError01`–`20`.
+  `semIISuperCorrecto01`–`07` y `semIISuperError01`–`21`.
 
 Correcciones posteriores al cierre de la spec 0003 (code review,
 2026-10-24):

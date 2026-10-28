@@ -1,3 +1,4 @@
+///[SinErrores]
 // Herencia sin argumento de una clase generica (ADR 0007): el
 // metodo heredado m(T t) conserva su T (spec 0001, D5), y null conforma con
 // ella (gemelo de semIIError173).

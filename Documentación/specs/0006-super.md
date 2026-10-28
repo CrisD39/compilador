@@ -208,6 +208,12 @@ el texto se ajusta para que se lea bien cuando ese lexema es `super`, por
 ejemplo nombrando la superclase. La descripción no es parte del contrato,
 la etiqueta sí.
 
+> **Nota (ticket 08):** al implementarlo, la variante ya no se elige por el
+> lexema sino por el campo `detalle` de `ErrorSemantico`, que
+> `ChequeoLlamada.chequearConstructor()` pone en
+> `ErrorSemantico.DETALLE_SUPER` para `super(...)`: otro camino podría
+> reportar esos códigos sobre un token `super`. La etiqueta no cambia.
+
 **D9 · Contexto previo a la construcción.** `TablaSimbolos` lleva una marca
 que `NodoLlamadaSuperConstructor` prende mientras chequea sus argumentos y
 apaga al terminar, aunque salga por una excepción. Con la marca prendida,

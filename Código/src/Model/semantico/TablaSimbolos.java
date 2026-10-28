@@ -279,16 +279,17 @@ public class TablaSimbolos {
     }
 
     // Supertipos directos de una entidad, como tipos. Una clase sube por su
-    // padre efectivo, que es Object si no escribió 'extends', y por su
+    // superclase (Clase.getTipoSuperclase(): el 'extends' escrito, u Object
+    // si no hay; null antes de consolidar y en un ciclo), y por su
     // interfaz; una interfaz, por sus 'extends'. Toda interfaz llega además a
     // Object, como en Java (ADR 0004): ya contiene sus métodos de instancia
     // (spec 0002).
     private List<Tipo> supertiposDe(EntidadDeclarada entidad) {
         List<Tipo> supertipos = new ArrayList<>();
         if (entidad instanceof Clase clase) {
-            Clase padre = clase.getPadreEfectivo();
-            if (padre != null) {
-                supertipos.add(clase.getHerencia() != null ? clase.getHerencia() : new Tipo(padre.getNombre()));
+            Tipo superclase = clase.getTipoSuperclase();
+            if (superclase != null) {
+                supertipos.add(superclase);
             }
             if (clase.getInterfaz() != null) {
                 supertipos.add(clase.getInterfaz());
