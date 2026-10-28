@@ -27,6 +27,9 @@ válidos y el error lo da el parser.
 
 ## Solution
 
+> Revisada: ver "Revisión de D2" al final. `4.metodo1` es `4.` + `metodo1`
+> y el error sintáctico cae sobre el `4.`.
+
 Un literal numérico termina donde dejan de valer sus caracteres, y lo que
 sigue arranca un token nuevo, sin error léxico. `4.metodo1` son tres tokens
 (`4`, `.`, `metodo1`), y el sintáctico reporta el error sobre el `.`
@@ -66,6 +69,9 @@ bajo" y, con él, `consumirSufijoInvalidoDeNumero`.
 
 ### D2. Dígitos seguidos de `.`
 
+> Revisada: ver "Revisión de D2" al final. Cualquier carácter que no sea
+> dígito, `e`/`E` ni sufijo cierra el float `dígitos.`, letras incluidas.
+
 El caso del reporte. Después de los dígitos y un `.`, el carácter
 siguiente decide:
 
@@ -84,6 +90,8 @@ Consecuencias, iguales a las de javac: `4.foo()` es `floatLiteral(4.f)`
 letra empieza un nombre.
 
 ### D3. Mecanismo: un token en reserva
+
+> Revisada: ver "Revisión de D2" al final. La reserva se borró.
 
 Cuando D2 decide partir, el `.` ya está consumido y la letra es
 `caracterActual`. `SourceManager` no tiene `unread`/`peek` y no se le
@@ -106,6 +114,9 @@ identificador se arma por el camino normal.
   parser ya reporta el error donde corresponde.
 
 ### D5. Contrato de salida
+
+> Revisada: ver "Revisión de D2" al final. `x = 4.metodo1();` da
+> `[Error:4.|L]`.
 
 - `x = 4.metodo1();` en ET2/ET4: `[Error:.|L]` (se esperaba `;` y se
   encontró `.`), sin error léxico.
@@ -171,3 +182,24 @@ entregar el `.`, y `x = 1234567890.abc;` le llegaba al sintáctico como
 `x = abc . ;`. Ahora `startAnalizar` y `nextToken` comparten un solo loop
 (`leerToken`), que mira la reserva en cada vuelta. Lo cubre `sintError67`
 (`[Error:.|7]`). Sintáctico 38 + 67 + 4; el resto igual.
+
+**Revisión de D2 (2026-10-28):** D2 sacaba el `.` del número ante una letra
+que no fuera `e`/`E`/`f`/`F`/`d`/`D` (o un `_`), y para eso necesitaba la
+reserva de D3. No es lo que hace javac: en Java `4.` es un float válido y
+javac lo cierra en la `m`. Era además la única excepción a D1, y la reserva
+fue el origen de los dos arreglos de arriba. Ahora, después de `dígitos .`,
+un dígito sigue la parte decimal, `e`/`E` abre el exponente, `f`/`F`/`d`/`D`
+es el sufijo y **cualquier otro carácter, letras y `_` incluidos, cierra el
+float `dígitos.`**. Se borraron `tokenEnReserva`, `tomarTokenEnReserva` y
+`partirEnteroYPunto`. `4.foo` y `4.equals` no cambian.
+
+La gramática de MiniJava no tiene floats (`<Primitivo>` es `true`, `false`,
+`intLiteral`, `charLiteral` o `null`; el logro "Floats I" es sólo léxico), así
+que el error sintáctico no cae sobre `metodo1` como en javac sino sobre el
+`4.`: "se esperaba una expresión y se encontró floatLiteral ("4.")", el mismo
+que da `x = 3.14;`. Sigue sin haber error léxico, que es lo que pidió la
+corrección. Cambian `lexSinErrores19` (`3.a`: `3.` `a`), `lexSinErrores24`
+(`4.` `metodo1`), `sintError64` (`[Error:4.|5]`), `sintError66`
+(`[Error:3.|7]`) y `sintError67`, que deja de probar la reserva y pasa a
+cubrir que `1234567890.abc` es un float sin límite de 9 dígitos
+(`[Error:1234567890.|8]`). Los conteos de casos no cambian.

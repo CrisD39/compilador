@@ -25,12 +25,6 @@ public class AnalizadorLexicoImpl implements AnalizadorLexico
     // puntos de entrada se arranque.
     private boolean iniciado;
 
-    // Token ya reconocido que se entrega en la llamada siguiente, antes de leer
-    // otro carácter. Sólo lo usa "dígitos . letra" (spec 0008, D2/D3): cuando
-    // se ve la letra, el '.' ya se consumió, y SourceManager no tiene
-    // unread/peek para devolverlo. Se emite el intLiteral y el '.' queda acá.
-    private Token tokenEnReserva;
-
     public AnalizadorLexicoImpl(SourceManager sourceManager, ResultadoLexicoListener listener)
     {
         this.sourceManager = sourceManager;
@@ -130,10 +124,7 @@ public class AnalizadorLexicoImpl implements AnalizadorLexico
     // Loop compartido por los dos modos, para que no puedan divergir.
     // estadoInicial() es el punto de arranque de cada token; cuando esa llamada no
     // arma token (blanco, comentario o error léxico), se vuelve a llamar hasta que
-    // salga uno o hasta EOF. La reserva se mira en cada vuelta y no sólo al
-    // entrar: partirEnteroYPunto() puede dejar el '.' en reserva sin armar el
-    // entero (error de más de 9 dígitos), y entonces el '.' tiene que salir antes
-    // de que estadoInicial() lea lo que sigue ("1234567890.abc" → error, '.', abc).
+    // salga uno o hasta EOF.
     private Token leerToken() throws IOException
     {
         if(!iniciado)
@@ -142,13 +133,8 @@ public class AnalizadorLexicoImpl implements AnalizadorLexico
             actualizarCaracterActual();
         }
 
-        while(tokenEnReserva != null || caracterActual != SourceManager.END_OF_FILE)
+        while(caracterActual != SourceManager.END_OF_FILE)
         {
-            if(tokenEnReserva != null)
-            {
-                return tomarTokenEnReserva();
-            }
-
             lexema.setLength(0);
             tokenAnalizado = null;
 
@@ -167,13 +153,6 @@ public class AnalizadorLexicoImpl implements AnalizadorLexico
         lexema.append('$');
         armarToken(TokenType.EOF);
         return tokenAnalizado;
-    }
-
-    private Token tomarTokenEnReserva()
-    {
-        Token token = tokenEnReserva;
-        tokenEnReserva = null;
-        return token;
     }
 
     private void estadoInicial() throws IOException
@@ -294,17 +273,17 @@ public class AnalizadorLexicoImpl implements AnalizadorLexico
         }
         else
         {
-            cerrarLiteralEntero(nroColumna - 1);
+            cerrarLiteralEntero();
         }
     }
 
-    // "columna" es la del último dígito: quien llama sabe cuántos caracteres
-    // de lookahead consumió después de él (uno, o dos si ya pasó un '.').
-    private void cerrarLiteralEntero(int columna)
+    // nroColumna ya está sobre el lookahead que cortó el entero: el caret va
+    // una columna antes, sobre el último dígito.
+    private void cerrarLiteralEntero()
     {
         if(lexema.length() > 9)
         {
-            reportarError(lexema.toString(), "el literal entero supera los 9 dígitos permitidos", columna);
+            reportarError(lexema.toString(), "el literal entero supera los 9 dígitos permitidos", nroColumna - 1);
         }
         else
         {
@@ -315,21 +294,14 @@ public class AnalizadorLexicoImpl implements AnalizadorLexico
     // Parte decimal: ya se consumió el '.'. No exige dígitos después (Java acepta
     // "3." como float válido), así que solo se queda mientras sigan llegando dígitos.
     // Si aparece 'e'/'E' pasa al exponente; cualquier otro carácter cierra como float.
-    // Spec 0008, D2: si después del '.' no vino ningún dígito y viene una letra
-    // que no continúa el float (ni exponente ni sufijo f/F/d/D) o un '_', el '.'
-    // no es del número: "4.metodo1" es 4 . metodo1, y el parser reporta el '.'.
-    // Ver la letra no alcanza para "adivinar" un nombre ("4.foo" es 4.f + oo,
-    // igual que en javac), y no se mira más de un carácter adelante.
+    // Spec 0008, D2 revisada: una letra o '_' que no continúa el float (ni
+    // exponente ni sufijo f/F/d/D) cierra el float "dígitos." como cualquier otro
+    // carácter, igual que en javac: "4.metodo1" es 4. + metodo1, y el error lo
+    // da el parser (la gramática de MiniJava no tiene floats, así que cae sobre
+    // el "4."). No se mira más de un carácter adelante, así que "4.foo"
+    // es 4.f + oo y "4.equals" es el error de exponente sobre "4.e".
     private void estadoParteDecimal() throws IOException
     {
-        if((Character.isLetter(caracterActual) || caracterActual == '_')
-                && caracterActual != 'e' && caracterActual != 'E'
-                && !esSufijoFloatValido(caracterActual))
-        {
-            partirEnteroYPunto();
-            return;
-        }
-
         while(Character.isDigit(caracterActual))
         {
             actualizarLexema();
@@ -384,17 +356,6 @@ public class AnalizadorLexicoImpl implements AnalizadorLexico
             actualizarCaracterActual();
         }
         cerrarLiteralFloat();
-    }
-
-    // El lexema es "dígitos." y caracterActual es la letra (o '_') que sigue: se
-    // saca el '.' del lexema, se cierra el entero y el '.' queda en reserva con
-    // la misma línea (no hubo salto en el medio). El entero va antes que el
-    // '.', así que su límite de 9 dígitos se controla igual que sin el punto.
-    private void partirEnteroYPunto()
-    {
-        lexema.setLength(lexema.length() - 1);
-        cerrarLiteralEntero(nroColumna - 2);
-        tokenEnReserva = new Token(TokenType.PUNTO, ".", sourceManager.getLineNumber());
     }
 
     // REQ-AL-21: "misma estructura que los floats de Java" incluye el sufijo de
