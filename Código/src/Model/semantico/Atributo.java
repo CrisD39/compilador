@@ -85,9 +85,10 @@ public class Atributo implements Chequeable, Variable {
     // error, ése es el único error del atributo (sin cascada, D9). Se chequea
     // en contexto de instancia (D4): quien llama setea atributoActual, y
     // enContextoEstatico() da false. Quien llama atrapa el error, porque el
-    // inicializador no pasa por un NodoBloque.
+    // inicializador no pasa por un NodoBloque. El tipo del atributo es el
+    // tipo esperado del inicializador (spec 0007, D3).
     public void chequearInicializador(TablaSimbolos tabla) {
-        Tipo valor = inicializador.chequear(tabla);
+        Tipo valor = inicializador.chequearConTipoEsperado(tabla, tipo);
         if (!valor.conformaCon(tipo, tabla)) {
             throw new ExcepcionSemantica(igual, "ERR_ASIGNACION_INCOMPATIBLE");
         }

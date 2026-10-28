@@ -47,6 +47,20 @@ public class NodoExpTernaria extends NodoExpCompuesta {
         throw new ExcepcionSemantica(operador, "ERR_TERNARIO_INCOMPATIBLE");
     }
 
+    // D4, pasos 1 y 2: con tipo esperado, cada rama completa (la izquierda y
+    // después la derecha) tiene que conformar con él, como en Java (JLS
+    // §15.25.3). El esperado baja a cada rama, así que en un ternario
+    // anidado el error va sobre el "?" del ternario dueño de la rama.
+    // Devuelve el esperado ya validado: el contexto sigue con su control de
+    // conformidad de siempre, que nunca da un segundo error.
+    @Override
+    public Tipo chequearConTipoEsperado(TablaSimbolos tabla, Tipo esperado) {
+        chequearCondicion(tabla);
+        chequearRamaContra(ladoIzq, tabla, esperado);
+        chequearRamaContra(ladoDer, tabla, esperado);
+        return esperado;
+    }
+
     // La condición va antes que las ramas, así el error informado es el
     // primero del fuente.
     private void chequearCondicion(TablaSimbolos tabla) {
@@ -55,10 +69,20 @@ public class NodoExpTernaria extends NodoExpCompuesta {
         }
     }
 
+    private Tipo chequearRama(NodoExpresion rama, TablaSimbolos tabla) {
+        return exigirValor(rama.chequear(tabla));
+    }
+
+    private void chequearRamaContra(NodoExpresion rama, TablaSimbolos tabla, Tipo esperado) {
+        Tipo tipo = exigirValor(rama.chequearConTipoEsperado(tabla, esperado));
+        if (!tipo.conformaCon(esperado, tabla)) {
+            throw new ExcepcionSemantica(operador, "ERR_TERNARIO_RAMA_INCOMPATIBLE");
+        }
+    }
+
     // Filtro explícito de void aunque conformaCon ya lo rechace: una rama
     // void tiene su propio error, aunque lo sean las dos (c ? m() : n()).
-    private Tipo chequearRama(NodoExpresion rama, TablaSimbolos tabla) {
-        Tipo tipo = rama.chequear(tabla);
+    private Tipo exigirValor(Tipo tipo) {
         if (tipo.esVoid()) {
             throw new ExcepcionSemantica(operador, "ERR_TERNARIO_RAMA_VOID");
         }

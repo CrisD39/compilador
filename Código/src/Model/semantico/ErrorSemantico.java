@@ -151,6 +151,7 @@ public final class ErrorSemantico {
             case "ERR_INSTANCEOF_GENERICO" -> "el tipo a la derecha de " + x + " no puede ser genérico";
             // Logro Ternarios (spec 0007): x es el "?".
             case "ERR_TERNARIO_RAMA_VOID" -> "una rama de " + x + " no produce valor";
+            case "ERR_TERNARIO_RAMA_INCOMPATIBLE" -> "una rama de " + x + " no conforma con el tipo esperado";
             case "ERR_TERNARIO_INCOMPATIBLE" -> "las ramas de " + x + " no tienen tipos compatibles";
             case "ERR_RETORNO_INCORRECTO" -> "el " + x + " no corresponde con el tipo de retorno de la unidad";
             // Logro Caminos de retorno (spec 0004).

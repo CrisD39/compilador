@@ -40,4 +40,15 @@ public class NodoExpParentizada extends NodoPrimario {
     public Tipo chequear(TablaSimbolos tabla) {
         return chequearEncadenado(tabla, expresion.chequear(tabla));
     }
+
+    // El paréntesis no cambia el valor, así que el tipo esperado baja a la
+    // expresión de adentro (spec 0007, D2). Con encadenado no: en
+    // (c ? b : a).getN() el esperado es el de getN(), no el del ternario.
+    @Override
+    public Tipo chequearConTipoEsperado(TablaSimbolos tabla, Tipo esperado) {
+        if (encadenado != null) {
+            return chequear(tabla);
+        }
+        return expresion.chequearConTipoEsperado(tabla, esperado);
+    }
 }

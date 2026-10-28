@@ -1,6 +1,6 @@
 ///[Error:?|9]
-// null con un int: sin boxing, ninguna rama conforma con la otra
-// (ERR_TERNARIO_INCOMPATIBLE, sobre el ?), aunque el destino sea int.
+// null con un int: sin boxing, la rama null no conforma con el tipo
+// esperado int del destino (ERR_TERNARIO_RAMA_INCOMPATIBLE, sobre el ?).
 
 class A1 {
     int i;

@@ -1,6 +1,6 @@
 ///[Error:?|9]
-// char no conforma con int (sin promocion numerica, §9.1), asi que las ramas
-// son incompatibles (ERR_TERNARIO_INCOMPATIBLE, sobre el ?).
+// char no conforma con el tipo esperado int (sin promocion numerica, §9.1):
+// ERR_TERNARIO_RAMA_INCOMPATIBLE, sobre el ?.
 
 class A1 {
     int i;

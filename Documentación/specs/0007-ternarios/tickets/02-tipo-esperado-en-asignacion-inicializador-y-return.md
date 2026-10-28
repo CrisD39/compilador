@@ -1,6 +1,6 @@
 ---
 titulo: Tipo esperado en asignación, inicializador y return
-estado: ready-for-agent
+estado: hecho
 spec: ../../0007-ternarios.md
 ---
 
@@ -44,13 +44,19 @@ ADR 0011. Glosario: *tipo esperado*.
 - Casos nuevos en `logros/ternarios/` (tabla de la spec).
 
 **Criterios:**
-- [ ] Casos de `logros/ternarios/` en verde: Correcto 02 y 06; Error 09,
+- [x] Casos de `logros/ternarios/` en verde: Correcto 02 y 06; Error 09,
       13 y 21. Siguen en verde los del ticket 01.
-- [ ] `semIIAtribInicError15` sigue en verde con `[Error:?|7]`, ahora con
+- [x] `semIIAtribInicError15` sigue en verde con `[Error:?|7]`, ahora con
       `ERR_TERNARIO_RAMA_INCOMPATIBLE`.
-- [ ] Un ternario sin tipo esperado (receptor, `==`, `var`, condiciones,
+- [x] Un ternario sin tipo esperado (receptor, `==`, `var`, condiciones,
       índices) sigue con la regla del ticket 01.
-- [ ] Ningún caso base de `semantico2/{sinErrores,conErrores}` ni de las
+- [x] Ningún caso base de `semantico2/{sinErrores,conErrores}` ni de las
       Etapas 1–3 cambia de etiqueta.
-- [ ] Siguen en verde los demás logros habilitados.
-- [ ] `./test.sh` en verde.
+- [x] Siguen en verde los demás logros habilitados.
+- [x] `./test.sh` en verde.
+
+**Nota de implementación:** con tipo esperado, `ERR_TERNARIO_RAMA_INCOMPATIBLE`
+reemplaza a `ERR_TERNARIO_INCOMPATIBLE` en los casos del ticket 01 que
+asignan (Error 01, 05, 11, 12 y la primera sentencia de 23) y en
+`semIIAtribInicError15`. Las etiquetas no cambian; se actualizaron los
+comentarios que nombraban el código, sin mover líneas.

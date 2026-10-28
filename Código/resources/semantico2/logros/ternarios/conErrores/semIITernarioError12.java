@@ -1,7 +1,7 @@
 ///[Error:?|10]
-// Un T no conforma con Object (regla de semIIError41-43), y un Object no
-// conforma con T: las ramas son incompatibles (ERR_TERNARIO_INCOMPATIBLE,
-// sobre el ?).
+// Un T no conforma con Object (regla de semIIError41-43): con el Object del
+// destino como tipo esperado, la rama t no conforma
+// (ERR_TERNARIO_RAMA_INCOMPATIBLE, sobre el ?).
 
 class Caja<T> {
     Object o;

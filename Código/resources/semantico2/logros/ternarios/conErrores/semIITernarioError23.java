@@ -1,7 +1,7 @@
 ///[Error:?|12]
 ///[Error:?|13]
 // Multi-deteccion: dos sentencias con ternarios mal tipados dan dos
-// errores, en orden (ERR_TERNARIO_INCOMPATIBLE y ERR_TERNARIO_RAMA_VOID).
+// errores, en orden (ERR_TERNARIO_RAMA_INCOMPATIBLE y ERR_TERNARIO_RAMA_VOID).
 
 class A1 {
     int i;

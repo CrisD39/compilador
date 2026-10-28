@@ -301,7 +301,7 @@ En `0007-ternarios/tickets/`, uno por archivo.
 | # | Ticket | Bloqueado por | Estado |
 |---|---|---|---|
 | 01 | Ternario sin tipo esperado | — | hecho |
-| 02 | Tipo esperado en asignación, inicializador y return | 01 | ready-for-agent |
+| 02 | Tipo esperado en asignación, inicializador y return | 01 | hecho |
 | 03 | Tipo esperado en los argumentos | 02 | ready-for-agent |
 | 04 | Cierre | 03 | ready-for-agent |
 

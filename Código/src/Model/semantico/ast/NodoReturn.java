@@ -26,12 +26,17 @@ public class NodoReturn extends NodoSentencia {
     // método no void la expresión es obligatoria y conforma con el retorno
     // declarado. La expresión se chequea primero, así un error adentro de
     // ella se reporta en su propio token. El retorno en todos los caminos lo
-    // controla el logro Caminos de retorno (salida(), ADR 0008).
+    // controla el logro Caminos de retorno (salida(), ADR 0008). En un
+    // método no void el retorno es el tipo esperado de la expresión (spec
+    // 0007, D3); en un constructor o un método void no hay tipo esperado.
     @Override
     public void chequear(TablaSimbolos tabla) {
-        Tipo tipo = expresion != null ? expresion.chequear(tabla) : null;
         Metodo metodo = tabla.getMetodoActual();
         Tipo esperado = metodo != null ? metodo.getTipoRetorno() : null;
+        Tipo tipo = null;
+        if (expresion != null) {
+            tipo = esperado != null ? expresion.chequearConTipoEsperado(tabla, esperado) : expresion.chequear(tabla);
+        }
         boolean correcto = esperado == null ? tipo == null : tipo != null && tipo.conformaCon(esperado, tabla);
         if (!correcto) {
             throw new ExcepcionSemantica(tokenReturn, "ERR_RETORNO_INCORRECTO");

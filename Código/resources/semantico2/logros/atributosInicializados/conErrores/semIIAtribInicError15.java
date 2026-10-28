@@ -1,7 +1,7 @@
 ///[Error:?|7]
-// Un ternario mal tipado en el inicializador da su propio error
-// (ERR_TERNARIO_INCOMPATIBLE, sobre el ?: logro Ternarios, spec 0007), y el
-// atributo no suma un segundo error de conformidad sobre el =.
+// Un ternario mal tipado en el inicializador da su propio error: "x" no
+// conforma con el tipo esperado int (ERR_TERNARIO_RAMA_INCOMPATIBLE, sobre
+// el ?: spec 0007), sin un segundo error de conformidad sobre el =.
 
 class A1 {
     int a = true ? 1 : "x";

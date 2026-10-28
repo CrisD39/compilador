@@ -33,7 +33,8 @@ public class NodoExpAsignacion extends NodoExpresion {
     // v.length depende del tipo de v: recién entonces se sabe que es el
     // length de un arreglo, de sólo lectura (⚠10, semIIError67). El destino
     // se chequea "como destino": en un inicializador, (b = 3) con b posterior
-    // no es una referencia adelantada (spec 0005, D7).
+    // no es una referencia adelantada (spec 0005, D7). El valor se chequea
+    // con el tipo del destino como tipo esperado (spec 0007, D3).
     @Override
     public Tipo chequear(TablaSimbolos tabla) {
         if (!ladoIzq.esAsignable()) {
@@ -43,7 +44,7 @@ public class NodoExpAsignacion extends NodoExpresion {
         if (!ladoIzq.esAsignable()) {
             throw new ExcepcionSemantica(operador, "ERR_DESTINO_NO_ASIGNABLE");
         }
-        Tipo valor = ladoDer.chequear(tabla);
+        Tipo valor = ladoDer.chequearConTipoEsperado(tabla, destino);
         if (!valor.conformaCon(destino, tabla)) {
             throw new ExcepcionSemantica(operador, "ERR_ASIGNACION_INCOMPATIBLE");
         }
