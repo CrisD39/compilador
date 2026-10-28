@@ -106,7 +106,7 @@ Error Semántico en línea <L>: <descripción del error>
 ```
 
 Por eso la primera línea de cada caso usa la misma convención de tres barras
-que el léxico y el sintáctico (`///[...]`, sin espacio, ver `sintError44.java`
+que el léxico y el sintáctico (`///[...]`, sin espacio, ver `sintError45.java`
 y siguientes):
 
 ```

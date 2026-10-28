@@ -248,8 +248,8 @@ Decisiones:
     `int a = 1, b = 2;`), locales de arreglo de tipo primitivo, de clase,
     de genérico instanciado y de parámetro de tipo, con una y dos
     dimensiones, y un `for` con local clásica.
-  - `sintError64`: coma colgante, `int x = 1, ;` (error sobre el `;`).
-  - `sintError65`: `for (int i = 0, j = 0; …)` (error sobre la `,`).
+  - `sintError68` (64–67 ya los usaba la spec 0008): coma colgante, `int x = 1, ;` (error sobre el `;`).
+  - `sintError69`: `for (int i = 0, j = 0; …)` (error sobre la `,`).
 - **Casos correctos del logro** (`semIIVarLocalCorrectoNN`):
 
   | # | Qué prueba |

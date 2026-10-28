@@ -1,6 +1,6 @@
 ---
 titulo: Un inicializador por declarador y locales de arreglo
-estado: ready-for-agent
+estado: hecho
 spec: ../../0009-variables-locales-clasicas.md
 ---
 
@@ -45,15 +45,15 @@ Glosario: *variable local clásica*, *declarador*.
     cerrar). Se fija corriendo el caso y se actualiza el comentario.
   - Nuevos: `sintCorrecto40` (declaradores mezclados, arreglos de
     primitivo, clase, genérico instanciado y parámetro de tipo con una y
-    dos dimensiones, y un `for` con local clásica), `sintError64`
-    (`int x = 1, ;`, error sobre el `;`) y `sintError65`
+    dos dimensiones, y un `for` con local clásica), `sintError68`
+    (`int x = 1, ;`, error sobre el `;`) y `sintError69`
     (`for (int i = 0, j = 0; …)`, error sobre la `,`).
 
 **Criterios:**
-- [ ] Los casos sintácticos de arriba, en verde.
-- [ ] `int x = ;` e `int[ a;` dan un error sintáctico claro.
-- [ ] Los casos de modo pánico (`TesterSintacticoModoPanico`) no cambian.
-- [ ] Ningún caso de las Etapas 1–3 ni de Sem2 (base y logros habilitados)
+- [x] Los casos sintácticos de arriba, en verde.
+- [x] `int x = ;` e `int[ a;` dan un error sintáctico claro.
+- [x] Los casos de modo pánico (`TesterSintacticoModoPanico`) no cambian.
+- [x] Ningún caso de las Etapas 1–3 ni de Sem2 (base y logros habilitados)
       cambia de etiqueta, salvo `sintError44` y `sintError50`.
-- [ ] `analizador-sintactico.md` describe la gramática nueva.
-- [ ] `./test.sh` en verde.
+- [x] `analizador-sintactico.md` describe la gramática nueva.
+- [x] `./test.sh` en verde.

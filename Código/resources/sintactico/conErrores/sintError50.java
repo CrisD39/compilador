@@ -1,6 +1,6 @@
-///[Error:[|7]
-// Acceso a arreglo con "[" sin cerrar antes del ";" -- <ReferenciaResto>
-// espera "]" tras <Expresion>.
+///[Error:;|8]
+// "[" sin cerrar: <ReferenciaResto> espera "]" tras <Expresion> y encuentra
+// el ";". La línea 7 es una local de tipo arreglo válida (spec 0009).
 class ArregloMalo{
 
     void metodo(){

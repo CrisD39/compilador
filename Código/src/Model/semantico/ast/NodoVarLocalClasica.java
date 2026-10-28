@@ -7,23 +7,24 @@ import Model.semantico.Tipo;
 
 import java.util.List;
 
-// <Sentencia> ::= <Tipo> <RestoDeclLocal> (int x, y, z = 10;). Un solo nodo
-// para toda la lista, y el inicializador vale sólo para el último nombre,
-// como en Java (⚠7). Logro Variables locales clásicas: todavía no
-// soportado, se reporta sobre el primer nombre (D11).
+// <Sentencia> ::= <TipoBase> <RestoDeclLocal> (int x = 1, y;, int[] a;). Un
+// solo nodo por sentencia, no uno por nombre: el bloque recibe una sentencia
+// por cada declaración del fuente, que es lo que cuentan el flujo (spec 0004)
+// y la Multi-detección (spec 0009, D3). El tipo ya trae sus dimensiones, y
+// los declaradores van en el orden del fuente, cada uno con su inicializador.
+// El for arma el mismo nodo con un solo declarador. Logro Variables locales
+// clásicas: todavía no soportado, se reporta sobre el primer nombre (D11).
 public class NodoVarLocalClasica extends NodoSentencia {
     private final Tipo tipo;
-    private final List<Token> nombres;
-    private final NodoExpresion inicializador;
+    private final List<Declarador> declaradores;
 
-    public NodoVarLocalClasica(Tipo tipo, List<Token> nombres, NodoExpresion inicializador) {
+    public NodoVarLocalClasica(Tipo tipo, List<Declarador> declaradores) {
         this.tipo = tipo;
-        this.nombres = nombres;
-        this.inicializador = inicializador;
+        this.declaradores = declaradores;
     }
 
     public Token getPrimerNombre() {
-        return nombres.get(0);
+        return declaradores.get(0).nombre();
     }
 
     // El tipo (int, A1) va antes que el primer nombre (spec 0004, D7). Una

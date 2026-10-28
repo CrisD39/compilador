@@ -1084,12 +1084,12 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
         return new NodoVarLocal(var, nombre, expresionCompuesta());
     }
 
-    // <SentIdClase> ::= <TipoGenericoOpcional> <RestoDeclLocal>
+    // <SentIdClase> ::= <TipoGenericoOpcional> <RestoDeclLocal>    (FIRST = { <, [, idMetVar })
     //               |  . idMetVar <ArgsActuales> <ReferenciaResto> <PostfijoOpcional> <ExpresionCompuestaResto>
     //                  <TernarioOpcional> <RestoAsignacion> ;
     // El "idClase" ya fue consumido por sentencia(). Si sigue ".", era una
     // llamada a método estático (expresión); si no, es una declaración local
-    // con tipo clase (`Foo x;`, `Foo<Bar> x = ...;`). La rama "." reconstruye
+    // con tipo clase (`Foo x;`, `Foo<Bar> x = ...;`, `Foo[] x;`). La rama "." reconstruye
     // la cola de <Expresion> que arrancaba en idClase . idMetVar <ArgsActuales>,
     // con el postfijo y el ternario incluidos (⚠13): tiene que dar el mismo
     // árbol que el camino normal, y sin ellos A1.m().x++; era error sintáctico.
@@ -1136,41 +1136,51 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
         return restoAsignacion(expresion);
     }
 
-    // <RestoDeclLocal> ::= idMetVar <MasIdsLocal> <InitLocalOpc> ;
-    // Cola de una declaración local clásica, después del tipo base. Un único
-    // "= <ExpresionCompuesta>" al final vale sólo para el último nombre, como
-    // en Java (`int x, y, z = 10;`, ⚠7).
-    private NodoVarLocalClasica restoDeclLocal(Tipo tipo) {
-        Token primero = tokenActual;
-        match(TokenType.ID_MET_VAR);
-        List<Token> nombres = masIdsLocal();
-        nombres.add(0, primero);
-        NodoExpresion inicializador = initLocalOpc();
+    // <RestoDeclLocal> ::= <DimensionesOpcionales> <Declarador> <MasDeclaradores> ;
+    // Cola de una declaración local clásica, después del tipo base. Las
+    // dimensiones van acá y no en cada entrada (tipo primitivo, idGen y la
+    // rama tipo de <SentIdClase>) para que se apliquen al tipo una sola vez y
+    // el for, que no pasa por acá, no las admita (spec 0009, D2). Sigue LL(1):
+    // FIRST(<DimensionesOpcionales>) = { [ } y FIRST(<Declarador>) = { idMetVar }.
+    private NodoVarLocalClasica restoDeclLocal(Tipo tipoBase) {
+        Tipo tipo = tipoBase.conDimensiones(dimensionesOpcionales());
+        List<Declarador> declaradores = new ArrayList<>();
+        declaradores.add(declarador());
+        masDeclaradores(declaradores);
         matchCierre(TokenType.PUNTO_COMA);
-        return new NodoVarLocalClasica(tipo, nombres, inicializador);
+        return new NodoVarLocalClasica(tipo, declaradores);
     }
 
-    // <MasIdsLocal> ::= , idMetVar <MasIdsLocal> | ϵ
-    private List<Token> masIdsLocal() {
+    // <Declarador> ::= idMetVar <InitLocalOpc>
+    private Declarador declarador() {
+        Token nombre = tokenActual;
+        match(TokenType.ID_MET_VAR);
+        return initLocalOpc(nombre);
+    }
+
+    // <MasDeclaradores> ::= , <Declarador> <MasDeclaradores> | ϵ
+    // Cada nombre trae su propio inicializador, como en Java (JLS §14.4): en
+    // int x, y, z = 10; sólo z vale 10. FOLLOW = { ; }.
+    private void masDeclaradores(List<Declarador> declaradores) {
         if (actualEs(TokenType.COMA)) {
             match(TokenType.COMA);
-            Token nombre = tokenActual;
-            match(TokenType.ID_MET_VAR);
-            List<Token> resto = masIdsLocal();
-            resto.add(0, nombre);
-            return resto;
+            declaradores.add(declarador());
+            masDeclaradores(declaradores);
         }
-        return new ArrayList<>();
+        // ϵ
     }
 
     // <InitLocalOpc> ::= = <ExpresionCompuesta> | ϵ
-    // null si no hay inicializador.
-    private NodoExpresion initLocalOpc() {
+    // Recibe el nombre ya consumido y arma el declarador con el "=" (lexema
+    // de ERR_ASIGNACION_INCOMPATIBLE) y la expresión, null los dos si no hay
+    // inicializador. FOLLOW = { ,, ; }.
+    private Declarador initLocalOpc(Token nombre) {
         if (actualEs(TokenType.OP_ASIGN)) {
+            Token asignacion = tokenActual;
             match(TokenType.OP_ASIGN);
-            return expresionCompuesta();
+            return new Declarador(nombre, asignacion, expresionCompuesta());
         }
-        return null;
+        return new Declarador(nombre, null, null);
     }
 
     // <Return> ::= return <ExpresionOpcional>
@@ -1300,15 +1310,16 @@ public class AnalizadorSintacticoImpl implements AnalizadorSintactico {
     // <TrasIdForTipo> ::= : <Expresion>                          (for-each)
     //                  |  <InitLocalOpc> ; <CondFor> ; <ActFor>  (for clásico con declaración)
     // La declaración del for clásico es una local clásica de un solo nombre
-    // (⚠9).
+    // y sin dimensiones (⚠9): no pasa por <RestoDeclLocal>, así que
+    // for (int i = 0, j = 0; ...) es error sobre la "," (spec 0009, D2).
     private NodoSentencia trasIdForTipo(Token tokenFor, Tipo tipo, Token nombre) {
         if (actualEs(TokenType.DOS_PUNTOS)) {
             match(TokenType.DOS_PUNTOS);
             return new NodoForEach(tokenFor, tipo, nombre, expresion());
         } else {
-            NodoExpresion inicializador = initLocalOpc();
+            Declarador declarador = initLocalOpc(nombre);
             matchCierre(TokenType.PUNTO_COMA);
-            NodoVarLocalClasica declaracion = new NodoVarLocalClasica(tipo, List.of(nombre), inicializador);
+            NodoVarLocalClasica declaracion = new NodoVarLocalClasica(tipo, List.of(declarador));
             return restoForClasico(tokenFor, declaracion);
         }
     }

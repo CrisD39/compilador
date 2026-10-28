@@ -43,7 +43,7 @@ distintos y conviene poder citarlos sin ambigüedad.
 | REQ-AS-003 | Ante un error sintáctico, el analizador debe reportarlo (línea, token encontrado, token(s) esperado(s) — ver "Manejo de errores sintácticos") e intentar continuar el análisis en lugar de abortar en el primer error, para poder informar más de uno por corrida, en la misma línea que el léxico con los suyos (REQ-AL-22 de la etapa 1). |
 | REQ-AS-004 | Al terminar de derivar el símbolo inicial de la gramática, el analizador debe verificar que no queden tokens sin consumir salvo el de fin de archivo; si sobran, es un error sintáctico (ver "`start()`" en "Estrategia de análisis"). |
 | REQ-AS-005 | El analizador sintáctico debe aceptar **expresiones lambda** con sintaxis similar a la de Java (`params -> cuerpo`). A diferencia de Java: los parámetros no declaran tipo explícito, el cuerpo es **una única expresión** (no se admite cuerpo entre llaves) y se permite cualquier cantidad de parámetros, incluido ninguno (`() -> expr`). La prohibición de capturar variables locales, parámetros o `this` dentro de la lambda es una restricción **semántica** (requiere resolución de nombres/alcances): queda anotada acá pero se verifica en una etapa posterior; el sintáctico solo valida la forma. Ver detalle debajo. |
-| REQ-AS-006 | El analizador sintáctico debe aceptar la declaración de variables locales en la forma clásica de Java: sin `var`, indicando el tipo (ejemplo `int x;`). Además debe admitir declarar varias variables e inicializarlas en una misma sentencia (ejemplo `int x,y,z = 10;`, un valor común al final para toda la lista; a qué variables les llega es semántico). **Implementado** — ver "Gramática Expandida (Logros)" y "Factorización de `<Sentencia>`". |
+| REQ-AS-006 | El analizador sintáctico debe aceptar la declaración de variables locales en la forma clásica de Java: sin `var`, indicando el tipo (ejemplo `int x;`). Además debe admitir declarar varias variables e inicializarlas en una misma sentencia (ejemplo `int x,y,z = 10;`). Como en Java, cada nombre tiene su propio inicializador opcional (`int x = 1, y = 2;`; en `int x,y,z = 10;` sólo `z` vale 10), y el tipo puede ser un arreglo (`int[] a;`), spec 0009. **Implementado** — ver "Gramática Expandida (Logros)" y "Factorización de `<Sentencia>`". |
 | REQ-AS-007 | El analizador sintáctico debe permitir indicar la visibilidad de métodos, atributos y constructores de forma implícita o explícita: al declarar un miembro se puede omitir la visibilidad o indicar explícitamente `public` o `private`. **Implementado** — ver "Gramática Expandida (Logros)" y "Factorización de `<Miembro>`". |
 | REQ-AS-008 | El compilador no finaliza la ejecución ante el primer error sino que se recupera (modo pánico) y es capaz de reportar otros errores. Para eso, al encontrar un error, el analizador descarta la entrada hasta encontrar un token de sincronización que permita reanudar el análisis: se espera que se sincronice con el siguiente punto y coma, llave de cierre, o llave que abre según el contexto (ver "Manejo de errores sintácticos"). **Implementado** — conjunto de sincronización `{ ; { } eof }`, ver "Manejo de errores sintácticos". |
 | REQ-AS-009 | El analizador sintáctico debe aceptar sentencias `for` similares a las de Java, en dos formas: la estándar con separadores `;` y la de iteradores (for-each) con `:`. Se restringe cada sección del `for` a una sola sentencia/expresión (no listas separadas por coma). **Implementado** — ver "Gramática Expandida (Logros)" y "Factorización de `<For>`". Las tres secciones de la forma clásica son opcionales (`for (;;)`, como en Java); el for-each no admite `var` (sólo tipo explícito). |
@@ -327,10 +327,11 @@ bloque de gramática de partida no la incluye a propósito (es el punto de parti
 sin extensiones). Ver "Detalle de REQ-AS-005" en "Requerimientos".
 
 Las **variables locales clásicas** (`REQ-AS-006`) —declaración sin `var`, con
-tipo explícito y varias variables por sentencia con un valor común
-(`int x, y, z = 10;`)— **ya están reflejadas** en "Gramática Expandida
-(Logros)" (`<Sentencia>` con arranque `<TipoPrimitivo>` / `idGen` / `idClase`,
-más `<SentIdClase>` / `<RestoDeclLocal>` / `<MasIdsLocal>` / `<InitLocalOpc>`) y
+tipo explícito y varias variables por sentencia, cada una con su propio
+inicializador opcional (`int x = 1, y, z = 10;`)— **ya están reflejadas** en
+"Gramática Expandida (Logros)" (`<Sentencia>` con arranque `<TipoPrimitivo>` /
+`idGen` / `idClase`, más `<SentIdClase>` / `<RestoDeclLocal>` / `<Declarador>` /
+`<MasDeclaradores>` / `<InitLocalOpc>`) y
 en el código. El detalle del conflicto del prefijo `idClase` está en
 "Factorización de `<Sentencia>`". La forma `var idMetVar = ...` queda intacta.
 
@@ -1049,9 +1050,11 @@ una `IOException` del `SourceManager` se re-lanza envuelta en
 <VarLocal> ::= var idMetVar = <ExpresionCompuesta>
 
 # --- REQ-AS-006 · variable local clásica (sin var) -----------------------------
-# int x;  /  int x, y, z = 10;  /  T g;  /  Foo x;  /  Foo<Bar> x = new Foo<Bar>();
-# Un único "= <ExpresionCompuesta>" al final vale para toda la lista de nombres;
-# a qué variables les aplica el valor es semántico. El prefijo idClase se comparte
+# int x;  /  int x = 1, y = 2;  /  int x, y, z = 10;  /  T g;  /  Foo x;
+# Foo<Bar> x = new Foo<Bar>();  /  int[] a = new int[3];  /  Foo<Bar>[][] m;
+# Cada nombre es un <Declarador> con su propio inicializador opcional, como en
+# Java (en int x, y, z = 10; sólo z vale 10), y el tipo admite dimensiones
+# (spec 0009, D2). El prefijo idClase se comparte
 # con la expresión (idClase . idMetVar (...)) y se factoriza en <SentIdClase>
 # mirando el token que sigue (ver "Factorización de <Sentencia>").
 
@@ -1066,9 +1069,11 @@ una `IOException` del `SourceManager` se re-lanza envuelta en
 <SentSuper> ::= <ArgsActuales> ;
 <SentSuper> ::= <AccesoSuper> <PostfijoOpcional> <ExpresionCompuestaResto> <TernarioOpcional> <RestoAsignacion> ;
 
-<RestoDeclLocal> ::= idMetVar <MasIdsLocal> <InitLocalOpc> ;
+<RestoDeclLocal> ::= <DimensionesOpcionales> <Declarador> <MasDeclaradores> ;
 
-<MasIdsLocal> ::= , idMetVar <MasIdsLocal> | ϵ
+<Declarador> ::= idMetVar <InitLocalOpc>
+
+<MasDeclaradores> ::= , <Declarador> <MasDeclaradores> | ϵ
 
 # --- REQ-AS-009 · sentencia "for" (clásica y for-each) -------------------------
 # Clásica: for ( init ; cond ; act ) Sentencia — las tres secciones son
@@ -1097,7 +1102,7 @@ una `IOException` del `SourceManager` se re-lanza envuelta en
 <CondFor> ::= <Expresion> | ϵ
 <ActFor>  ::= <Expresion> | ϵ
 
-<InitLocalOpc> ::= <OperadorAsignacion> <ExpresionCompuesta> | ϵ
+<InitLocalOpc> ::= = <ExpresionCompuesta> | ϵ
 
 <Return> ::= return <ExpresionOpcional>
 
@@ -1436,8 +1441,9 @@ están en `FIRST(<Expresion>)`, así que `int x, y, z = 10;` no choca con nada.
 
 - en posición de **expresión**, tras `idClase` **siempre** viene `.`
   (`Fabrica.crear();`);
-- en posición de **tipo** (declaración), tras `idClase` viene `<` (genérico) o
-  `idMetVar` (el nombre de la variable): `Foo x;`, `Foo<Bar> x = ...;`.
+- en posición de **tipo** (declaración), tras `idClase` viene `<` (genérico),
+  `[` (arreglo) o `idMetVar` (el nombre de la variable): `Foo x;`,
+  `Foo<Bar> x = ...;`, `Foo[] x;`.
 
 **La factorización.** Misma idea que `<TrasId>` en la lambda: se consume
 `idClase` y **un** token más desambigua, sin lookahead extra.
@@ -1445,7 +1451,7 @@ están en `FIRST(<Expresion>)`, así que `int x, y, z = 10;` no choca con nada.
 ```
 <Sentencia> ::= ... | idClase <SentIdClase> | ... | <Expresion> ;
 
-<SentIdClase> ::= <TipoGenericoOpcional> <RestoDeclLocal>          # decl: Foo x;  Foo<Bar> x = ...;
+<SentIdClase> ::= <TipoGenericoOpcional> <RestoDeclLocal>          # decl: Foo x;  Foo<Bar> x = ...;  Foo[] x;
               |  . idMetVar <ArgsActuales> <ReferenciaResto> <PostfijoOpcional> <ExpresionCompuestaResto> <TernarioOpcional> <RestoAsignacion> ;   # expr: Foo.m()...;
 ```
 
@@ -1459,17 +1465,50 @@ están en `FIRST(<Expresion>)`, así que `int x, y, z = 10;` no choca con nada.
   LL(1): `++`/`--` y `?` no están en `FIRST` de lo que sigue (`<OperadorBinario>`,
   `=` o `;`).
 - Cualquier otro token ⇒ declaración local.
-- FIRST disjuntos: rama-1 = `{ <, idMetVar }` (vía `<TipoGenericoOpcional>` y
-  `<RestoDeclLocal>` anulables hasta `idMetVar`) vs. rama-2 = `{ . }`.
+- FIRST disjuntos: rama-1 = `{ <, [, idMetVar }` (vía `<TipoGenericoOpcional>`
+  y `<DimensionesOpcionales>` anulables hasta `idMetVar`) vs. rama-2 = `{ . }`.
 - La alternativa `<Sentencia> ::= <Expresion> ;` sigue existiendo, pero el
   método `sentencia()` la prueba **después** de la rama `idClase`, así que en la
   práctica sólo entra con `FIRST(<Expresion>) \ { idClase }`.
 
-**Init compartido.** `<RestoDeclLocal> ::= idMetVar <MasIdsLocal> <InitLocalOpc> ;`
-admite un único `= <ExpresionCompuesta>` al final para toda la lista de nombres
-(`int x, y, z = 10;`). Que el valor "les llegue a las tres" es una regla
-**semántica**; el sintáctico sólo valida la forma (igual criterio que la
-posición de parámetro en la lambda).
+**Un inicializador por declarador.** Como en Java (JLS §14.4), cada nombre de
+la lista tiene su propio `= <ExpresionCompuesta>` opcional (spec 0009, D2):
+
+```
+<RestoDeclLocal>  ::= <DimensionesOpcionales> <Declarador> <MasDeclaradores> ;
+<Declarador>      ::= idMetVar <InitLocalOpc>
+<MasDeclaradores> ::= , <Declarador> <MasDeclaradores> | ϵ
+<InitLocalOpc>    ::= = <ExpresionCompuesta> | ϵ
+```
+
+`int x = 1, y = 2;` e `int x, y = 2, z;` son válidas, y en `int x, y, z = 10;`
+sólo `z` vale 10. Antes la gramática admitía un único inicializador al final
+de la lista, y `int x = 1, y = 2;` daba error sobre la `,`. Las dimensiones
+van al principio de `<RestoDeclLocal>`, así se aplican al tipo una sola vez
+desde las tres entradas (`<TipoPrimitivo>`, `idGen` y la rama tipo de
+`<SentIdClase>`) y el `for`, que no pasa por `<RestoDeclLocal>`, no las
+admite.
+
+FIRST/FOLLOW nuevos, todos disjuntos:
+
+| No terminal | FIRST | FOLLOW |
+|---|---|---|
+| `<RestoDeclLocal>` | `{ [, idMetVar }` | FOLLOW(`<Sentencia>`) |
+| `<Declarador>` | `{ idMetVar }` | `{ ,, ; }` |
+| `<MasDeclaradores>` | `{ ,, ϵ }` | `{ ; }` |
+| `<InitLocalOpc>` | `{ =, ϵ }` | `{ ,, ; }` (y `{ ; }` en `<TrasIdForTipo>`) |
+
+- Después del tipo base, `<DimensionesOpcionales>` (`{ [ }`) y `<Declarador>`
+  (`{ idMetVar }`) no comparten FIRST.
+- `<MasDeclaradores>`: `{ , }` vs. FOLLOW `{ ; }`.
+- `<InitLocalOpc>`: `{ = }` vs. FOLLOW `{ ,, ; }`.
+
+El AST tiene un `NodoVarLocalClasica` por sentencia con el tipo (ya con sus
+dimensiones) y la lista ordenada de declaradores (`Declarador`: nombre, `=` e
+inicializador). `<InitLocalOpc>` devuelve también el `=`, lexema del error de
+tipos del inicializador en la Etapa 4. Casos: `sintCorrecto39`,
+`sintCorrecto40`, `sintError68` (coma colgante) y `sintError69` (dos nombres
+en el `for`).
 
 **Sin token nuevo.** No hace falta nada en el léxico: `<TipoPrimitivo>`,
 `idGen`, `idClase`, `,`, `=` y `;` ya existen.
@@ -1642,9 +1681,10 @@ de implementar):
   sumar después como una alternativa más de `<ClausulasFor>`
   (`var idMetVar : <Expresion>`) sin romper nada, porque `var` es palabra clave
   propia y no comparte prefijo con nada de lo de arriba.
-- **Alcance**: igual que `<RestoDeclLocal>` hoy, no se admiten arreglos en la
-  variable declarada en el `for` (`<DimensionesOpcionales>` queda afuera),
-  consistente con que `REQ-AS-006` tampoco los cubre todavía.
+- **Alcance**: no se admiten arreglos ni varios nombres en la variable
+  declarada en el `for` (`<TrasIdForTipo>` no pasa por `<RestoDeclLocal>`, que
+  sí admite `<DimensionesOpcionales>` y `<MasDeclaradores>` desde la spec
+  0009). `for (int i = 0, j = 0; ...)` es error sobre la `,` (`sintError69`).
 - La `<Actualizacion>` de Java en rigor sólo admite expresiones-sentencia
   (asignación, `++`/`--`, llamada), no cualquier `<Expresion>`; se optó por
   `<Expresion>` sin restricción porque el proyecto ya acepta esa misma
@@ -2011,8 +2051,9 @@ si se puede evitar, para poder reportar varios errores en una sola corrida.
   - **Variable local clásica (`REQ-AS-006`) ya implementada**: `sentencia()`
     suma ramas para `<TipoPrimitivo>` / `idGen` / `idClase` (esta última con
     `sentIdClase()` factorizando declaración vs. llamada estática por el token
-    que sigue al `idClase`), más `restoDeclLocal()` / `masIdsLocal()` /
-    `initLocalOpc()`. `PRIMEROS_SENTENCIA` suma `boolean` / `char` / `int` /
+    que sigue al `idClase`), más `restoDeclLocal()` / `declarador()` /
+    `masDeclaradores()` / `initLocalOpc()` (un inicializador por nombre y
+    locales de arreglo desde la spec 0009). `PRIMEROS_SENTENCIA` suma `boolean` / `char` / `int` /
     `idGen`. La rama `<Expresion> ;` se prueba después de la de `idClase`. La
     forma con `var` (`varLocal()`) queda intacta.
   - **Visibilidad de miembros (`REQ-AS-007`) ya implementada**: se sumó el
@@ -2233,7 +2274,7 @@ si se puede evitar, para poder reportar varios errores en una sola corrida.
    `trasParen()` / `trasParenId()` / `decidirTrasCierre()` / `listaIdLambda()` /
    `restoListaIdLambda()`; `referencia()` / `primario()` / `expresionParentizada()`
    inlineados), **la variable local clásica** (ramas nuevas en `sentencia()` +
-   `sentIdClase()` / `restoDeclLocal()` / `masIdsLocal()` / `initLocalOpc()`),
+   `sentIdClase()` / `restoDeclLocal()` / `declarador()` / `masDeclaradores()` / `initLocalOpc()`),
    **la visibilidad de miembros** (`miembro()` reescrito como `visibilidad()` +
    `cuerpoMiembro()`, con `trasIdClaseMiembro()` factorizando el prefijo
    `idClase` del constructor; token `PR_PRIVATE` sumado a `TokenType` y
