@@ -97,7 +97,7 @@ Java. A diferencia de Java, los parámetros de tipo no tienen cotas, ni
 siquiera una cota implícita Object. Se mantienen las reglas de
 conformidad de MiniJava.
 
-### Variables Locales Clásicas Controladas
+### Variables Locales Clásicas Controladas - Chequeado
 El compilador controla las sentencias de definición de variables
 clásicas (en todas sus variantes) son correctamente tipadas
 
@@ -433,8 +433,9 @@ por destino donde hay tipo esperado y, si no, por conformidad entre ramas.
   (`ERR_SENTENCIA_INVALIDA` como sentencia suelta, `ERR_DESTINO_NO_ASIGNABLE`
   como destino) y nunca es una condición constante (ADR 0009).
 - **Locales clásicas e inicializadores de arreglo.** En Java son contextos
-  con tipo esperado. Sus logros siguen sin soportarse; cuando se
-  implementen, tienen que pasar el tipo esperado (ADR 0011).
+  con tipo esperado. Cuando se implementen, tienen que pasar el tipo
+  esperado (ADR 0011). La local clásica lo hace desde la spec 0009, con el
+  tipo declarado; el inicializador de arreglo sigue sin soportarse.
 
 ### Para el informe de la Etapa 4
 
@@ -450,9 +451,76 @@ por destino donde hay tipo esperado y, si no, por conformidad entre ramas.
 - La condición no se evalúa (ADR 0009): `true ? 1 : "a"` es error aunque la
   rama derecha nunca se ejecute.
 
+## Decisiones de la spec 0009 (2026-10-28)
+
+El logro *Variables Locales Clásicas* (Etapa 2) y su par *Variables Locales
+Clásicas Controladas* (Etapa 4) se cerraron en una entrevista de diseño y se
+planificaron en `specs/0009-variables-locales-clasicas.md` (4 tickets). La
+decisión que se aparta de Java está en el **ADR 0012**
+(`adr/0012-locales-sin-asignacion-definida.md`): no se controla la
+asignación definida.
+
+- **Gramática.** Cada nombre tiene su propio inicializador opcional (un
+  *declarador*, ver `GLOSARIO.md`), como en Java (JLS §14.4):
+  `<RestoDeclLocal> ::= <DimensionesOpcionales> <Declarador> <MasDeclaradores> ;`
+  y `<Declarador> ::= idMetVar <InitLocalOpc>`. `int x = 1, y = 2;` vale, y
+  en `int x, y, z = 10;` sólo `z` vale 10. El tipo puede ser un arreglo
+  (`int[] a;`, `A1[][] b;`, `T[] t;`). Cambia el parser compartido, así que
+  afecta a `ModuloPrincipalET2`, `ET3` y `ET4`. El `for` sigue admitiendo un
+  solo nombre, sin dimensiones.
+- **AST.** Un `NodoVarLocalClasica` por sentencia, no uno por nombre: el
+  bloque recibe una sentencia por declaración del fuente, que es lo que
+  cuentan el flujo (spec 0004) y la *Multi-detección*. Guarda el `Tipo` (con
+  sus dimensiones) y una lista ordenada de `Declarador` (nombre, `=` e
+  inicializador; los dos últimos null sin inicializador).
+- **Tipo.** Se resuelve una vez, antes de los declaradores, con las reglas
+  de los tipos escritos en un cuerpo (`Tipo.resolverEnCuerpo`, la misma del
+  for-each): clase o interfaz existente, sin raw (ADR 0007), parámetro de
+  tipo visible. Si falla, el error va sobre el token del tipo, no se chequea
+  ningún inicializador y los nombres se declaran sin tipo.
+- **Declaradores, de izquierda a derecha.** Cada uno sigue el orden de
+  `var`: el inicializador contra el tipo declarado, que es su tipo esperado
+  (ADR 0011; si no conforma, `ERR_ASIGNACION_INCOMPATIBLE` sobre su `=`, y
+  un error de ternario va sobre su `?` sin un segundo error); después el
+  choque con una local visible o un parámetro (`ERR_LOCAL_DUPLICADA` sobre
+  el nombre; un atributo no choca, la local lo oculta); por último, la
+  declaración. Un inicializador ve los nombres anteriores pero no el suyo:
+  `int x = 1, y = x;` vale, e `int x = x;` lee el atributo `x` si hay, y si
+  no es `ERR_VAR_NO_DECLARADA`, igual que `var x = x`.
+- **Un error por sentencia.** El primer error corta la sentencia, pero
+  antes se declaran, con el tipo declarado, el nombre que falló y los
+  siguientes, salvo los que chocan, sin chequear sus inicializadores. Así
+  las sentencias siguientes no suman errores en cascada.
+- **Asignación definida.** No se controla (ADR 0012): `int x; return x;`
+  vale.
+- **For.** La inicialización puede ser una local clásica, además de un
+  `var` y una asignación; vive en el scope propio del `for`. Una llamada
+  sigue siendo `ERR_FOR_INICIALIZACION`.
+- **Lo que no cambia.** Una local clásica completa normalmente (spec 0004),
+  y si es inalcanzable el error va sobre su tipo. Como cuerpo directo de un
+  `if`, `while` o `for` es `ERR_DECLARACION_COMO_CUERPO` sobre su primer
+  nombre. La referencia adelantada (spec 0005) es sólo de inicializadores de
+  atributo. No hay códigos de error nuevos.
+
+### Para el informe de la Etapa 4
+
+- Sin asignación definida (ADR 0012), `int x; return x;` compila, y javac
+  lo rechaza ("variable x might not have been initialized", JLS cap. 16).
+  Conviene confirmar la diferencia con la cátedra.
+- En Java el alcance de una local incluye su propio inicializador, así que
+  `int x = x;` es un error de asignación definida aunque haya un atributo
+  `x`. En MiniJava el inicializador no ve su propio nombre: con un atributo
+  `x` lee el atributo (`semIIVarLocalCorrecto06`) y sin él es "variable no
+  declarada" sobre el `x` de la derecha (`semIIVarLocalError08`).
+- javac reporta todos los errores de una declaración con varios
+  declaradores; MiniJava, el primero de la sentencia (*Multi-detección*
+  sigue con la sentencia siguiente).
+- Sin coerción numérica (logro *Floats y Coerción*, pendiente),
+  `char c = 1;` es error, y en Java compila por ser una constante.
+
 ## Estado de la implementación (2026-10-28)
 
-Las specs 0003, 0004, 0005, 0006 y 0007 están cerradas. Quedó implementado:
+Las specs 0003, 0004, 0005, 0006, 0007 y 0009 están cerradas. Quedó implementado:
 
 - **Lo base de §9–§12.** Todos los casos de `resources/semantico2/{sinErrores,conErrores}`
   pasan con `ModuloPrincipalET4`, que es el main del jar. La tercera pasada es `TablaSimbolos.chequearSentencias()`, y sólo
@@ -465,13 +533,16 @@ Las specs 0003, 0004, 0005, 0006 y 0007 están cerradas. Quedó implementado:
   `LOGROS_HABILITADOS` de `TesterLogrosSem2`.
 - **Logro *For*, for clásico** (2026-10-25, después del cierre). `NodoFor`
   abre un scope propio para la variable de la inicialización. Siguiendo el
-  logro al pie de la letra, la inicialización es una asignación o un `var`
-  (`int i = 0` y una llamada son `ERR_FOR_INICIALIZACION`), la condición es
+  logro al pie de la letra, la inicialización era una asignación o un `var`
+  (`int i = 0` y una llamada eran `ERR_FOR_INICIALIZACION`). Desde la spec
+  0009 también vale una local clásica (`for (int i = 0; …)`), como en Java,
+  y una llamada sigue siendo error. La condición es
   boolean y la actualización es una asignación (`i++` es
   `ERR_FOR_ACTUALIZACION`). Las cláusulas vacías valen (`for (;;)`). Los
   errores propios del for van sobre `for`. El parser admite `var` en la
   inicialización. `for` está en `LOGROS_HABILITADOS`. Casos:
-  `semIIForCorrecto01`–`04` y `semIIForError01`–`09`.
+  `semIIForCorrecto01`–`04` y `10`, y `semIIForError01`–`09`, sin el
+  `04`, que pasó a `semIIForCorrecto10` con la spec 0009.
 - **Logro *For*, for-each** (2026-10-25). Con esto el logro *For* queda
   completo. `MiniIterable<T>` es una interfaz
   predefinida (`void start(); T next(); boolean hasNext();`), registrada en
@@ -661,6 +732,27 @@ Las specs 0003, 0004, 0005, 0006 y 0007 están cerradas. Quedó implementado:
   que `c ? v() : v();` da `ERR_SENTENCIA_INVALIDA` (D5).
   `semIIAtribInicError15` pasó de `ERR_NO_SOPORTADO` a un ternario mal
   tipado, con la misma etiqueta.
+- **Logro *Variables Locales Clásicas Controladas*** (2026-10-28, spec
+  0009, ADR 0012). Siempre activo en `ModuloPrincipalET4`. El parser arma un
+  `NodoVarLocalClasica` por sentencia con el `Tipo` (dimensiones incluidas)
+  y una lista de `Declarador` (record con nombre, `=` e inicializador);
+  `initLocalOpc()` devuelve también el `=`, en las locales y en el `for`.
+  `NodoVarLocalClasica.chequear` resuelve el tipo con
+  `Tipo.resolverEnCuerpo` y, de izquierda a derecha, chequea cada
+  inicializador con `chequearConTipoEsperado(tabla, declarado)` y su
+  conformidad (`ERR_ASIGNACION_INCOMPATIBLE` sobre el `=`), controla el
+  choque con una local o un parámetro (`ERR_LOCAL_DUPLICADA`; un atributo no
+  choca) y declara la local. Ante el primer error, `declararDesde` declara
+  el nombre que falló y los siguientes que no chocan (sin tipo si el tipo
+  era inválido, con `VariableLocal.sinTipo`) y la excepción sigue hasta
+  `NodoBloque`. `NodoFor` acepta la local clásica como inicialización.
+  `variablesLocalesClasicas` está en `LOGROS_HABILITADOS`. Casos:
+  `semIIVarLocalCorrecto01`–`10` y `semIIVarLocalError01`–`16`.
+  `semIIVarLocalError01`, que probaba `var x = null`, se reescribió con
+  `int x = true;`. En los sintácticos, `sintError44` (`int[] x;`) pasó a
+  `sintCorrecto39`, la etiqueta de `sintError50` pasó a la línea 8 y hay
+  casos nuevos (`sintCorrecto40`, `sintError68` y `69`). La base no
+  cambió: ningún caso base usaba locales clásicas.
 
 Correcciones posteriores al cierre de la spec 0003 (code review,
 2026-10-24):
@@ -682,10 +774,10 @@ Correcciones posteriores al cierre de la spec 0003 (code review,
 Siguen pendientes, cada uno para una spec propia. El parser ya los acepta y
 arma sus nodos, pero el chequeo reporta `ERR_NO_SOPORTADO` (spec 0003, D11):
 
-- *Minilambdas*, *Variables Locales Clásicas Controladas*, *Métodos
-  Genéricos E4* y *Genericidad Avanzada* (diamante). Las locales clásicas y
-  los inicializadores de arreglo, cuando se implementen, tienen que pasar
-  el tipo esperado con `chequearConTipoEsperado` (ADR 0011).
+- *Minilambdas*, *Métodos Genéricos E4* y *Genericidad Avanzada*
+  (diamante). Los inicializadores de arreglo, cuando se implementen, tienen
+  que pasar el tipo esperado con `chequearConTipoEsperado` (ADR 0011); en
+  una local clásica, el tipo declarado.
 - *Floats y coerción*: además hay que decidir qué pasa con los casos base
   que lo contradicen (`semIIError33`, `34`, `52`, `59`, `70`).
 
@@ -1154,7 +1246,7 @@ abajo son los de ese archivo.
   `List<…>` dentro del nodo padre. En el nivel cuerpos son `<ListaSentencias>`,
   `<ArgsActuales>`, `<ListaExpsOpcional>`, `<ListaExps>`, `<RestoListaExps>`,
   `<ListaIdLambda>`, `<RestoListaIdLambda>`, `<ListaValoresArregloOpcional>`,
-  `<ListaValoresArreglo>`, `<RestoValoresArreglo>`, `<MasIdsLocal>`,
+  `<ListaValoresArreglo>`, `<RestoValoresArreglo>`, `<MasDeclaradores>`,
   `<MasCorchetesVaciosNew>` y `<DimensionesConTamanioOpc>`.
 - **Tokens sólo donde representan algo.** Un nodo guarda un `Token` cuando ese
   token tiene significado propio: el operador (`operador`), un nombre
@@ -1256,7 +1348,7 @@ class A extends P {      // P declara p
 | `<Bloque> ::= { <ListaSentencias> }` | `NodoBloque` | `List<NodoSentencia> sentencias` |
 | `<Sentencia> ::= ;` | `NodoSentenciaVacia` | — |
 | `<Sentencia> ::= <VarLocal> ;`, `<VarLocal> ::= var idMetVar = <ExpresionCompuesta>` | `NodoVarLocal` | `Token nombre`, `NodoExpresion inicializador` |
-| `<Sentencia> ::= <TipoPrimitivo> <RestoDeclLocal>` / `idGen <RestoDeclLocal>` / `idClase <SentIdClase>` (rama tipo) + `<RestoDeclLocal>`, `<MasIdsLocal>`, `<InitLocalOpc>` | `NodoVarLocalClasica` ⚠7 | `Tipo tipo`, `List<Token> nombres`, `NodoExpresion inicializador` (puede ser null) |
+| `<Sentencia> ::= <TipoPrimitivo> <RestoDeclLocal>` / `idGen <RestoDeclLocal>` / `idClase <SentIdClase>` (rama tipo) + `<RestoDeclLocal>`, `<Declarador>`, `<MasDeclaradores>`, `<InitLocalOpc>` | `NodoVarLocalClasica` ⚠7 | `Tipo tipo` (con sus dimensiones), `List<Declarador> declaradores`; cada `Declarador` (record) tiene `Token nombre`, `Token asignacion` y `NodoExpresion inicializador` (los dos últimos null sin inicializador) |
 | `<Return> ::= return <ExpresionOpcional>` | `NodoReturn` | `Token return`, `NodoExpresion expresion` (null si `return;`) |
 | `<If> ::= if ( <Expresion> ) <Sentencia> <ElseOpcional>` | `NodoIf` ⚠8 | `Token if`, `condicion`, `entonces`, `sino` (null sin `else`) |
 | `<While> ::= while ( <Expresion> ) <Sentencia>` | `NodoWhile` | `Token while`, `condicion`, `cuerpo` |
@@ -1455,15 +1547,20 @@ receptor implícito (`m()`), `NodoLlamadaEstatica` es `Clase.m()` y
   con la lista enlazada, donde el receptor es lo que está a la izquierda.
 
 ### ⚠7 · Variable local clásica con varios nombres
-`int x, y, z = 10;`: `<RestoDeclLocal> ::= idMetVar <MasIdsLocal> <InitLocalOpc> ;`
-tiene **un solo** inicializador al final para toda la lista.
-**Decisión: como en Java, con un solo nodo.** `NodoVarLocalClasica` tiene
-`Tipo tipo`, `List<Token> nombres` y `NodoExpresion inicializador`. El
-inicializador se aplica **solo al último nombre**: en el ejemplo, sólo `z`
-vale 10.
-- *Descartadas:* aplicar el inicializador a todas las variables (no es Java),
-  y desdoblar en un nodo por variable (misma semántica, pero el bloque recibe
-  varias sentencias por una sola línea del fuente).
+`int x = 1, y, z = 10;`: desde la spec 0009,
+`<RestoDeclLocal> ::= <DimensionesOpcionales> <Declarador> <MasDeclaradores> ;`
+con `<Declarador> ::= idMetVar <InitLocalOpc>`, así que cada nombre tiene su
+propio inicializador opcional, como en Java (JLS §14.4). En
+`int x, y, z = 10;` sólo `z` vale 10.
+**Decisión: un solo nodo por sentencia.** `NodoVarLocalClasica` tiene
+`Tipo tipo` (con sus dimensiones) y una lista ordenada de `Declarador`
+(nombre, `=` e inicializador, los dos últimos null sin inicializador). El
+`for` arma el mismo nodo con un solo declarador.
+- *Descartadas:* un solo inicializador al final para toda la lista (la
+  gramática anterior a la spec 0009, que no es Java), aplicarlo a todas las
+  variables (tampoco es Java), y desdoblar en un nodo por variable (misma
+  semántica, pero el bloque recibe varias sentencias por una sola línea del
+  fuente, y eso cambia lo que cuentan el flujo y la *Multi-detección*).
 
 ### ⚠8 · If con y sin else
 **Decisión: un solo `NodoIf`**, con `sino` en `null` cuando no hay `else`. El

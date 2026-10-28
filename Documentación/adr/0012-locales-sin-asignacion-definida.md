@@ -1,7 +1,8 @@
 # Las locales clásicas no exigen asignación definida
 
-**Estado:** aceptado (2026-10-28, en la entrevista de diseño del logro
-*Variables Locales Clásicas Controladas*). Pendiente de implementar.
+**Estado:** aceptado e implementado (2026-10-28, en la entrevista de diseño
+del logro *Variables Locales Clásicas Controladas*; se implementó en la spec
+0009, `specs/0009-variables-locales-clasicas.md`).
 
 Java rechaza leer una variable local que no tiene un valor asignado en todos
 los caminos que llegan a la lectura (`int x; return x;` da "variable x

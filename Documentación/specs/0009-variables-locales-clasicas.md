@@ -1,6 +1,6 @@
 ---
 titulo: Logro Variables Locales Clásicas (Etapas 2 y 4)
-estado: ready-for-agent
+estado: hecho
 origen: entrevista de diseño (grill with docs, 2026-10-28)
 fecha: 2026-10-28
 ---
@@ -343,3 +343,9 @@ Decisiones:
   - el `CLAUDE.md`: lista de logros chequeados, conteo de casos (también los
     de *For*) y la línea de logros con nodos que reportan
     `ERR_NO_SOPORTADO`.
+
+**Cierre (2026-10-28):** los cuatro tickets están hechos y `./test.sh` en
+verde: léxico 25 + 20, sintáctico 40 + 68 + 4 de modo pánico, semántico
+37 + 104; Sem2 con 93 casos sin error, 172 con error y 233 de logros (26 de
+este logro: 10 correctos y 16 con error; *For* queda en 10 + 26). La base
+de Sem2 no cambió.

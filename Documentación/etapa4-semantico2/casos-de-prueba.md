@@ -13,10 +13,10 @@ Es el contrato de la spec 0003 (D7): todos los casos con error lo cumplen. El c�
 
 | Error | Lexema | Código `ERR_*` |
 |---|---|---|
-| Variable no declarada (incluye `var x = x;`) | el nombre | `ERR_VAR_NO_DECLARADA` |
+| Variable no declarada (incluye `var x = x;` e `int x = x;` sin atributo `x`) | el nombre | `ERR_VAR_NO_DECLARADA` |
 | Atributo implícito desde un método estático | el nombre | `ERR_ATRIBUTO_EN_ESTATICO` |
 | `e.x` inexistente en el tipo estático de `e` (incluye `length` sobre `Object`) | el nombre del atributo | `ERR_ATRIBUTO_NO_ENCONTRADO` |
-| Asignación incompatible (incluye un inicializador de atributo que no conforma; logro Atributos inicializados) | `=` | `ERR_ASIGNACION_INCOMPATIBLE` |
+| Asignación incompatible (incluye un inicializador de atributo que no conforma, logro Atributos inicializados, y el de un declarador de una local clásica, logro Variables locales clásicas) | `=` (en una local clásica, el del declarador que falla) | `ERR_ASIGNACION_INCOMPATIBLE` |
 | Destino no asignable | `=` (o `++`/`--`) | `ERR_DESTINO_NO_ASIGNABLE` |
 | Método inexistente o aridad sin match (incluye `clone` sobre un arreglo) | nombre del método | `ERR_METODO_NO_ENCONTRADO` |
 | Argumento que no conforma (método o constructor) | nombre del método o de la clase (en `super(...)`, `super`; logro Super!) | `ERR_ARGUMENTO_INCOMPATIBLE` |
@@ -29,7 +29,7 @@ Es el contrato de la spec 0003 (D7): todos los casos con error lo cumplen. El c�
 | Operador con tipos incorrectos u operando void (incluye `++`/`--` sobre algo que no es `int`, y un `instanceof` con operando primitivo o tipos sin relación) | el operador | `ERR_OPERADOR_INCOMPATIBLE` |
 | Condición no boolean | `if` / `while` / `for` / `?` (logro Ternarios) | `ERR_CONDICION_NO_BOOLEAN` |
 | Rama void de un ternario, aunque lo sean las dos (logro Ternarios) | `?` | `ERR_TERNARIO_RAMA_VOID` |
-| Rama de un ternario que no conforma con el tipo esperado: destino de `=`, inicializador de atributo, retorno de un método no void o formal de un argumento (logro Ternarios). En un anidado, el `?` del ternario dueño de la rama | `?` | `ERR_TERNARIO_RAMA_INCOMPATIBLE` |
+| Rama de un ternario que no conforma con el tipo esperado: destino de `=`, inicializador de atributo o de local clásica, retorno de un método no void o formal de un argumento (logro Ternarios). En un anidado, el `?` del ternario dueño de la rama | `?` | `ERR_TERNARIO_RAMA_INCOMPATIBLE` |
 | Ramas de un ternario sin tipo esperado de las que ninguna conforma con la otra (logro Ternarios) | `?` | `ERR_TERNARIO_INCOMPATIBLE` |
 | Return incorrecto (incluye retorno no conformante) | `return` | `ERR_RETORNO_INCORRECTO` |
 | `this` en contexto estático | `this` | `ERR_THIS_EN_ESTATICO` |
@@ -40,10 +40,11 @@ Es el contrato de la spec 0003 (D7): todos los casos con error lo cumplen. El c�
 | Índice o tamaño no int | `[` | `ERR_INDICE_NO_ENTERO` |
 | Indexar algo que no es arreglo | `[` | `ERR_NO_ES_ARREGLO` |
 | Expresión que no es sentencia válida | `;` | `ERR_SENTENCIA_INVALIDA` |
-| Local repetida, choca con un parámetro u oculta una local visible | nombre de la local | `ERR_LOCAL_DUPLICADA` |
+| Local repetida, choca con un parámetro u oculta una local visible (en una local clásica, también un nombre anterior de la misma sentencia; un atributo no choca) | nombre de la local | `ERR_LOCAL_DUPLICADA` |
+| Tipo de una local clásica inexistente o genérico sin argumento (logro Variables locales clásicas) | el token del tipo | `ERR_TIPO_NO_DECLARADO` / `ERR_TIPO_SIN_ARGUMENTO` (de la Etapa 3) |
 | `var` con `null` o `void` | nombre de la local | `ERR_VAR_SIN_TIPO` |
-| `var` como cuerpo directo de if/else/while/for | `var` | `ERR_DECLARACION_COMO_CUERPO` |
-| Inicialización del for que no es una asignación ni un `var` (logro For) | `for` | `ERR_FOR_INICIALIZACION` |
+| `var` o local clásica como cuerpo directo de if/else/while/for | `var`; en una local clásica, su primer nombre | `ERR_DECLARACION_COMO_CUERPO` |
+| Inicialización del for que no es una asignación ni una declaración (`var` o local clásica; logros For y Variables locales clásicas) | `for` | `ERR_FOR_INICIALIZACION` |
 | Actualización del for que no es una asignación (logro For) | `for` | `ERR_FOR_ACTUALIZACION` |
 | Expresión del for-each que no conforma con `MiniIterable` (arreglos incluidos; logro For) | `for` | `ERR_FOREACH_NO_ITERABLE` |
 | Elemento del for-each que no conforma con el tipo de la variable (logro For) | `for` | `ERR_FOREACH_TIPO_INCOMPATIBLE` |
@@ -54,7 +55,7 @@ Es el contrato de la spec 0003 (D7): todos los casos con error lo cumplen. El c�
 | Referencia adelantada o autorreferencia en el inicializador de un atributo (logro Atributos inicializados) | el nombre usado | `ERR_REFERENCIA_ADELANTADA` |
 | Construcción de un logro no implementado | ver la spec 0003, D11 | `ERR_NO_SOPORTADO` |
 
-Una local cuyo `var` falló (inicializador con error, `null` o `void`) queda declarada sin tipo: usarla corta la sentencia sin reportar nada más, así un solo error no se repite en cada uso (`semIIMultiErrorError03`).
+Una local cuyo `var` falló (inicializador con error, `null` o `void`) queda declarada sin tipo: usarla corta la sentencia sin reportar nada más, así un solo error no se repite en cada uso (`semIIMultiErrorError03`). Una local clásica con error declara igual sus nombres que no chocan: con el tipo declarado si el tipo era válido, y sin tipo si no (`semIIVarLocalError15` y `16`).
 
 Extiende la de los casos de referencia (no declarada → nombre; asignación → `=`; parámetros → nombre del método; local repetida → nombre). Un caso nuevo tiene que seguir esta tabla; si una regla nueva necesita otro token, se agrega una fila.
 
@@ -146,7 +147,7 @@ Están en `logros/superKeyword/` (spec 0006) y los corre `TesterLogrosSem2`. Nin
 
 ## Casos del logro Ternarios
 
-Están en `logros/ternarios/` (spec 0007, ADR 0011) y los corre `TesterLogrosSem2`. Ningún caso base usa ternarios en el chequeo de sentencias (los sintácticos que los usan corren en `ModuloPrincipalET2`, que no cambió), así que habilitar el logro no cambió ninguna etiqueta de la base. `semIIAtribInicError15` (logro Atributos inicializados) daba `ERR_NO_SOPORTADO` y se reescribió con un ternario mal tipado, con la misma etiqueta. Los destinos de `=` son atributos o parámetros, porque una local con tipo explícito es del logro *Variables locales clásicas*, que no está implementado. Dos `?` en la misma línea darían la misma etiqueta, así que en los anidados con error el ternario que falla va en su propia línea.
+Están en `logros/ternarios/` (spec 0007, ADR 0011) y los corre `TesterLogrosSem2`. Ningún caso base usa ternarios en el chequeo de sentencias (los sintácticos que los usan corren en `ModuloPrincipalET2`, que no cambió), así que habilitar el logro no cambió ninguna etiqueta de la base. `semIIAtribInicError15` (logro Atributos inicializados) daba `ERR_NO_SOPORTADO` y se reescribió con un ternario mal tipado, con la misma etiqueta. Los destinos de `=` son atributos o parámetros, porque una local con tipo explícito es del logro *Variables locales clásicas*, que todavía no estaba implementado (spec 0009). Dos `?` en la misma línea darían la misma etiqueta, así que en los anidados con error el ternario que falla va en su propia línea.
 
 | Caso | Etiquetas | Qué prueba |
 |---|---|---|
@@ -182,6 +183,39 @@ Están en `logros/ternarios/` (spec 0007, ADR 0011) y los corre `TesterLogrosSem
 | `semIITernarioError23` | `?`, `?` | Multi-detección: dos sentencias con ternarios mal tipados. |
 | `semIITernarioError24` | `noExiste` | Orden sin tipo esperado (D4, paso 3): las dos ramas se tipan antes de filtrar void, así que con la izquierda void sale el error de la derecha. |
 | `semIITernarioError25` | `;` | D5: la forma de la sentencia se controla antes de tipar, así que `c ? v() : v();` con `v` void da `ERR_SENTENCIA_INVALIDA` y no `ERR_TERNARIO_RAMA_VOID`. |
+
+## Casos del logro Variables locales clásicas
+
+Están en `logros/variablesLocalesClasicas/` (spec 0009, ADR 0012) y los corre `TesterLogrosSem2`. Ningún caso base usa locales clásicas, así que habilitar el logro no cambió ninguna etiqueta de la base. `semIIVarLocalError01`, que probaba `var x = null` (ya cubierto en la base), se reescribió con `int x = true;`. En el logro *For*, `semIIForError04` (`for (int i = 0; …)`) pasó a `semIIForCorrecto10`, y su número no se reusa: el logro queda con 10 casos correctos y 26 con error. Dos `=` o dos nombres iguales en la misma línea darían la misma etiqueta, así que cuando un caso tiene que distinguir declaradores (Error 02 y 03) el que falla va en su propia línea.
+
+| Caso | Etiquetas | Qué prueba |
+|---|---|---|
+| `semIIVarLocalCorrecto01` | — | `var` y locales clásicas simples (`int y = x;`, `boolean b = true;`). |
+| `semIIVarLocalCorrecto02` | — | Declaradores mezclados: `int x, y = 2, z;` e `int a = 1, b = 2;`, y después se usan todas. |
+| `semIIVarLocalCorrecto03` | — | Izquierda a derecha: `int x = 1, y = x;`. |
+| `semIIVarLocalCorrecto04` | — | Tipos de referencia y genéricos: `Caja<A1> c = new Caja<A1>();`, `String s = "a", t;` y `A1 a = null;`. |
+| `semIIVarLocalCorrecto05` | — | Arreglos: `int[] a = new int[3];`, `A1[] b;` y `T[] t;` en una clase genérica. |
+| `semIIVarLocalCorrecto06` | — | Oculta un atributo: `int a1 = 2;` con atributo `a1`, e `int b1 = b1;`, que lee el atributo `b1`. |
+| `semIIVarLocalCorrecto07` | — | Sin inicializador, usada libremente (ADR 0012): `int x; return x;` y `A1 a; a = new A1();`. En Java, el `return x` no compila. |
+| `semIIVarLocalCorrecto08` | — | Ternario con hermanas contra el tipo declarado: `A1 a = c ? new B2() : new C3();` (ADR 0011). |
+| `semIIVarLocalCorrecto09` | — | El mismo nombre en bloques disjuntos: `{ int x = 1; } { boolean x = true; }`. |
+| `semIIVarLocalCorrecto10` | — | `for (int i = 0; i < 10; i = i + 1)` y `for (A1 a = null; a == null; a = new A1())`; el nombre se puede volver a declarar después del `for`. |
+| `semIIVarLocalError01` | `=` | `int x = true;`. |
+| `semIIVarLocalError02` | `=` | `int x = 1,` / `y = true;`: el `=` del segundo declarador, en su propia línea. |
+| `semIIVarLocalError03` | `x` | `int x,` / `x;`: el segundo `x` choca con el primero. |
+| `semIIVarLocalError04` | `p` | Choca con un parámetro: `void m(int p) { int p; }`. |
+| `semIIVarLocalError05` | `x` | Choca con una local de un bloque contenedor: `int x = 1;` y, adentro de un `if`, `int y, x = 2;`. |
+| `semIIVarLocalError06` | `Foo` | Tipo inexistente: `Foo x;`. |
+| `semIIVarLocalError07` | `Caja` | Genérico sin argumentos: `Caja c;` (ADR 0007). |
+| `semIIVarLocalError08` | `x` | `int x = x;` sin atributo `x`: el inicializador no ve su propio nombre, y el error va sobre el `x` de la derecha. |
+| `semIIVarLocalError09` | `=` | Arreglo incompatible: `int[] a = new boolean[2];`. |
+| `semIIVarLocalError10` | `=` | Referencia incompatible: `A1 a = new Object();`. |
+| `semIIVarLocalError11` | `?` | Rama de ternario incompatible con el tipo declarado: `int x = c ? 1 : true;`, sin un segundo error sobre el `=`. |
+| `semIIVarLocalError12` | `x` | Declaración como cuerpo: `if (c) int x = 1;` (`ERR_DECLARACION_COMO_CUERPO` sobre el primer nombre). |
+| `semIIVarLocalError13` | `int` | Inalcanzable: `return;` y después `int x = 1;` (logro Todos los caminos llevan al retorno). |
+| `semIIVarLocalError14` | `=` | El inicializador se chequea antes que el choque: `void m(int p) { int p = true; }`. |
+| `semIIVarLocalError15` | `Foo` | Con un tipo inválido no se chequean los inicializadores: `Foo x = new NoExiste(), y;`, e `y = 1;` en la línea siguiente no da error (`y` quedó sin tipo). |
+| `semIIVarLocalError16` | `=`, `=` | Multi-detección: `int x = true, y = noExiste;` da sólo el primer `=`, e `y` queda `int`, así que `y = false;` en la línea siguiente da su propio error. |
 
 ## Índice
 
