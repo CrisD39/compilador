@@ -33,9 +33,10 @@ public class NodoFor extends NodoSentencia {
         return tokenFor;
     }
 
-    // Logro For: la inicialización es una asignación o un var (no una local
-    // clásica, ni una llamada), la condición es boolean y la actualización es
-    // una asignación (no un postfijo ni una llamada). Una cláusula vacía no
+    // Logro For: la inicialización es una asignación, un var o una local
+    // clásica (no una llamada; spec 0009, D8), la condición es boolean y la
+    // actualización es una asignación (no un postfijo ni una llamada). La
+    // local clásica se chequea igual que en un bloque. Una cláusula vacía no
     // es un componente mal puesto: for (;;) vale, como en Java. Los errores
     // propios del for van sobre "for", como la condición de if/while.
     // La variable de la inicialización vive en un scope propio que cubre las
@@ -49,7 +50,9 @@ public class NodoFor extends NodoSentencia {
         tabla.abrirBloque();
         try {
             if (inicializacion != null) {
-                if (!(inicializacion instanceof NodoVarLocal || esAsignacion(inicializacion))) {
+                if (!(inicializacion instanceof NodoVarLocal
+                        || inicializacion instanceof NodoVarLocalClasica
+                        || esAsignacion(inicializacion))) {
                     throw new ExcepcionSemantica(tokenFor, "ERR_FOR_INICIALIZACION");
                 }
                 inicializacion.chequear(tabla);

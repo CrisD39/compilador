@@ -1,6 +1,6 @@
-///[Error:for|9]
-// Una local clasica (int i = 0) tampoco es un var: el logro pide
-// asignacion o declaracion var (ERR_FOR_INICIALIZACION, sobre el for).
+///[SinErrores]
+// La inicializacion puede ser una local clasica, como en Java (spec 0009,
+// D8): int i vive en el scope propio del for, como el var.
 
 class A1 {
     int a1;

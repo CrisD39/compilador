@@ -1,6 +1,6 @@
 ---
 titulo: Local clásica en la inicialización del for
-estado: ready-for-agent
+estado: hecho
 spec: ../../0009-variables-locales-clasicas.md
 ---
 
@@ -25,8 +25,8 @@ y se chequea con las reglas del ticket 02. Una llamada sigue dando
   (tabla de la spec).
 
 **Criterios:**
-- [ ] `semIIForCorrecto10` y `semIIVarLocalCorrecto10` en verde.
-- [ ] El logro *For* queda con 10 casos correctos y 26 con error, todos en
+- [x] `semIIForCorrecto10` y `semIIVarLocalCorrecto10` en verde.
+- [x] El logro *For* queda con 10 casos correctos y 26 con error, todos en
       verde.
-- [ ] Siguen en verde los demás logros habilitados y los casos base.
-- [ ] `./test.sh` en verde.
+- [x] Siguen en verde los demás logros habilitados y los casos base.
+- [x] `./test.sh` en verde.

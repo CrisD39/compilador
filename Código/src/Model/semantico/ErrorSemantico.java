@@ -136,7 +136,7 @@ public final class ErrorSemantico {
             case "ERR_CONDICION_NO_BOOLEAN" -> "la condición de " + x + " tiene que ser boolean";
             // Logro For.
             case "ERR_FOR_INICIALIZACION" ->
-                    "la inicialización del " + x + " tiene que ser una asignación o una declaración var";
+                    "la inicialización del " + x + " tiene que ser una asignación o una declaración de variable";
             case "ERR_FOR_ACTUALIZACION" -> "la actualización del " + x + " tiene que ser una asignación";
             case "ERR_FOREACH_NO_ITERABLE" -> "la expresión del " + x + " no conforma con MiniIterable";
             case "ERR_FOREACH_TIPO_INCOMPATIBLE" ->
