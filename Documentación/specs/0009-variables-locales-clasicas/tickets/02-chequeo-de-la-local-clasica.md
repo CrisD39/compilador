@@ -1,6 +1,6 @@
 ---
 titulo: Chequeo de la local clásica en un bloque
-estado: ready-for-agent
+estado: hecho
 spec: ../../0009-variables-locales-clasicas.md
 ---
 
@@ -47,11 +47,11 @@ misma recuperación sin tipo).
   línea.
 
 **Criterios:**
-- [ ] Casos del logro en verde: Correcto 01 (existe) y 02–09, Error 01–16,
+- [x] Casos del logro en verde: Correcto 01 (existe) y 02–09, Error 01–16,
       con exactamente las etiquetas de la tabla de la spec, en orden.
-- [ ] `semIIVarLocalCorrecto01` sigue en verde sin cambios, o se ajusta
+- [x] `semIIVarLocalCorrecto01` sigue en verde sin cambios, o se ajusta
       si dependía del comportamiento viejo (anotarlo).
-- [ ] Ningún caso base de `semantico2/{sinErrores,conErrores}` ni de las
+- [x] Ningún caso base de `semantico2/{sinErrores,conErrores}` ni de las
       Etapas 1–3 cambia de etiqueta.
-- [ ] Siguen en verde los demás logros habilitados.
-- [ ] `./test.sh` en verde.
+- [x] Siguen en verde los demás logros habilitados.
+- [x] `./test.sh` en verde.

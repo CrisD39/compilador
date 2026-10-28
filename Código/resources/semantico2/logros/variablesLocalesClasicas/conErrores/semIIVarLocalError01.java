@@ -1,10 +1,8 @@
-///[Error:x|6]
-// var con null no permite inferir el tipo.
+///[Error:=|5]
+// Inicializador incompatible (spec 0009, D5): el error va sobre el "=".
 
 class A1 {
-    void m1() {
-        var x = null;
-    }
+    void m1() { int x = true; }
 }
 
 class Init{
