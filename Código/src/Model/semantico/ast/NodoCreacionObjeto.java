@@ -51,11 +51,11 @@ public class NodoCreacionObjeto extends NodoPrimario {
         if (entidad == null) {
             throw new ExcepcionSemantica(nombre, "ERR_TIPO_NO_DECLARADO");
         }
-        if (!(entidad instanceof Clase clase)) {
+        if (!(entidad instanceof Clase)) {
             throw new ExcepcionSemantica(nombre, "ERR_NEW_INTERFAZ");
         }
         Tipo creado = tipo.resolverEnCuerpo(tabla);
-        ChequeoLlamada.chequearConstructor(tabla, clase, creado, argumentos, nombre);
+        ChequeoLlamada.chequearConstructor(tabla, creado, argumentos, nombre);
         return chequearEncadenado(tabla, creado);
     }
 }

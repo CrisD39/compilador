@@ -1,7 +1,6 @@
 package Model.semantico.ast;
 
 import Model.lexico.Token;
-import Model.semantico.Clase;
 import Model.semantico.ExcepcionSemantica;
 import Model.semantico.TablaSimbolos;
 import Model.semantico.Tipo;
@@ -38,26 +37,26 @@ public class NodoLlamadaSuperConstructor extends NodoSentencia {
 
     // D7: fuera de lugar es error antes de mirar los argumentos; en un método
     // estático gana este error y no el de contexto estático. D8: en lugar,
-    // hace lo mismo que new sobre la clase de la superclase, con super en el
-    // papel del nombre de la clase. Los parámetros se ven desde el extends
-    // tal como se escribió: con extends A<String>, A(T t) es A(String t). La
-    // superclase existe y es una clase porque, si no, la Etapa 3 hubiera dado
-    // error y este chequeo no correría (D5); sin extends es Object, que sólo
-    // tiene el constructor sin parámetros.
+    // hace lo mismo que new sobre el tipo de la superclase que dejó la
+    // consolidación (Clase.getTipoSuperclase()), con super en el papel del
+    // nombre de la clase. Los parámetros se ven desde el extends tal como se
+    // escribió: con extends A<String>, A(T t) es A(String t). La superclase
+    // existe y es una clase porque, si no, la Etapa 3 hubiera dado error y
+    // este chequeo no correría (D5); sin extends es Object, que sólo tiene
+    // el constructor sin parámetros.
     @Override
     public void chequear(TablaSimbolos tabla) {
         if (!enLugar) {
             throw new ExcepcionSemantica(tokenSuper, "ERR_SUPER_FUERA_DE_LUGAR");
         }
         Tipo tipoSuperclase = tabla.getClaseActual().getTipoSuperclase();
-        Clase superclase = (Clase) tabla.buscarClase(tipoSuperclase.getToken().getLexema());
         // D9: los argumentos se chequean en el contexto previo a la
         // construcción. La marca se apaga aunque un argumento lance, así el
         // resto del constructor usa el objeto actual normalmente. Cubre toda
         // la resolución, pero sólo los argumentos miran la marca.
         tabla.setContextoPrevioAConstruccion(true);
         try {
-            ChequeoLlamada.chequearConstructor(tabla, superclase, tipoSuperclase, argumentos, tokenSuper);
+            ChequeoLlamada.chequearConstructor(tabla, tipoSuperclase, argumentos, tokenSuper);
         } finally {
             tabla.setContextoPrevioAConstruccion(false);
         }

@@ -62,6 +62,9 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
         return padreEfectivo;
     }
 
+    // El padre efectivo como tipo de super (ver getTipoSuperclase()).
+    private Tipo tipoSuperclase;
+
     // Instanciación genérica (spec 0001): para cada ancestro genérico, el
     // argumento con que esta clase lo hereda, visto desde acá (con Base<T>,
     // "class Dd extends Base<String>" deja Base -> String). Se compone en
@@ -258,13 +261,15 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
 
     // Tipo de super (logro Super!, spec 0006, D5): el 'extends' tal como se
     // escribió, con su argumento (A<String>), así el encadenado ve los
-    // miembros instanciados desde ahí; sin 'extends', Object. Sólo lo usa el
-    // chequeo de sentencias, que no corre si hubo errores de declaración: el
-    // 'extends' existe, es una clase y no está en un ciclo. Una clase con
-    // 'implements' no tiene 'extends' (ADR 0005), así que su superclase es
-    // Object, nunca la interfaz.
+    // miembros instanciados desde ahí; sin 'extends', Object, el padre
+    // efectivo. Se fija en consolidarHerencia() junto con el padre efectivo,
+    // así no se arma un Object nuevo en cada super. Sólo lo usa el chequeo de
+    // sentencias, que no corre si hubo errores de declaración: el 'extends'
+    // existe, es una clase y no está en un ciclo. Una clase con 'implements'
+    // no tiene 'extends' (ADR 0005), así que su superclase es Object, nunca
+    // la interfaz. null antes de consolidar, para Object y en un ciclo.
     public Tipo getTipoSuperclase() {
-        return herencia != null ? herencia : new Tipo(tablaSimbolos.getObject().getNombre());
+        return tipoSuperclase;
     }
 
     public List<Token> getParametrosTipo() {
@@ -697,6 +702,7 @@ public class Clase implements Chequeable, EntidadDeclarada, OrigenParametroTipo 
                 }
             }
             padreEfectivo = padre;
+            tipoSuperclase = herencia != null ? herencia : padre.comoTipo();
             // Antes de consolidarConPadre(): la redefinición compara con esta
             // vista. El padre ya está consolidado, así que su mapa está
             // completo.

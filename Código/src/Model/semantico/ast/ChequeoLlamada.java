@@ -34,17 +34,24 @@ final class ChequeoLlamada {
         return tipos;
     }
 
-    // Resolución de un constructor de 'clase', compartida por new C(...) y
-    // super(...) (logro Super!, spec 0006, D8). Se elige por aridad: el por
-    // defecto sólo existe si la clase no declaró ninguno (semIIError25), y
-    // los de los ancestros no cuentan porque no se heredan (semIIError26). Un
+    // Resolución de un constructor de la clase que nombra 'tipo', compartida
+    // por new C(...) y super(...) (logro Super!, spec 0006, D8). 'tipo'
+    // nombra siempre una clase: new ya descartó lo que no existe y las
+    // interfaces, y la superclase de super(...) lo es por D5 (sin errores de
+    // declaración no corre el chequeo); si eso se rompe, falla acá con un
+    // mensaje y no con un cast. Se elige por aridad: el por defecto sólo
+    // existe si la clase no declaró ninguno (semIIError25), y los de los
+    // ancestros no cuentan porque no se heredan (semIIError26). Un
     // constructor private sólo vale dentro de su clase (logro Visibilidad
     // chequeada). Los parámetros se ven desde 'tipo': en new Caja<String>(5)
     // o en super(5) con extends Caja<String>, T es String (D10,
     // semIIError28). Todos los errores van sobre 'token': el nombre de la
     // clase en new, super en la llamada al constructor de la superclase.
-    static void chequearConstructor(TablaSimbolos tabla, Clase clase, Tipo tipo,
+    static void chequearConstructor(TablaSimbolos tabla, Tipo tipo,
                                     List<NodoExpresion> argumentos, Token token) {
+        if (!(tabla.entidadDe(tipo) instanceof Clase clase)) {
+            throw new IllegalStateException("Constructor de algo que no es una clase: " + tipo.getToken().getLexema());
+        }
         Constructor constructor = clase.getConstructores().stream()
                 .filter(c -> c.getParams().size() == argumentos.size())
                 .findFirst()

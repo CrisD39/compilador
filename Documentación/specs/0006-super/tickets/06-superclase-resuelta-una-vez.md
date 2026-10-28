@@ -1,6 +1,6 @@
 ---
 titulo: Resolver la superclase una sola vez
-estado: ready-for-agent
+estado: hecho
 spec: ../../0006-super.md
 ---
 
@@ -27,13 +27,13 @@ se guarda.
 **Origen:** `revision.md`, §2.1, §2.2 y §2.7.
 
 **Criterios:**
-- [ ] `super(...)` no busca la superclase por nombre ni hace un cast sin
+- [x] `super(...)` no busca la superclase por nombre ni hace un cast sin
       chequear.
-- [ ] La resolución del constructor recibe el tipo y no la clase; `new` y
+- [x] La resolución del constructor recibe el tipo y no la clase; `new` y
       `super(...)` la llaman igual.
-- [ ] El tipo de la superclase implícita (`Object`) no se construye en
+- [x] El tipo de la superclase implícita (`Object`) no se construye en
       cada llamada.
-- [ ] Los comentarios que describen esos pasos (D8/D10 en
+- [x] Los comentarios que describen esos pasos (D8/D10 en
       `NodoLlamadaSuperConstructor`, `NodoCreacionObjeto` y la resolución
       del constructor) siguen diciendo lo que hace el código.
-- [ ] Ninguna salida cambia: `./test.sh` en verde, sin tocar casos.
+- [x] Ninguna salida cambia: `./test.sh` en verde, sin tocar casos.
