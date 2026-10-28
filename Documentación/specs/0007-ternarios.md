@@ -302,7 +302,7 @@ En `0007-ternarios/tickets/`, uno por archivo.
 |---|---|---|---|
 | 01 | Ternario sin tipo esperado | — | hecho |
 | 02 | Tipo esperado en asignación, inicializador y return | 01 | hecho |
-| 03 | Tipo esperado en los argumentos | 02 | ready-for-agent |
+| 03 | Tipo esperado en los argumentos | 02 | hecho |
 | 04 | Cierre | 03 | ready-for-agent |
 
 Reparto de casos: 01 → Correcto 01, 04, 05 y 07, Error 01–08, 10–12,

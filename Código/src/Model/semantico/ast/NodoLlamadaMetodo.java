@@ -3,10 +3,12 @@ package Model.semantico.ast;
 import Model.lexico.Token;
 import Model.semantico.ExcepcionSemantica;
 import Model.semantico.Metodo;
+import Model.semantico.OrigenParametroTipo;
 import Model.semantico.TablaSimbolos;
 import Model.semantico.Tipo;
 
 import java.util.List;
+import java.util.Map;
 
 // <Operando> ::= idMetVar <TrasId> con <ArgsActuales>: llamada con receptor
 // implícito, m(...) (⚠6).
@@ -47,9 +49,9 @@ public class NodoLlamadaMetodo extends NodoPrimario {
         if (!metodo.isEstatico()) {
             tabla.exigirObjetoActual(nombre, "ERR_METODO_NO_ESTATICO");
         }
-        List<Tipo> tiposArgumentos = ChequeoLlamada.chequearArgumentos(tabla, argumentos);
-        Tipo tipo = ChequeoLlamada.tipoDeLlamada(
-                tabla, metodo, tabla.getClaseActual().getInstanciacion(), nombre, tiposArgumentos);
+        Map<OrigenParametroTipo, Tipo> vista = tabla.getClaseActual().getInstanciacion();
+        List<Tipo> tiposArgumentos = ChequeoLlamada.chequearArgumentos(tabla, metodo, vista, argumentos);
+        Tipo tipo = ChequeoLlamada.tipoDeLlamada(tabla, metodo, vista, nombre, tiposArgumentos);
         return chequearEncadenado(tabla, tipo);
     }
 }

@@ -4,10 +4,12 @@ import Model.lexico.Token;
 import Model.semantico.EntidadDeclarada;
 import Model.semantico.ExcepcionSemantica;
 import Model.semantico.Metodo;
+import Model.semantico.OrigenParametroTipo;
 import Model.semantico.TablaSimbolos;
 import Model.semantico.Tipo;
 
 import java.util.List;
+import java.util.Map;
 
 // <ReferenciaResto> ::= . idMetVar <ArgsActuales> <ReferenciaResto>: .m(...)
 // (⚠2, ⚠6).
@@ -43,9 +45,9 @@ public class NodoLlamadaEncadenada extends NodoEncadenado {
             throw new ExcepcionSemantica(nombre, "ERR_METODO_NO_ENCONTRADO");
         }
         ChequeoVisibilidad.exigirAcceso(tabla, metodo.isPrivado(), metodo.getMiClase(), entidad, nombre);
-        List<Tipo> tiposArgumentos = ChequeoLlamada.chequearArgumentos(tabla, argumentos);
-        Tipo tipo = ChequeoLlamada.tipoDeLlamada(
-                tabla, metodo, tabla.instanciacionDe(tipoIzquierdo), nombre, tiposArgumentos);
+        Map<OrigenParametroTipo, Tipo> vista = tabla.instanciacionDe(tipoIzquierdo);
+        List<Tipo> tiposArgumentos = ChequeoLlamada.chequearArgumentos(tabla, metodo, vista, argumentos);
+        Tipo tipo = ChequeoLlamada.tipoDeLlamada(tabla, metodo, vista, nombre, tiposArgumentos);
         return chequearSiguiente(tabla, tipo);
     }
 }

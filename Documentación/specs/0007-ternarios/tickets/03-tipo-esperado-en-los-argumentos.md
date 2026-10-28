@@ -1,6 +1,6 @@
 ---
 titulo: Tipo esperado en los argumentos
-estado: ready-for-agent
+estado: hecho
 spec: ../../0007-ternarios.md
 ---
 
@@ -40,11 +40,11 @@ Glosario: *tipo esperado*, *contexto previo a la construcción*.
 - Casos nuevos en `logros/ternarios/` (tabla de la spec).
 
 **Criterios:**
-- [ ] Casos de `logros/ternarios/` en verde: Correcto 03; Error 14, 15, 16
+- [x] Casos de `logros/ternarios/` en verde: Correcto 03; Error 14, 15, 16
       y 22. Siguen en verde los de los tickets 01 y 02.
-- [ ] Ningún caso de `ERR_ARGUMENTO_INCOMPATIBLE` sin ternario cambia de
+- [x] Ningún caso de `ERR_ARGUMENTO_INCOMPATIBLE` sin ternario cambia de
       etiqueta, en la base ni en los logros.
-- [ ] Ningún caso base de `semantico2/{sinErrores,conErrores}` ni de las
+- [x] Ningún caso base de `semantico2/{sinErrores,conErrores}` ni de las
       Etapas 1–3 cambia de etiqueta.
-- [ ] Siguen en verde los demás logros habilitados.
-- [ ] `./test.sh` en verde.
+- [x] Siguen en verde los demás logros habilitados.
+- [x] `./test.sh` en verde.

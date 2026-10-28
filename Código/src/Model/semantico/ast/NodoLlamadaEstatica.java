@@ -54,7 +54,7 @@ public class NodoLlamadaEstatica extends NodoPrimario {
         if (!metodo.isEstatico()) {
             throw new ExcepcionSemantica(nombre, "ERR_METODO_NO_ESTATICO");
         }
-        List<Tipo> tiposArgumentos = ChequeoLlamada.chequearArgumentos(tabla, argumentos);
+        List<Tipo> tiposArgumentos = ChequeoLlamada.chequearArgumentos(tabla, metodo, Map.of(), argumentos);
         return chequearEncadenado(tabla, ChequeoLlamada.tipoDeLlamada(tabla, metodo, Map.of(), nombre, tiposArgumentos));
     }
 }

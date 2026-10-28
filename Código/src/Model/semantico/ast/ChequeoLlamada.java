@@ -26,13 +26,36 @@ final class ChequeoLlamada {
     // Cada nodo los chequea recién después de resolver el método o el
     // constructor, que sólo necesita la cantidad: con un error por sentencia
     // (D7), el informado es el primero en el orden del fuente, y en
-    // noExiste(z) gana noExiste y no z.
-    static List<Tipo> chequearArgumentos(TablaSimbolos tabla, List<NodoExpresion> argumentos) {
+    // noExiste(z) gana noExiste y no z. El tipo esperado de cada argumento
+    // es su formal visto desde el receptor (spec 0007, D3; ADR 0011): en
+    // cs.poner(c ? "a" : null) con Caja<String>, cada rama se compara con
+    // String. Sólo lo usa un ternario; la conformidad la sigue controlando
+    // exigirConformidad(), después de tipar todos, así en m(1, c ? x : "a")
+    // con (String, int) gana el "?" y no el 1 (semIITernarioError22).
+    static List<Tipo> chequearArgumentos(TablaSimbolos tabla, List<NodoExpresion> argumentos,
+                                         List<Parametro> formales, Map<OrigenParametroTipo, Tipo> vista) {
         List<Tipo> tipos = new ArrayList<>();
-        for (NodoExpresion argumento : argumentos) {
-            tipos.add(argumento.chequear(tabla));
+        for (int i = 0; i < argumentos.size(); i++) {
+            tipos.add(argumentos.get(i).chequearConTipoEsperado(tabla, formales.get(i).getTipo().sustituir(vista)));
         }
         return tipos;
+    }
+
+    // Los argumentos de una llamada a un método ya resuelto. Uno con
+    // parámetros de tipo propios es del logro Métodos genéricos: sus formales
+    // pueden nombrar esos T, así que los argumentos se tipan sin tipo
+    // esperado, como antes de la spec 0007, y tipoDeLlamada() corta después
+    // con ERR_NO_SOPORTADO.
+    static List<Tipo> chequearArgumentos(TablaSimbolos tabla, Metodo metodo, Map<OrigenParametroTipo, Tipo> vista,
+                                         List<NodoExpresion> argumentos) {
+        if (!metodo.getParametrosTipoPropios().isEmpty()) {
+            List<Tipo> tipos = new ArrayList<>();
+            for (NodoExpresion argumento : argumentos) {
+                tipos.add(argumento.chequear(tabla));
+            }
+            return tipos;
+        }
+        return chequearArgumentos(tabla, argumentos, metodo.getParams(), vista);
     }
 
     // Resolución de un constructor de la clase que nombra 'tipo', compartida
@@ -66,19 +89,19 @@ final class ChequeoLlamada {
                 .findFirst()
                 .orElseThrow(() -> new ExcepcionSemantica(token, "ERR_CONSTRUCTOR_NO_ENCONTRADO", detalle));
         ChequeoVisibilidad.exigirAcceso(tabla, constructor.isPrivado(), clase, clase, token, detalle);
+        Map<OrigenParametroTipo, Tipo> vista = tabla.instanciacionDe(tipo);
         List<Tipo> tiposArgumentos;
         if (deSuper) {
             boolean anterior = tabla.prenderContextoPrevioAConstruccion();
             try {
-                tiposArgumentos = chequearArgumentos(tabla, argumentos);
+                tiposArgumentos = chequearArgumentos(tabla, argumentos, constructor.getParams(), vista);
             } finally {
                 tabla.restaurarContextoPrevioAConstruccion(anterior);
             }
         } else {
-            tiposArgumentos = chequearArgumentos(tabla, argumentos);
+            tiposArgumentos = chequearArgumentos(tabla, argumentos, constructor.getParams(), vista);
         }
-        exigirConformidad(tabla, constructor.getParams(), tabla.instanciacionDe(tipo), tiposArgumentos, token,
-                detalle);
+        exigirConformidad(tabla, constructor.getParams(), vista, tiposArgumentos, token, detalle);
     }
 
     // Tipo de la llamada a un método ya resuelto. 'vista' es el mapa con que
