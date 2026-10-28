@@ -241,6 +241,23 @@ Método no void cuyo cuerpo termina normalmente, es decir, que tiene algún
 camino que llega al final sin pasar por un `return`.
 _Evitar_: retorno parcial
 
+### Expresiones
+
+**Tipo esperado**:
+Tipo que el lugar donde aparece una expresión le exige: el del destino de
+una asignación, el del atributo que se inicializa, el de retorno del
+método, o el del parámetro formal que recibe un argumento.
+_Evitar_: tipo destino (se confunde con el destino de `=`), target type
+
+**Ternario**:
+Expresión `c ? e1 : e2`, con una condición boolean y dos ramas, ninguna
+void. Donde hay un tipo esperado, cada rama tiene que conformar con él,
+como en Java. Donde no lo hay, tiene el tipo de la rama con la que la otra
+conforma. A diferencia de Java, ahí no busca un supertipo común: con dos
+clases hermanas es incorrecto. Como no hay boxing, `null` con un primitivo
+también es incorrecto.
+_Evitar_: operador condicional, if en línea
+
 ### Nombres
 
 **Nombre invalidado**:
