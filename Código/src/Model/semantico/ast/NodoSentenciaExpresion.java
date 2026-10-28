@@ -28,11 +28,14 @@ public class NodoSentenciaExpresion extends NodoSentencia {
         return expresion.primerToken();
     }
 
+    // La forma se controla antes de tipar, como javac ("not a statement"):
+    // esSentenciaValida() es estructural, así que en c ? v() : v(); con v
+    // void el error es el ";" y no la rama void (spec 0007, D5).
     @Override
     public void chequear(TablaSimbolos tabla) {
-        expresion.chequear(tabla);
         if (!expresion.esSentenciaValida()) {
             throw new ExcepcionSemantica(puntoYComa, "ERR_SENTENCIA_INVALIDA");
         }
+        expresion.chequear(tabla);
     }
 }

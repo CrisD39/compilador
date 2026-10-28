@@ -12,6 +12,7 @@ import Model.semantico.TablaSimbolos;
 import Model.semantico.Tipo;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -29,33 +30,28 @@ final class ChequeoLlamada {
     // noExiste(z) gana noExiste y no z. El tipo esperado de cada argumento
     // es su formal visto desde el receptor (spec 0007, D3; ADR 0011): en
     // cs.poner(c ? "a" : null) con Caja<String>, cada rama se compara con
-    // String. Sólo lo usa un ternario; la conformidad la sigue controlando
-    // exigirConformidad(), después de tipar todos, así en m(1, c ? x : "a")
-    // con (String, int) gana el "?" y no el 1 (semIITernarioError22).
-    static List<Tipo> chequearArgumentos(TablaSimbolos tabla, List<NodoExpresion> argumentos,
-                                         List<Parametro> formales, Map<OrigenParametroTipo, Tipo> vista) {
+    // String. Un esperado null es sin tipo esperado. Sólo lo usa un ternario;
+    // la conformidad la sigue controlando exigirConformidad(), después de
+    // tipar todos, así en m(1, c ? x : "a") con (String, int) gana el "?" y
+    // no el 1 (semIITernarioError22).
+    private static List<Tipo> chequearArgumentos(TablaSimbolos tabla, List<NodoExpresion> argumentos,
+                                                 List<Tipo> esperados) {
         List<Tipo> tipos = new ArrayList<>();
         for (int i = 0; i < argumentos.size(); i++) {
-            tipos.add(argumentos.get(i).chequearConTipoEsperado(tabla, formales.get(i).getTipo().sustituir(vista)));
+            tipos.add(argumentos.get(i).chequearConTipoEsperado(tabla, esperados.get(i)));
         }
         return tipos;
     }
 
-    // Los argumentos de una llamada a un método ya resuelto. Uno con
-    // parámetros de tipo propios es del logro Métodos genéricos: sus formales
-    // pueden nombrar esos T, así que los argumentos se tipan sin tipo
-    // esperado, como antes de la spec 0007, y tipoDeLlamada() corta después
-    // con ERR_NO_SOPORTADO.
-    static List<Tipo> chequearArgumentos(TablaSimbolos tabla, Metodo metodo, Map<OrigenParametroTipo, Tipo> vista,
-                                         List<NodoExpresion> argumentos) {
-        if (!metodo.getParametrosTipoPropios().isEmpty()) {
-            List<Tipo> tipos = new ArrayList<>();
-            for (NodoExpresion argumento : argumentos) {
-                tipos.add(argumento.chequear(tabla));
-            }
-            return tipos;
+    // Cada formal visto desde el receptor ('vista'): en new Caja<String>(5)
+    // el parámetro T es String (semIIError28). Se calcula una vez y sirve de
+    // tipo esperado de los argumentos y para su conformidad.
+    private static List<Tipo> formalesVistos(List<Parametro> formales, Map<OrigenParametroTipo, Tipo> vista) {
+        List<Tipo> tipos = new ArrayList<>();
+        for (Parametro formal : formales) {
+            tipos.add(formal.getTipo().sustituir(vista));
         }
-        return chequearArgumentos(tabla, argumentos, metodo.getParams(), vista);
+        return tipos;
     }
 
     // Resolución de un constructor de la clase que nombra 'tipo', compartida
@@ -89,48 +85,51 @@ final class ChequeoLlamada {
                 .findFirst()
                 .orElseThrow(() -> new ExcepcionSemantica(token, "ERR_CONSTRUCTOR_NO_ENCONTRADO", detalle));
         ChequeoVisibilidad.exigirAcceso(tabla, constructor.isPrivado(), clase, clase, token, detalle);
-        Map<OrigenParametroTipo, Tipo> vista = tabla.instanciacionDe(tipo);
+        List<Tipo> formales = formalesVistos(constructor.getParams(), tabla.instanciacionDe(tipo));
         List<Tipo> tiposArgumentos;
         if (deSuper) {
             boolean anterior = tabla.prenderContextoPrevioAConstruccion();
             try {
-                tiposArgumentos = chequearArgumentos(tabla, argumentos, constructor.getParams(), vista);
+                tiposArgumentos = chequearArgumentos(tabla, argumentos, formales);
             } finally {
                 tabla.restaurarContextoPrevioAConstruccion(anterior);
             }
         } else {
-            tiposArgumentos = chequearArgumentos(tabla, argumentos, constructor.getParams(), vista);
+            tiposArgumentos = chequearArgumentos(tabla, argumentos, formales);
         }
-        exigirConformidad(tabla, constructor.getParams(), vista, tiposArgumentos, token, detalle);
+        exigirConformidad(tabla, formales, tiposArgumentos, token, detalle);
     }
 
-    // Tipo de la llamada a un método ya resuelto. 'vista' es el mapa con que
-    // se ven sus parámetros y su retorno desde el receptor (D10): en
-    // c.obtener() con c de tipo Caja<String>, T obtener() devuelve String
-    // (semIICorrecto12). Un método con parámetros de tipo propios es del logro
-    // Métodos genéricos (D11), y se corta antes de comparar argumentos contra
+    // Tipo de la llamada a un método ya resuelto, con sus argumentos. 'vista'
+    // es el mapa con que se ven sus parámetros y su retorno desde el receptor
+    // (D10): en c.obtener() con c de tipo Caja<String>, T obtener() devuelve
+    // String (semIICorrecto12). Un método con parámetros de tipo propios es
+    // del logro Métodos genéricos (D11): sus formales pueden nombrar esos T,
+    // así que los argumentos se tipan sin tipo esperado, como antes de la
+    // spec 0007, y se corta con ERR_NO_SOPORTADO antes de compararlos contra
     // sus T.
     static Tipo tipoDeLlamada(TablaSimbolos tabla, Metodo metodo, Map<OrigenParametroTipo, Tipo> vista,
-                              Token nombre, List<Tipo> tiposArgumentos) {
+                              Token nombre, List<NodoExpresion> argumentos) {
         if (!metodo.getParametrosTipoPropios().isEmpty()) {
+            chequearArgumentos(tabla, argumentos, Collections.nCopies(argumentos.size(), null));
             throw ExcepcionSemantica.noSoportado(nombre);
         }
-        exigirConformidad(tabla, metodo.getParams(), vista, tiposArgumentos, nombre, null);
+        List<Tipo> formales = formalesVistos(metodo.getParams(), vista);
+        exigirConformidad(tabla, formales, chequearArgumentos(tabla, argumentos, formales), nombre, null);
         return metodo.getTipoDeLlamada().sustituir(vista);
     }
 
     // Cada argumento conforma con su parámetro, en orden (§10.2). La aridad
     // ya coincide porque se eligió por clave, y no se busca otra variante por
     // tipos (semIIError16). Un argumento void no conforma con nada
-    // (semIIError49). Cada formal se ve desde el receptor ('vista'): en
-    // new Caja<String>(5) el parámetro T es String (semIIError28). El error va
-    // sobre el nombre del método o de la clase, con el 'detalle' de
-    // chequearConstructor() (null en una llamada a método).
-    static void exigirConformidad(TablaSimbolos tabla, List<Parametro> formales,
-                                  Map<OrigenParametroTipo, Tipo> vista, List<Tipo> actuales, Token token,
-                                  String detalle) {
+    // (semIIError49). 'formales' ya viene visto desde el receptor
+    // (formalesVistos()). El error va sobre el nombre del método o de la
+    // clase, con el 'detalle' de chequearConstructor() (null en una llamada a
+    // método).
+    private static void exigirConformidad(TablaSimbolos tabla, List<Tipo> formales, List<Tipo> actuales,
+                                          Token token, String detalle) {
         for (int i = 0; i < formales.size(); i++) {
-            if (!actuales.get(i).conformaCon(formales.get(i).getTipo().sustituir(vista), tabla)) {
+            if (!actuales.get(i).conformaCon(formales.get(i), tabla)) {
                 throw new ExcepcionSemantica(token, "ERR_ARGUMENTO_INCOMPATIBLE", detalle);
             }
         }

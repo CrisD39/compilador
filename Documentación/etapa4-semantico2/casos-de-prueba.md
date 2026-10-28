@@ -103,6 +103,9 @@ Están en `logros/superKeyword/` (spec 0006) y los corre `TesterLogrosSem2`. Nin
 | `semIISuperCorrecto05` | — | Lo que vale en los argumentos de `super(...)`: un parámetro con el nombre de un atributo heredado, literales, `A1.m()`, un método estático propio sin receptor, `new` de la clase actual, `p.x` y `p.m()`. |
 | `semIISuperCorrecto06` | — | Contextos de instancia: `super.b` en un inicializador (no es referencia adelantada) y accesos con super en un constructor, después de `super()` y en otro sin `super(...)`. |
 | `semIISuperCorrecto07` | — | Herencia sin argumento de `A1<T>` (ADR 0007): la `T` heredada se conserva (spec 0001, D5) y `null` conforma con ella en `super(null)` y `super.m(null)`. |
+| `semIISuperCorrecto08` | — | La marca del contexto previo a la construcción se apaga al terminar `super(...)`: después se usan atributos sueltos, `this`, métodos de instancia y `super.m()`. En los argumentos valen `B2.s()` y `new P3().n()`. |
+| `semIISuperCorrecto09` | — | Cadena genérica: en `B2<T> extends A1<T>`, `super.dato`, `super.get()` y `super(t)` con `T`; en `C3 extends B2<String>`, los miembros del abuelo y de `B2` vistos como `String`. |
+| `semIISuperCorrecto10` | — | Con otros logros: `super.x++`/`--`, `instanceof` sobre `super.o`, `super.x` en un for clásico, for-each sobre `super.lista`, `super.debugPrint(...)` y retorno con super en todos los caminos. |
 | `semIISuperError01` | `noExiste` | `super.noExiste()`. |
 | `semIISuperError02` | `x` | `super.x` con `x` declarado sólo en la clase actual. |
 | `semIISuperError03` | `m` | `super.m()` con `m` que sólo viene de la interfaz implementada. |
@@ -124,6 +127,22 @@ Están en `logros/superKeyword/` (spec 0006) y los corre `TesterLogrosSem2`. Nin
 | `semIISuperError19` | `super` | Sentencia inalcanzable: `super.m();` después de un `return;`. |
 | `semIISuperError20` | `noExiste`, `=`, `+` | Multi-detección: `super.noExiste();`, `super.x = true;` con `int x` y `this.y = 1 + true;`. |
 | `semIISuperError21` | `super`, `m` | Herencia sin argumento de `A1<T>` (ADR 0007): la `T` heredada se conserva (spec 0001, D5), así que `super(5)` y `super.m(5)` no conforman. En Java compilan. |
+| `semIISuperError22` | `equals` | `super.equals(o)` sin `extends`: el `Object` de MiniJava sólo tiene `debugPrint` y `toString`. |
+| `semIISuperError23` | `p`, `q` | Private del abuelo alcanzado con `super` (la superclase directa no lo declara). |
+| `semIISuperError24` | `super` ×4 | Contexto estático con un miembro estático (`super.s()`), encadenado (`super.get().y`), en un `return` y en el `main` de `Init`. |
+| `semIISuperError25` | `super`, `super` | Aridad: `super()` con la superclase con sólo `A(int)` (no hay constructor por defecto), y `super(1, 2)` entre `C()` y `C(int)`. |
+| `semIISuperError26` | `super`, `super`, `this` | Orden de D8 con `super(this)`: la aridad y la visibilidad ganan a los argumentos, y los argumentos a la conformidad. |
+| `semIISuperError27` | `this`, `=` | La marca se apaga aunque `super(this)` falle: después `x` y `m()` valen y el error siguiente es de tipos. |
+| `semIISuperError28` | `y`, `this`, `m` | Antes de la construcción: atributo propio suelto, `super(this.y)` y `m()` dentro de `p.n() + m()`. |
+| `semIISuperError29` | `super`, `super`, `super` | Ubicación: después de un `var`, y después de un `return` (inalcanzable y fuera de lugar en la misma línea). |
+| `semIISuperError30` | `;` | Sintaxis: `x = super;`. |
+| `semIISuperError31` | `[` | Sintaxis: `super[0]`. |
+| `semIISuperError32` | `;` | Sintaxis: `super.;`. |
+| `semIISuperError33` | `m`, `x`, `m`, `=` | Encadenado: `super.m` con `m` método, `super.x()` con `x` atributo, `super.m(1)` sin match de aridad y asignar un `super.m()` void. |
+| `semIISuperError34` | `=`, `secreto`, `noHay` | Inicializadores de atributos: tipo incompatible, private y atributo inexistente (logro Atributos inicializados). |
+| `semIISuperError35` | `->` | Una lambda en los argumentos de `super(...)` da `ERR_NO_SOPORTADO`. |
+| `semIISuperError36` | `this`, `super`, `super`, `noExiste` | Multi-detección: la primera llamada está en lugar aunque sus argumentos fallen, y la segunda queda fuera de lugar. En un método, `super()` y después `super.noExiste()`. |
+| `semIISuperError37` | `if`, `while`, `for`, `=` | Acceso con super en condiciones no boolean, en un for-each sobre un `int` y en una asignación incompatible. |
 
 ## Casos del logro Ternarios
 
@@ -161,6 +180,8 @@ Están en `logros/ternarios/` (spec 0007, ADR 0011) y los corre `TesterLogrosSem
 | `semIITernarioError21` | `?` | Anidado con tipo esperado propagado: el error va sobre el `?` del ternario de adentro, en su propia línea. |
 | `semIITernarioError22` | `?` | Orden en una llamada: con `m2(String, int)`, `m2(1, c ? x : "a")` reporta el `?` y no el `ERR_ARGUMENTO_INCOMPATIBLE` del `1`. |
 | `semIITernarioError23` | `?`, `?` | Multi-detección: dos sentencias con ternarios mal tipados. |
+| `semIITernarioError24` | `noExiste` | Orden sin tipo esperado (D4, paso 3): las dos ramas se tipan antes de filtrar void, así que con la izquierda void sale el error de la derecha. |
+| `semIITernarioError25` | `;` | D5: la forma de la sentencia se controla antes de tipar, así que `c ? v() : v();` con `v` void da `ERR_SENTENCIA_INVALIDA` y no `ERR_TERNARIO_RAMA_VOID`. |
 
 ## Índice
 

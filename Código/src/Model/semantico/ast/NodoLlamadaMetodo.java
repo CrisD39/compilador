@@ -50,8 +50,7 @@ public class NodoLlamadaMetodo extends NodoPrimario {
             tabla.exigirObjetoActual(nombre, "ERR_METODO_NO_ESTATICO");
         }
         Map<OrigenParametroTipo, Tipo> vista = tabla.getClaseActual().getInstanciacion();
-        List<Tipo> tiposArgumentos = ChequeoLlamada.chequearArgumentos(tabla, metodo, vista, argumentos);
-        Tipo tipo = ChequeoLlamada.tipoDeLlamada(tabla, metodo, vista, nombre, tiposArgumentos);
+        Tipo tipo = ChequeoLlamada.tipoDeLlamada(tabla, metodo, vista, nombre, argumentos);
         return chequearEncadenado(tabla, tipo);
     }
 }

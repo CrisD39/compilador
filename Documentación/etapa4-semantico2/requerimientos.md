@@ -626,11 +626,12 @@ Las specs 0003, 0004, 0005, 0006 y 0007 están cerradas. Quedó implementado:
   primero el contexto estático y después la marca. Un
   parámetro con el nombre de un atributo resuelve antes y vale.
   `superKeyword` está en `LOGROS_HABILITADOS`. Casos:
-  `semIISuperCorrecto01`–`07` y `semIISuperError01`–`21`.
+  `semIISuperCorrecto01`–`10` y `semIISuperError01`–`37`.
 - **Logro *Ternarios*** (2026-10-28, spec 0007, ADR 0011). Siempre activo
   en `ModuloPrincipalET4`; la gramática no cambió. `NodoExpresion` tiene
   `chequearConTipoEsperado(tabla, esperado)`, que por defecto devuelve
-  `chequear(tabla)` y no controla la conformidad. Lo redefinen
+  `chequear(tabla)` y no controla la conformidad; un esperado `null` es sin
+  tipo esperado, así cada contexto hace una sola llamada. Lo redefinen
   `NodoExpTernaria` y `NodoExpParentizada`, que lo baja a la expresión de
   adentro sólo si no tiene encadenado. Lo llaman, en lugar de `chequear`,
   los contextos con tipo esperado: `NodoExpAsignacion` (con el tipo del
@@ -638,19 +639,26 @@ Las specs 0003, 0004, 0005, 0006 y 0007 están cerradas. Quedó implementado:
   un método no void y `ChequeoLlamada.chequearArgumentos`, con cada formal
   visto desde el receptor (`sustituir(vista)`), para métodos de instancia,
   estáticos y encadenados, `new` y `super(...)`. Un método con parámetros de
-  tipo propios tipa sus argumentos sin tipo esperado, antes de su
-  `ERR_NO_SOPORTADO`. Cada contexto sigue después con su control de
+  tipo propios tipa sus argumentos sin tipo esperado (`null` en cada uno),
+  antes de su `ERR_NO_SOPORTADO`. Cada contexto sigue después con su control de
   siempre: como el ternario devuelve el tipo esperado una vez que validó sus
   ramas, nunca sale un segundo error. Los argumentos se siguen chequeando
   en dos fases (primero se tipan todos, después la conformidad), así que un
   error de rama sale antes que un `ERR_ARGUMENTO_INCOMPATIBLE` de un
-  argumento anterior. `NodoExpTernaria` chequea la condición
-  (`ERR_CONDICION_NO_BOOLEAN`) y después cada rama, la izquierda primero:
-  void da `ERR_TERNARIO_RAMA_VOID`; con tipo esperado, una rama que no
-  conforma da `ERR_TERNARIO_RAMA_INCOMPATIBLE`, y sin él, unas ramas de las
-  que ninguna conforma con la otra dan `ERR_TERNARIO_INCOMPATIBLE`. Todos
-  van sobre el `?`. `ternarios` está en `LOGROS_HABILITADOS`. Casos:
-  `semIITernarioCorrecto01`–`07` y `semIITernarioError01`–`23`.
+  argumento anterior. `NodoExpTernaria` sigue el orden de D4. Primero la
+  condición: si no es `boolean`, `ERR_CONDICION_NO_BOOLEAN`. Con tipo
+  esperado, cada rama completa, la izquierda y después la derecha: si da
+  void, `ERR_TERNARIO_RAMA_VOID`; si no conforma con el esperado,
+  `ERR_TERNARIO_RAMA_INCOMPATIBLE`; y devuelve el esperado. Sin tipo
+  esperado, tipa la rama izquierda y la derecha, y recién entonces, si
+  alguna es void, `ERR_TERNARIO_RAMA_VOID` (así, en `c ? v() : noExiste`
+  sale el error de `noExiste`); después, si la izquierda conforma con la
+  derecha, devuelve el tipo de la derecha, si no, y la derecha conforma con
+  la izquierda, el de la izquierda, y si no, `ERR_TERNARIO_INCOMPATIBLE`.
+  Todos van sobre el `?`. `ternarios` está en `LOGROS_HABILITADOS`. Casos:
+  `semIITernarioCorrecto01`–`07` y `semIITernarioError01`–`25`. Una
+  expresión suelta se controla primero por su forma y después se tipa, así
+  que `c ? v() : v();` da `ERR_SENTENCIA_INVALIDA` (D5).
   `semIIAtribInicError15` pasó de `ERR_NO_SOPORTADO` a un ternario mal
   tipado, con la misma etiqueta.
 
@@ -1092,13 +1100,14 @@ public class NodoSentenciaExpresion extends NodoSentencia {
 
     @Override
     public void chequear(TablaSimbolos tabla) {
-        // 1. Primero chequeo los tipos de toda la cadena para que valide que todo exista
-        this.expresion.chequear(tabla);
-
-        // 2. Verifico que sea una asignación o que la expresión completa termine en algo invocable
-        if (!(this.expresion instanceof NodoExpAsignacion) && !this.expresion.esLlamable()) {
+        // 1. Primero la forma, que es estructural (como el "not a statement" de javac):
+        //    asignación, postfijo, o una expresión que termina en una llamada o un new
+        if (!this.expresion.esSentenciaValida()) {
             throw new ExcepcionSemantica(puntoYComa, "ERR_SENTENCIA_INVALIDA");
         }
+
+        // 2. Recién entonces chequeo los tipos de toda la cadena
+        this.expresion.chequear(tabla);
     }
 }
 ```

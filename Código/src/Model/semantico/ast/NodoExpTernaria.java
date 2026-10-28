@@ -32,12 +32,16 @@ public class NodoExpTernaria extends NodoExpCompuesta {
     // rama con la que la otra conforma. No se busca un supertipo común, así
     // que dos clases hermanas son error (a diferencia de Java). El null sale
     // de conformaCon: null : null es null, null con una referencia da esa
-    // referencia, y con un primitivo es error (no hay boxing).
+    // referencia, y con un primitivo es error (no hay boxing). Las dos ramas
+    // se tipan antes de filtrar void, como dice D4: en c ? v() : noExiste,
+    // con v void, el error es el de noExiste (semIITernarioError24).
     @Override
     public Tipo chequear(TablaSimbolos tabla) {
         chequearCondicion(tabla);
-        Tipo izq = chequearRama(ladoIzq, tabla);
-        Tipo der = chequearRama(ladoDer, tabla);
+        Tipo izq = ladoIzq.chequear(tabla);
+        Tipo der = ladoDer.chequear(tabla);
+        exigirValor(izq);
+        exigirValor(der);
         if (izq.conformaCon(der, tabla)) {
             return der;
         }
@@ -52,9 +56,13 @@ public class NodoExpTernaria extends NodoExpCompuesta {
     // §15.25.3). El esperado baja a cada rama, así que en un ternario
     // anidado el error va sobre el "?" del ternario dueño de la rama.
     // Devuelve el esperado ya validado: el contexto sigue con su control de
-    // conformidad de siempre, que nunca da un segundo error.
+    // conformidad de siempre, que nunca da un segundo error. Un esperado null
+    // es sin tipo esperado: se tipa como en chequear().
     @Override
     public Tipo chequearConTipoEsperado(TablaSimbolos tabla, Tipo esperado) {
+        if (esperado == null) {
+            return chequear(tabla);
+        }
         chequearCondicion(tabla);
         chequearRamaContra(ladoIzq, tabla, esperado);
         chequearRamaContra(ladoDer, tabla, esperado);
@@ -67,10 +75,6 @@ public class NodoExpTernaria extends NodoExpCompuesta {
         if (!Tipo.BOOLEAN.equals(condicion.chequear(tabla))) {
             throw new ExcepcionSemantica(operador, "ERR_CONDICION_NO_BOOLEAN");
         }
-    }
-
-    private Tipo chequearRama(NodoExpresion rama, TablaSimbolos tabla) {
-        return exigirValor(rama.chequear(tabla));
     }
 
     private void chequearRamaContra(NodoExpresion rama, TablaSimbolos tabla, Tipo esperado) {

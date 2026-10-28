@@ -21,11 +21,16 @@ public abstract class NodoExpresion implements ValorArreglo {
     }
 
     // Chequeo en un contexto con tipo esperado: el valor de "=", el
-    // inicializador de un atributo y el return de un método no void (spec
-    // 0007, D2 y D3; ADR 0011). Por defecto no controla la conformidad, que
-    // la sigue haciendo el contexto con su código y su token. Sólo lo
-    // redefinen NodoExpTernaria, que tipa cada rama contra el esperado, y
-    // NodoExpParentizada, que lo baja a la expresión de adentro.
+    // inicializador de un atributo, el return de un método no void y los
+    // argumentos de una llamada, new o super(...), con cada formal visto
+    // desde el receptor (ChequeoLlamada) (spec 0007, D2 y D3; ADR 0011). Un
+    // esperado null es sin tipo esperado y equivale a chequear(), así el
+    // contexto hace una sola llamada aunque a veces no tenga uno (el return
+    // de un método void, los argumentos de un método genérico). Por defecto
+    // no controla la conformidad, que la sigue haciendo el contexto con su
+    // código y su token. Sólo lo redefinen NodoExpTernaria, que tipa cada
+    // rama contra el esperado, y NodoExpParentizada, que lo baja a la
+    // expresión de adentro.
     public Tipo chequearConTipoEsperado(TablaSimbolos tabla, Tipo esperado) {
         return chequear(tabla);
     }

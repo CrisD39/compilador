@@ -28,14 +28,15 @@ public class NodoReturn extends NodoSentencia {
     // ella se reporta en su propio token. El retorno en todos los caminos lo
     // controla el logro Caminos de retorno (salida(), ADR 0008). En un
     // método no void el retorno es el tipo esperado de la expresión (spec
-    // 0007, D3); en un constructor o un método void no hay tipo esperado.
+    // 0007, D3); en un constructor o un método void el esperado es null, o
+    // sea sin tipo esperado.
     @Override
     public void chequear(TablaSimbolos tabla) {
         Metodo metodo = tabla.getMetodoActual();
         Tipo esperado = metodo != null ? metodo.getTipoRetorno() : null;
         Tipo tipo = null;
         if (expresion != null) {
-            tipo = esperado != null ? expresion.chequearConTipoEsperado(tabla, esperado) : expresion.chequear(tabla);
+            tipo = expresion.chequearConTipoEsperado(tabla, esperado);
         }
         boolean correcto = esperado == null ? tipo == null : tipo != null && tipo.conformaCon(esperado, tabla);
         if (!correcto) {

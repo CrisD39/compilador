@@ -46,8 +46,7 @@ public class NodoLlamadaEncadenada extends NodoEncadenado {
         }
         ChequeoVisibilidad.exigirAcceso(tabla, metodo.isPrivado(), metodo.getMiClase(), entidad, nombre);
         Map<OrigenParametroTipo, Tipo> vista = tabla.instanciacionDe(tipoIzquierdo);
-        List<Tipo> tiposArgumentos = ChequeoLlamada.chequearArgumentos(tabla, metodo, vista, argumentos);
-        Tipo tipo = ChequeoLlamada.tipoDeLlamada(tabla, metodo, vista, nombre, tiposArgumentos);
+        Tipo tipo = ChequeoLlamada.tipoDeLlamada(tabla, metodo, vista, nombre, argumentos);
         return chequearSiguiente(tabla, tipo);
     }
 }
