@@ -157,3 +157,9 @@ identificador se arma por el camino normal.
 sintáctico 38 + 66 + 4 de modo pánico (entran `sintError64`–`66`);
 semántico 37 + 104 y Sem2 (93 + 172 + 207 de logros) sin cambios por esta
 spec.
+
+**Arreglo posterior (2026-10-28):** el error de exponente sin dígitos
+(`estadoParteExponente`) consumía el carácter que cortaba el literal, en
+contra de D1: `4.equals` perdía la `q` y `3e;` el `;`. Ahora lo deja para
+el token siguiente; lo cubre `lexConErrores25` (`3e#`, `[Error:#|2]`).
+Léxico 25 + 20; el resto igual.
