@@ -1,6 +1,6 @@
 ---
 titulo: Documentación de la revisión
-estado: ready-for-agent
+estado: hecho
 spec: ../../0006-super.md
 ---
 
@@ -25,8 +25,19 @@ encontró desactualizados dicen lo que hace el código después de 05–08.
   de 08.
 
 **Criterios:**
-- [ ] Todo lo de arriba corregido.
-- [ ] `revision.md` dice qué ticket resolvió cada punto.
-- [ ] La spec y los tickets 05–09 en `hecho`, con la cuenta de tests de
+- [x] Todo lo de arriba corregido.
+- [x] `revision.md` dice qué ticket resolvió cada punto.
+- [x] La spec y los tickets 05–09 en `hecho`, con la cuenta de tests de
       `./test.sh`.
-- [ ] `./test.sh` en verde.
+- [x] `./test.sh` en verde.
+
+**Notas de la implementación:** sólo documentación y comentarios. El
+encabezado de `ChequeoVisibilidad` y el comentario de `exigirAcceso` dicen
+que `super(...)` llega por `ChequeoLlamada.chequearConstructor()`, con la
+superclase como receptor y el error sobre `super`; `CLAUDE.md` dice lo mismo.
+Los comentarios de `ErrorSemantico` sobre `ERR_ACCESO_PRIVADO` (el de
+`detalle` y el del `case`) ya estaban bien después de 08 y no se tocaron.
+`revision.md` tiene una sección "Resolución" con el ticket de cada punto, y
+la spec lista los tickets 05–09 y un cierre de la revisión. `./test.sh`:
+léxico 14 + 24, sintáctico 38 + 63 + 4 de modo pánico, semántico 37 + 104,
+Sem2 con 93 casos sin error, 172 con error y 156 de logros, todo en verde.

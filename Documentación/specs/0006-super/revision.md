@@ -132,6 +132,19 @@ Ninguno de estos puntos cambia la salida hoy.
    problema. Si se hace 2.6 antes, revisar también el comentario de
    `ErrorSemantico` sobre `ERR_ACCESO_PRIVADO`.
 
+## Resolución
+
+Todos los puntos se resolvieron en la misma rama, con los tickets 05–09 de
+`tickets/`:
+
+| Punto | Ticket | Cómo |
+|---|---|---|
+| §1.1 | 05 | Se mantiene `T`; casos base y de `superKeyword` que lo fijan, y una línea en `etapa4-semantico2/requerimientos.md`. |
+| §2.1, §2.2, §2.7 | 06 | La superclase sale de la consolidación; `chequearConstructor` deriva la clase del tipo. |
+| §2.3, §2.4, §2.5 | 07 | La marca se restaura al valor previo, envuelve sólo los argumentos, y la regla vive en `TablaSimbolos.exigirObjetoActual()`. |
+| §2.6 | 08 | La descripción la elige `detalle` (`DETALLE_SUPER`); `esSuper()` desapareció. |
+| §3.1, §3.2 | 09 | La coma del índice; los encabezados de `ChequeoVisibilidad` y `CLAUDE.md` incluyen `super(...)`. Los comentarios de `ErrorSemantico` ya estaban al día después de 08. |
+
 ## Propuesta de tickets
 
 Para pasar por `/to-tickets`:

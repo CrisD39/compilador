@@ -394,6 +394,11 @@ En `0006-super/tickets/`, uno por archivo.
 | 02 | Llamada al constructor de la superclase | 01 | hecho |
 | 03 | Contexto previo a la construcción | 02 | hecho |
 | 04 | Cierre | 03 | hecho |
+| 05 | Miembros heredados de una superclase genérica sin argumento | — | hecho |
+| 06 | Resolver la superclase una sola vez | — | hecho |
+| 07 | Contexto previo a la construcción en un solo lugar | 06 | hecho |
+| 08 | Descripciones de super(...) con detalle | 07 | hecho |
+| 09 | Documentación de la revisión | 08 | hecho |
 
 Reparto de casos: 01 → Correcto 01 y 02, Error 01–08, 19 y 20; 02 →
 Correcto 03 y 04, Error 09–16; 03 → Correcto 05 y 06, Error 17 y 18.
@@ -402,3 +407,11 @@ Correcto 03 y 04, Error 09–16; 03 → Correcto 05 y 06, Error 17 y 18.
 (léxico 14 + 24, sintáctico 38 + 63 + 4 de modo pánico, semántico 37 + 104);
 Sem2 con 92 casos sin error, 171 con error y 154 de logros (26 de este
 logro: 6 correctos y 20 con error). La base no cambió.
+
+Los tickets 05–09 salen de la revisión (`0006-super/revision.md`).
+
+**Cierre de la revisión (2026-10-27):** `./test.sh` en verde. Etapas 1–3
+sin cambios (léxico 14 + 24, sintáctico 38 + 63 + 4 de modo pánico,
+semántico 37 + 104); Sem2 con 93 casos sin error, 172 con error y 156 de
+logros (28 de este logro: 7 correctos y 21 con error). Los casos nuevos son
+los de 05; 06–09 no cambian ninguna salida.
