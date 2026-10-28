@@ -163,3 +163,11 @@ spec.
 contra de D1: `4.equals` perdía la `q` y `3e;` el `;`. Ahora lo deja para
 el token siguiente; lo cubre `lexConErrores25` (`3e#`, `[Error:#|2]`).
 Léxico 25 + 20; el resto igual.
+
+**Segundo arreglo (2026-10-28):** `nextToken` miraba `tokenEnReserva` una
+sola vez, antes de su loop. Si `partirEnteroYPunto` no armaba el entero
+(error de más de 9 dígitos), el loop leía el token siguiente antes de
+entregar el `.`, y `x = 1234567890.abc;` le llegaba al sintáctico como
+`x = abc . ;`. Ahora `startAnalizar` y `nextToken` comparten un solo loop
+(`leerToken`), que mira la reserva en cada vuelta. Lo cubre `sintError67`
+(`[Error:.|7]`). Sintáctico 38 + 67 + 4; el resto igual.

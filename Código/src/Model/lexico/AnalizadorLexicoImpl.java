@@ -94,18 +94,59 @@ public class AnalizadorLexicoImpl implements AnalizadorLexico
     @Override
     public void startAnalizar() throws IOException
     {
-        // Loop principal: mientras no se llegue a EOF, invoca estadoInicial() por cada
-        // token, emite vía listener.onToken(...) / listener.onError(...), y no se
-        // detiene ante el primer error (REQ-AL-22).
-        iniciado = true;
-        actualizarCaracterActual();
+        // Modo push (etapa 1): emite vía listener.onToken(...) cada token que
+        // devuelve leerToken(), hasta el EOF inclusive. Los errores léxicos ya
+        // salieron por listener.onError(...) adentro de leerToken() y no detienen
+        // el análisis (REQ-AL-22).
+        Token token;
+        do
+        {
+            token = leerToken();
+            listener.onToken(token);
+        }
+        while(token.getTipo() != TokenType.EOF);
+    }
 
-        while(caracterActual != SourceManager.END_OF_FILE || tokenEnReserva != null)
+    // Modo pull para el analizador sintáctico (etapa 2): el mismo leerToken() que
+    // usa startAnalizar(), devolviendo un token por llamada en vez de empujarlos
+    // todos al listener. Los errores léxicos se siguen reportando por
+    // listener.onError(...) y no cortan la secuencia (REQ-AL-22): el sintáctico
+    // solo ve tokens.
+    @Override
+    public Token nextToken()
+    {
+        try
+        {
+            return leerToken();
+        }
+        catch(IOException e)
+        {
+            // nextToken() no declara IOException (la interfaz de consumo del
+            // sintáctico es pull y sin checked exceptions); se re-lanza envuelta.
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    // Loop compartido por los dos modos, para que no puedan divergir.
+    // estadoInicial() es el punto de arranque de cada token; cuando esa llamada no
+    // arma token (blanco, comentario o error léxico), se vuelve a llamar hasta que
+    // salga uno o hasta EOF. La reserva se mira en cada vuelta y no sólo al
+    // entrar: partirEnteroYPunto() puede dejar el '.' en reserva sin armar el
+    // entero (error de más de 9 dígitos), y entonces el '.' tiene que salir antes
+    // de que estadoInicial() lea lo que sigue ("1234567890.abc" → error, '.', abc).
+    private Token leerToken() throws IOException
+    {
+        if(!iniciado)
+        {
+            iniciado = true;
+            actualizarCaracterActual();
+        }
+
+        while(tokenEnReserva != null || caracterActual != SourceManager.END_OF_FILE)
         {
             if(tokenEnReserva != null)
             {
-                listener.onToken(tomarTokenEnReserva());
-                continue;
+                return tomarTokenEnReserva();
             }
 
             lexema.setLength(0);
@@ -115,66 +156,17 @@ public class AnalizadorLexicoImpl implements AnalizadorLexico
 
             if(tokenAnalizado != null)
             {
-                listener.onToken(tokenAnalizado);
+                return tokenAnalizado;
             }
         }
 
+        // EOF: se devuelve el mismo token de fin de archivo en esta llamada y en
+        // todas las siguientes (el sintáctico no tiene que chequear "ya se acabó,
+        // no llamar de nuevo").
         lexema.setLength(0);
         lexema.append('$');
         armarToken(TokenType.EOF);
-        listener.onToken(tokenAnalizado);
-    }
-
-    // Modo pull para el analizador sintáctico (etapa 2): mismo autómata que
-    // startAnalizar(), pero devolviendo un token por llamada en vez de empujarlos
-    // todos al listener. estadoInicial() sigue siendo el punto de arranque de cada
-    // token; cuando esa llamada no arma token (blanco, comentario o error léxico),
-    // se vuelve a llamar hasta que salga uno o hasta EOF. Los errores léxicos se
-    // siguen reportando por listener.onError(...) y no cortan la secuencia
-    // (REQ-AL-22): el sintáctico solo ve tokens.
-    @Override
-    public Token nextToken()
-    {
-        try
-        {
-            if(!iniciado)
-            {
-                iniciado = true;
-                actualizarCaracterActual();
-            }
-
-            if(tokenEnReserva != null)
-            {
-                return tomarTokenEnReserva();
-            }
-
-            while(caracterActual != SourceManager.END_OF_FILE)
-            {
-                lexema.setLength(0);
-                tokenAnalizado = null;
-
-                estadoInicial();
-
-                if(tokenAnalizado != null)
-                {
-                    return tokenAnalizado;
-                }
-            }
-
-            // EOF: se devuelve el mismo token de fin de archivo en esta llamada y
-            // en todas las siguientes (el sintáctico no tiene que chequear "ya se
-            // acabó, no llamar de nuevo").
-            lexema.setLength(0);
-            lexema.append('$');
-            armarToken(TokenType.EOF);
-            return tokenAnalizado;
-        }
-        catch(IOException e)
-        {
-            // nextToken() no declara IOException (la interfaz de consumo del
-            // sintáctico es pull y sin checked exceptions); se re-lanza envuelta.
-            throw new UncheckedIOException(e);
-        }
+        return tokenAnalizado;
     }
 
     private Token tomarTokenEnReserva()
