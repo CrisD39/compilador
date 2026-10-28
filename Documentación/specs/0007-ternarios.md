@@ -1,6 +1,6 @@
 ---
 titulo: Logro Ternarios (Etapa 4)
-estado: ready-for-agent
+estado: hecho
 origen: entrevista de diseño (grill with docs, 2026-10-28)
 fecha: 2026-10-28
 ---
@@ -303,7 +303,7 @@ En `0007-ternarios/tickets/`, uno por archivo.
 | 01 | Ternario sin tipo esperado | — | hecho |
 | 02 | Tipo esperado en asignación, inicializador y return | 01 | hecho |
 | 03 | Tipo esperado en los argumentos | 02 | hecho |
-| 04 | Cierre | 03 | ready-for-agent |
+| 04 | Cierre | 03 | hecho |
 
 Reparto de casos: 01 → Correcto 01, 04, 05 y 07, Error 01–08, 10–12,
 17–20 y 23, y la reescritura de `semIIAtribInicError15`; 02 → Correcto 02
@@ -313,3 +313,8 @@ Error 13–16 y 22 ya dan la etiqueta `?` sin tipo esperado (con
 `ERR_TERNARIO_INCOMPATIBLE`), porque sus ramas son incompatibles entre sí.
 Van en 02 y 03 porque prueban esos contextos. Los que sólo pasan con el
 tipo esperado son Correcto 02, 03 y 06 y Error 09 y 21.
+
+**Cierre (2026-10-28):** `./test.sh` en verde. Etapas 1–3 sin cambios
+(léxico 14 + 24, sintáctico 38 + 63 + 4 de modo pánico, semántico 37 + 104);
+Sem2 con 93 casos sin error, 172 con error y 186 de logros (30 de este
+logro: 7 correctos y 23 con error). La base no cambió.

@@ -1,6 +1,6 @@
 ---
 titulo: Cierre
-estado: ready-for-agent
+estado: hecho
 spec: ../../0007-ternarios.md
 ---
 
@@ -31,7 +31,23 @@ y cómo.
   `./test.sh`.
 
 **Criterios:**
-- [ ] Todos los archivos de arriba actualizados.
-- [ ] Ningún documento dice que el ternario no se soporta o que da
+- [x] Todos los archivos de arriba actualizados.
+- [x] Ningún documento dice que el ternario no se soporta o que da
       `ERR_NO_SOPORTADO`.
-- [ ] `./test.sh` en verde.
+- [x] `./test.sh` en verde.
+
+**Notas de la implementación:** sólo documentación. En
+`etapa4-semantico2/requerimientos.md` el logro pasó a "Chequeado", hay una
+sección "Decisiones de la spec 0007" (con cuatro notas para el informe: las
+hermanas sin tipo esperado, el `?` como lexema, la falta de boxing y de
+promoción numérica, y la condición sin evaluar), su entrada en "Estado de
+la implementación" y salió de los pendientes; la nota de la spec 0005 sobre
+la sintaxis de otros logros en un inicializador ya no nombra al ternario, y
+el boceto de `Atributo.chequearInicializador` usa `chequearConTipoEsperado`.
+En `casos-de-prueba.md`, `?` en la fila de la condición no boolean, los tres
+códigos nuevos, `semIIAtribInicError15` reescrito y "Casos del logro
+Ternarios" con los 30 casos y sus etiquetas. El comentario de
+`NodoExpTernaria` ya lo había actualizado el ticket 01. ADR 0011
+implementado; `CLAUDE.md` y `testers/guia-testers-sem2.md` actualizados.
+`./test.sh`: Sem2 con 93 casos sin error, 172 con error y 186 de logros,
+todo en verde.

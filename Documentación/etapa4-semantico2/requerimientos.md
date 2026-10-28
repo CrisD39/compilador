@@ -56,7 +56,7 @@ Float y, ademas, permite coerción. En particular, permite coerción de de
 ints a floats, ints a chars, chars a ints, chars a Strings y de ints a
 Strings. La coerción se aplica en los mismos contextos que en Java
 
-### Ternarios
+### Ternarios - Chequeado
 
 El compilador controla que las expresiones ternarias son correctamente
 tipadas
@@ -341,9 +341,11 @@ aparta de Java. El detalle está en "Atributos inicializados" (sección NODOS).
 - **Error de referencia adelantada.** Código nuevo
   `ERR_REFERENCIA_ADELANTADA`, también para la autorreferencia; lexema y
   línea del nombre usado.
-- **Sintaxis de otros logros** dentro del inicializador (ternario, lambda,
-  diamante, `new T[]{...}`) sigue dando `ERR_NO_SOPORTADO` en su token, sin
-  un segundo error del atributo.
+- **Sintaxis de otros logros** dentro del inicializador (lambda, diamante,
+  `new T[]{...}`) sigue dando `ERR_NO_SOPORTADO` en su token, sin un
+  segundo error del atributo. El ternario se chequea desde la spec 0007,
+  con el tipo del atributo como tipo esperado, y su error también es el
+  único del atributo.
 
 ## Decisiones de la spec 0006 (2026-10-27)
 
@@ -398,9 +400,59 @@ sentencia del cuerpo de un constructor, como en JDK 21 y no como en JDK 25
   subclase cuya superclase sólo tiene constructores con parámetros compila
   sin escribir `super(...)` (`semIISuperCorrecto04`), y javac la rechaza.
 
-## Estado de la implementación (2026-10-27)
+## Decisiones de la spec 0007 (2026-10-28)
 
-Las specs 0003, 0004, 0005 y 0006 están cerradas. Quedó implementado:
+El logro *Ternarios* se cerró en una entrevista de diseño y se planificó en
+`specs/0007-ternarios.md` (4 tickets). La decisión está en el **ADR 0011**
+(`adr/0011-ternario-tipado-por-destino-hibrido.md`): el ternario se tipa
+por destino donde hay tipo esperado y, si no, por conformidad entre ramas.
+
+- **Gramática.** No cambia: las ramas son `<ExpresionCompuesta>`, anidadas
+  a derecha, sin asignación dentro de una rama. `ModuloPrincipal`, `ET2` y
+  `ET3` no cambian.
+- **Condición.** Tiene que ser `boolean` (`ERR_CONDICION_NO_BOOLEAN`), y se
+  chequea antes que las ramas; la rama izquierda, antes que la derecha.
+- **Ramas void.** Ninguna rama puede ser void, aunque lo sean las dos
+  (`ERR_TERNARIO_RAMA_VOID`).
+- **Con tipo esperado** (el destino de `=`, el atributo que se inicializa,
+  el retorno de un método no void y el formal de un argumento, visto desde
+  el receptor, en llamadas, `new` y `super(...)`), cada rama tiene que
+  conformar con ese tipo (`ERR_TERNARIO_RAMA_INCOMPATIBLE`), como en Java
+  (JLS §15.25.3). El tipo esperado baja a través de paréntesis sin
+  encadenado y de ternarios anidados.
+- **Sin tipo esperado** (receptor, operandos, `==`, `instanceof`,
+  condiciones, índices, for-each, `var`), el ternario tiene el tipo de la
+  rama con la que la otra conforma. Si ninguna conforma con la otra, es
+  `ERR_TERNARIO_INCOMPATIBLE`. No se busca un supertipo común.
+- **null.** Sale de la conformidad: `null : null` tiene el tipo null,
+  `null` con una referencia da esa referencia y `null` con un primitivo es
+  error (no hay boxing).
+- **Lexema.** Todos los errores propios del ternario van sobre su `?`; en un
+  anidado, sobre el `?` del ternario dueño de la rama.
+- **Lo que no cambia.** El ternario no es asignable ni llamable
+  (`ERR_SENTENCIA_INVALIDA` como sentencia suelta, `ERR_DESTINO_NO_ASIGNABLE`
+  como destino) y nunca es una condición constante (ADR 0009).
+- **Locales clásicas e inicializadores de arreglo.** En Java son contextos
+  con tipo esperado. Sus logros siguen sin soportarse; cuando se
+  implementen, tienen que pasar el tipo esperado (ADR 0011).
+
+### Para el informe de la Etapa 4
+
+- Sin tipo esperado no se busca un supertipo común: con `B2` y `C2`
+  hermanas que extienden `A1`, `(c ? new B2() : new C2()).getN()` y
+  `(c ? new B2() : new C2()) == null` son error (`semIITernarioError07` y
+  `08`), y javac los acepta (su tipo es el lub, `A1`). Con tipo esperado
+  (`a = c ? new B2() : new C2();` con `A1 a`) valen, como en Java. Conviene
+  confirmar la diferencia con la cátedra.
+- javac marca la rama que no conforma; MiniJava marca el `?`.
+- Sin boxing ni promoción numérica, `c ? 1 : null` y `c ? 'a' : 1` contra
+  un `int` son error, y en Java compilan.
+- La condición no se evalúa (ADR 0009): `true ? 1 : "a"` es error aunque la
+  rama derecha nunca se ejecute.
+
+## Estado de la implementación (2026-10-28)
+
+Las specs 0003, 0004, 0005, 0006 y 0007 están cerradas. Quedó implementado:
 
 - **Lo base de §9–§12.** Todos los casos de `resources/semantico2/{sinErrores,conErrores}`
   pasan con `ModuloPrincipalET4`, que es el main del jar. La tercera pasada es `TablaSimbolos.chequearSentencias()`, y sólo
@@ -538,8 +590,9 @@ Las specs 0003, 0004, 0005 y 0006 están cerradas. Quedó implementado:
   destino directo de un `=` se salva (`NodoExpAsignacion` llama a
   `chequearComoDestino`, que sólo `NodoAccesoVar` sin encadenado
   redefine), pero `b++`, `b[0] = 1` y `b.x = 1` no. En métodos y
-  constructores la regla no aplica. La sintaxis de otros logros en el
-  inicializador sigue dando `ERR_NO_SOPORTADO` sobre su propio token.
+  constructores la regla no aplica. La sintaxis de los logros sin
+  implementar en el inicializador sigue dando `ERR_NO_SOPORTADO` sobre su
+  propio token (un ternario se chequea desde la spec 0007).
   `atributosInicializados` está en `LOGROS_HABILITADOS`. Casos:
   `semIIAtribInicCorrecto01`–`05` y `semIIAtribInicError01`–`16`.
 - **Logro *Super!*** (2026-10-27, spec 0006). Siempre activo en
@@ -574,6 +627,32 @@ Las specs 0003, 0004, 0005 y 0006 están cerradas. Quedó implementado:
   parámetro con el nombre de un atributo resuelve antes y vale.
   `superKeyword` está en `LOGROS_HABILITADOS`. Casos:
   `semIISuperCorrecto01`–`07` y `semIISuperError01`–`21`.
+- **Logro *Ternarios*** (2026-10-28, spec 0007, ADR 0011). Siempre activo
+  en `ModuloPrincipalET4`; la gramática no cambió. `NodoExpresion` tiene
+  `chequearConTipoEsperado(tabla, esperado)`, que por defecto devuelve
+  `chequear(tabla)` y no controla la conformidad. Lo redefinen
+  `NodoExpTernaria` y `NodoExpParentizada`, que lo baja a la expresión de
+  adentro sólo si no tiene encadenado. Lo llaman, en lugar de `chequear`,
+  los contextos con tipo esperado: `NodoExpAsignacion` (con el tipo del
+  destino ya chequeado), `Atributo.chequearInicializador`, `NodoReturn` en
+  un método no void y `ChequeoLlamada.chequearArgumentos`, con cada formal
+  visto desde el receptor (`sustituir(vista)`), para métodos de instancia,
+  estáticos y encadenados, `new` y `super(...)`. Un método con parámetros de
+  tipo propios tipa sus argumentos sin tipo esperado, antes de su
+  `ERR_NO_SOPORTADO`. Cada contexto sigue después con su control de
+  siempre: como el ternario devuelve el tipo esperado una vez que validó sus
+  ramas, nunca sale un segundo error. Los argumentos se siguen chequeando
+  en dos fases (primero se tipan todos, después la conformidad), así que un
+  error de rama sale antes que un `ERR_ARGUMENTO_INCOMPATIBLE` de un
+  argumento anterior. `NodoExpTernaria` chequea la condición
+  (`ERR_CONDICION_NO_BOOLEAN`) y después cada rama, la izquierda primero:
+  void da `ERR_TERNARIO_RAMA_VOID`; con tipo esperado, una rama que no
+  conforma da `ERR_TERNARIO_RAMA_INCOMPATIBLE`, y sin él, unas ramas de las
+  que ninguna conforma con la otra dan `ERR_TERNARIO_INCOMPATIBLE`. Todos
+  van sobre el `?`. `ternarios` está en `LOGROS_HABILITADOS`. Casos:
+  `semIITernarioCorrecto01`–`07` y `semIITernarioError01`–`23`.
+  `semIIAtribInicError15` pasó de `ERR_NO_SOPORTADO` a un ternario mal
+  tipado, con la misma etiqueta.
 
 Correcciones posteriores al cierre de la spec 0003 (code review,
 2026-10-24):
@@ -595,9 +674,10 @@ Correcciones posteriores al cierre de la spec 0003 (code review,
 Siguen pendientes, cada uno para una spec propia. El parser ya los acepta y
 arma sus nodos, pero el chequeo reporta `ERR_NO_SOPORTADO` (spec 0003, D11):
 
-- *Minilambdas*, *Ternarios*, *Variables Locales Clásicas
-  Controladas*, *Métodos Genéricos E4* y *Genericidad Avanzada*
-  (diamante).
+- *Minilambdas*, *Variables Locales Clásicas Controladas*, *Métodos
+  Genéricos E4* y *Genericidad Avanzada* (diamante). Las locales clásicas y
+  los inicializadores de arreglo, cuando se implementen, tienen que pasar
+  el tipo esperado con `chequearConTipoEsperado` (ADR 0011).
 - *Floats y coerción*: además hay que decidir qué pasa con los casos base
   que lo contradicen (`semIIError33`, `34`, `52`, `59`, `70`).
 
@@ -1130,9 +1210,10 @@ resto de la clase.
 ```java
 // Atributo
 public void chequearInicializador(TablaSimbolos tabla) {
-    Tipo tipoInicializador = inicializador.chequear(tabla);
-    if (!tipoInicializador.conformaCon(tipo)) {
-        throw new ExcepcionSemantica(asignacion, "ERR_ASIGNACION_INCOMPATIBLE");
+    // El tipo del atributo es el tipo esperado de un ternario (spec 0007).
+    Tipo valor = inicializador.chequearConTipoEsperado(tabla, tipo);
+    if (!valor.conformaCon(tipo, tabla)) {
+        throw new ExcepcionSemantica(igual, "ERR_ASIGNACION_INCOMPATIBLE");
     }
 }
 ```

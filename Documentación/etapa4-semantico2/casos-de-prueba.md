@@ -27,7 +27,10 @@ Es el contrato de la spec 0003 (D7): todos los casos con error lo cumplen. El c�
 | `new` o `super(...)` sin constructor de esa aridad | nombre de la clase (en `super(...)`, `super`; logro Super!) | `ERR_CONSTRUCTOR_NO_ENCONTRADO` |
 | Miembro sobre un primitivo o un `T` sin instanciar | el nombre del miembro | `ERR_RECEPTOR_SIN_MIEMBROS` |
 | Operador con tipos incorrectos u operando void (incluye `++`/`--` sobre algo que no es `int`, y un `instanceof` con operando primitivo o tipos sin relación) | el operador | `ERR_OPERADOR_INCOMPATIBLE` |
-| Condición no boolean | `if` / `while` / `for` | `ERR_CONDICION_NO_BOOLEAN` |
+| Condición no boolean | `if` / `while` / `for` / `?` (logro Ternarios) | `ERR_CONDICION_NO_BOOLEAN` |
+| Rama void de un ternario, aunque lo sean las dos (logro Ternarios) | `?` | `ERR_TERNARIO_RAMA_VOID` |
+| Rama de un ternario que no conforma con el tipo esperado: destino de `=`, inicializador de atributo, retorno de un método no void o formal de un argumento (logro Ternarios). En un anidado, el `?` del ternario dueño de la rama | `?` | `ERR_TERNARIO_RAMA_INCOMPATIBLE` |
+| Ramas de un ternario sin tipo esperado de las que ninguna conforma con la otra (logro Ternarios) | `?` | `ERR_TERNARIO_INCOMPATIBLE` |
 | Return incorrecto (incluye retorno no conformante) | `return` | `ERR_RETORNO_INCORRECTO` |
 | `this` en contexto estático | `this` | `ERR_THIS_EN_ESTATICO` |
 | Acceso con super (`super.x`, `super.m()`) en contexto estático (logro Super!) | `super` | `ERR_SUPER_EN_ESTATICO` |
@@ -84,7 +87,7 @@ Están en `logros/atributosInicializados/` (spec 0005) y los corre `TesterLogros
 | `semIIAtribInicError12` | `b`, `v`, `o` | Atributo posterior como argumento, indexado y con encadenado. |
 | `semIIAtribInicError13` | `b`, `v` | Sólo el destino directo se salva: `(c = b)` marca `b` y no `c`; `(v[0] = 1)` marca `v`. |
 | `semIIAtribInicError14` | `secreto` | Atributo `private` de otra clase (logro Visibilidad chequeada). |
-| `semIIAtribInicError15` | `?` | Ternario en el inicializador: logro no implementado, sin otro error del atributo. |
+| `semIIAtribInicError15` | `?` | Ternario mal tipado en el inicializador: la rama `"x"` no conforma con el tipo esperado `int` (`ERR_TERNARIO_RAMA_INCOMPATIBLE`, logro Ternarios), sin otro error del atributo. |
 | `semIIAtribInicError16` | `=`, `=`, `d` | Multi-detección: inicializadores y un método mezclados en el orden del programa. |
 
 ## Casos del logro Super!
@@ -121,6 +124,43 @@ Están en `logros/superKeyword/` (spec 0006) y los corre `TesterLogrosSem2`. Nin
 | `semIISuperError19` | `super` | Sentencia inalcanzable: `super.m();` después de un `return;`. |
 | `semIISuperError20` | `noExiste`, `=`, `+` | Multi-detección: `super.noExiste();`, `super.x = true;` con `int x` y `this.y = 1 + true;`. |
 | `semIISuperError21` | `super`, `m` | Herencia sin argumento de `A1<T>` (ADR 0007): la `T` heredada se conserva (spec 0001, D5), así que `super(5)` y `super.m(5)` no conforman. En Java compilan. |
+
+## Casos del logro Ternarios
+
+Están en `logros/ternarios/` (spec 0007, ADR 0011) y los corre `TesterLogrosSem2`. Ningún caso base usa ternarios en el chequeo de sentencias (los sintácticos que los usan corren en `ModuloPrincipalET2`, que no cambió), así que habilitar el logro no cambió ninguna etiqueta de la base. `semIIAtribInicError15` (logro Atributos inicializados) daba `ERR_NO_SOPORTADO` y se reescribió con un ternario mal tipado, con la misma etiqueta. Los destinos de `=` son atributos o parámetros, porque una local con tipo explícito es del logro *Variables locales clásicas*, que no está implementado. Dos `?` en la misma línea darían la misma etiqueta, así que en los anidados con error el ternario que falla va en su propia línea.
+
+| Caso | Etiquetas | Qué prueba |
+|---|---|---|
+| `semIITernarioCorrecto01` | — | Ramas `int` iguales asignadas a un atributo `int`. |
+| `semIITernarioCorrecto02` | — | Con tipo esperado, dos hermanas (`B2` y `C2` extienden `A1`) valen como valor de `=` sobre un atributo `A1`, en un `return` de un método que retorna `A1` y en un inicializador de atributo `A1`. |
+| `semIITernarioCorrecto03` | — | Hermanas como argumento con formal `A1`: método de instancia, estático y encadenado, `new` y `super(...)`, y un formal genérico visto desde el receptor (`cs.poner(c ? "a" : null)` con `Caja<String>`). |
+| `semIITernarioCorrecto04` | — | Sin tipo esperado, subclase y superclase en los dos órdenes dan la superclase: como receptor, en `==` y en un `var`; una interfaz con una clase que la implementa da la interfaz. |
+| `semIITernarioCorrecto05` | — | `null` con una clase, un arreglo y un `T`, de los dos lados; `null : null` asignado a un atributo `A1`, y `var v = c ? null : new A1();`. |
+| `semIITernarioCorrecto06` | — | Anidados a derecha y a izquierda, con condición compuesta, y con el tipo esperado propagado a través de un paréntesis (`a = c1 ? (c2 ? new B2() : new C2()) : null;`). |
+| `semIITernarioCorrecto07` | — | Contextos sin tipo esperado: índice, condición de `if` y de `while` (`while (c ? true : true)` no es una condición constante, ADR 0009) y `var` con genéricos iguales. |
+| `semIITernarioError01` | `?` | `a1 = true ? 1 : "hola";` con `int a1`: la rama `"hola"` no conforma con `int`. |
+| `semIITernarioError02` | `?` | Condición `int`: `i = 1 ? 2 : 3;`. |
+| `semIITernarioError03` | `?` | Rama void con tipo esperado: `i = c ? m() : 1;`. |
+| `semIITernarioError04` | `?` | Dos ramas void sin tipo esperado: `var v = c ? m() : n();` (el ternario falla antes que el `var`). |
+| `semIITernarioError05` | `?` | `null` con `int`, con tipo esperado: `i = c ? 1 : null;` (sin boxing). |
+| `semIITernarioError06` | `?` | `null` con `int`, sin tipo esperado: `var v = c ? 1 : null;`. |
+| `semIITernarioError07` | `?` | Hermanas como receptor: `i = (c ? new B2() : new C2()).getN();`. En Java compila (ADR 0011). |
+| `semIITernarioError08` | `?` | Hermanas en `==`: el error va sobre el `?` y no sobre el `==`. |
+| `semIITernarioError09` | `?` | Invarianza de los argumentos genéricos: `co = c ? new Caja<String>() : null;` con `Caja<Object> co`. |
+| `semIITernarioError10` | `?` | `int[]` con `int[][]` sin tipo esperado. |
+| `semIITernarioError11` | `?` | `char` con tipo esperado `int` (sin promoción numérica). |
+| `semIITernarioError12` | `?` | `T` con `Object`: `o = c ? t : new Object();` en `Caja<T>` (regla de `semIIError41`–`43`). |
+| `semIITernarioError13` | `?` | Rama incompatible en `return` de un método `int`, sin un `ERR_RETORNO_INCORRECTO`. |
+| `semIITernarioError14` | `?` | Rama incompatible en un argumento con formal genérico (`cs.poner(c ? 1 : "a")` con `Caja<String>`), sin un `ERR_ARGUMENTO_INCOMPATIBLE`. |
+| `semIITernarioError15` | `?` | Rama incompatible en `new D4(c ? 1 : "a")` con `D4(int)`. |
+| `semIITernarioError16` | `?` | Rama incompatible en `super(c ? 1 : "a")` con `A1(int)`. |
+| `semIITernarioError17` | `return` | `return c ? 1 : 2;` en un método void: el error de retorno de siempre. |
+| `semIITernarioError18` | `v` | `var v = c ? null : null;` falla como `var v = null;` (`ERR_VAR_SIN_TIPO`). |
+| `semIITernarioError19` | `;`, `=` | El ternario no es una sentencia válida (`c ? a : b;`, ramas `int`) ni un destino asignable (`(c ? a : b) = 3;`). |
+| `semIITernarioError20` | `?`, `noExiste` | Orden: la condición gana a las ramas, y el error dentro de una rama va en su propio token. |
+| `semIITernarioError21` | `?` | Anidado con tipo esperado propagado: el error va sobre el `?` del ternario de adentro, en su propia línea. |
+| `semIITernarioError22` | `?` | Orden en una llamada: con `m2(String, int)`, `m2(1, c ? x : "a")` reporta el `?` y no el `ERR_ARGUMENTO_INCOMPATIBLE` del `1`. |
+| `semIITernarioError23` | `?`, `?` | Multi-detección: dos sentencias con ternarios mal tipados. |
 
 ## Índice
 

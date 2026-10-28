@@ -1,7 +1,7 @@
 # El ternario se tipa por destino donde hay tipo esperado, y si no, por conformidad entre ramas
 
-**Estado:** aceptado, sin implementar (2026-10-28, entrevista de diseño del
-logro *Ternarios*; se planifica en la spec 0007).
+**Estado:** aceptado e implementado (2026-10-28, entrevista de diseño del
+logro *Ternarios*; se implementó en la spec 0007, `specs/0007-ternarios.md`).
 
 El logro pide que los ternarios estén "correctamente tipados". En Java
 (JLS §15.25.3), un ternario de referencias en un contexto de asignación o de
