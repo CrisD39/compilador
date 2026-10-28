@@ -149,6 +149,9 @@ public final class ErrorSemantico {
                     ? "no se puede llamar con super(...) al constructor de la superclase: es private y sólo se usa dentro de su clase"
                     : "no se puede acceder a " + x + ": es private y sólo se usa dentro de su clase";
             case "ERR_INSTANCEOF_GENERICO" -> "el tipo a la derecha de " + x + " no puede ser genérico";
+            // Logro Ternarios (spec 0007): x es el "?".
+            case "ERR_TERNARIO_RAMA_VOID" -> "una rama de " + x + " no produce valor";
+            case "ERR_TERNARIO_INCOMPATIBLE" -> "las ramas de " + x + " no tienen tipos compatibles";
             case "ERR_RETORNO_INCORRECTO" -> "el " + x + " no corresponde con el tipo de retorno de la unidad";
             // Logro Caminos de retorno (spec 0004).
             case "ERR_FALTA_RETORNO" -> "el método " + x + " no retorna un valor en todos sus caminos";

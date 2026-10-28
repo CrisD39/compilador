@@ -68,7 +68,7 @@ gramática ni el análisis de flujo, y sigue habiendo un error por sentencia
 19. Como estudiante, quiero que `c ? m() : n()` con las dos ramas void también sea error, como en Java.
 20. Como estudiante, quiero que `c ? new Caja<String>() : new Caja<Object>()` respete la invarianza de los argumentos genéricos, igual que la asignación.
 21. Como estudiante, quiero que un parámetro de tipo `T` siga sin conformar con `Object` dentro de un ternario, por coherencia con `o = t;`.
-22. Como estudiante, quiero que un ternario no valga como sentencia suelta (`c ? m() : n();`), como en Java.
+22. Como estudiante, quiero que un ternario no valga como sentencia suelta (`c ? a : b;`), como en Java.
 23. Como estudiante, quiero que un ternario no sea destino de una asignación (`(c ? a : b) = 3;`), como en Java.
 24. Como estudiante, quiero que `return c ? 1 : 2;` en un método void siga dando el error de retorno de siempre.
 25. Como estudiante, quiero que la condición se chequee antes que las ramas, y la rama izquierda antes que la derecha, para que el error informado sea el primero del fuente.
@@ -245,7 +245,7 @@ etiquetas `///[...]` iniciales, en orden.
   | 16 | Rama incompatible en `super(c ? 1 : "a")` con `A(int)` | `?` |
   | 17 | `return c ? 1 : 2;` en un método void | `return` |
   | 18 | `var v = c ? null : null;` | `v` |
-  | 19 | Dos sentencias: `c ? m() : n();` y `(c ? a : b) = 3;` | `;`, `=` |
+  | 19 | Dos sentencias: `c ? a : b;` (ramas `int`; con ramas void sale antes `ERR_TERNARIO_RAMA_VOID`) y `(c ? a : b) = 3;` | `;`, `=` |
   | 20 | Orden, dos sentencias: `i = 1 ? x : "a";` (la condición gana) e `i = c ? noExiste : 1;` | `?`, `noExiste` |
   | 21 | Anidado con tipo esperado propagado, con el ternario interno en otra línea y la rama `5` contra `A1` | `?\|L` (el interno) |
   | 22 | Orden en una llamada: `m(1, c ? x : "a")` con formales `(String, int)` | `?` |
@@ -300,7 +300,7 @@ En `0007-ternarios/tickets/`, uno por archivo.
 
 | # | Ticket | Bloqueado por | Estado |
 |---|---|---|---|
-| 01 | Ternario sin tipo esperado | — | ready-for-agent |
+| 01 | Ternario sin tipo esperado | — | hecho |
 | 02 | Tipo esperado en asignación, inicializador y return | 01 | ready-for-agent |
 | 03 | Tipo esperado en los argumentos | 02 | ready-for-agent |
 | 04 | Cierre | 03 | ready-for-agent |

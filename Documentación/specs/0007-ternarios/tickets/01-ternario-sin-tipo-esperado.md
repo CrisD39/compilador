@@ -1,6 +1,6 @@
 ---
 titulo: Ternario sin tipo esperado
-estado: ready-for-agent
+estado: hecho
 spec: ../../0007-ternarios.md
 ---
 
@@ -42,13 +42,21 @@ cambia), D6 (interacción con otros logros) y D7 (contrato de salida). ADR
 - Casos nuevos en `logros/ternarios/` (tabla de la spec).
 
 **Criterios:**
-- [ ] Casos de `logros/ternarios/` en verde: Correcto 01 (existe), 04, 05
+- [x] Casos de `logros/ternarios/` en verde: Correcto 01 (existe), 04, 05
       y 07; Error 01 (existe), 02–08, 10–12, 17–20 y 23.
-- [ ] `semIIAtribInicError15` reescrito, en verde con `[Error:?|7]` y sin
+- [x] `semIIAtribInicError15` reescrito, en verde con `[Error:?|7]` y sin
       un segundo error del atributo.
-- [ ] `class A1 { int x; void m(boolean c) { x = c ? 1 : 2; } }` da
+- [x] `class A1 { int x; void m(boolean c) { x = c ? 1 : 2; } }` da
       `[SinErrores]` con el jar.
-- [ ] Ningún caso base de `semantico2/{sinErrores,conErrores}` ni de las
+- [x] Ningún caso base de `semantico2/{sinErrores,conErrores}` ni de las
       Etapas 1–3 cambia de etiqueta.
-- [ ] Siguen en verde los demás logros habilitados.
-- [ ] `./test.sh` en verde.
+- [x] Siguen en verde los demás logros habilitados.
+- [x] `./test.sh` en verde.
+
+**Nota de implementación:** el caso Error 19 usa `c ? a : b;` (ramas
+`int`) como sentencia suelta, y no `c ? m() : n();` como decía la tabla de
+la spec. `NodoSentenciaExpresion` tipa la expresión antes de preguntar si es
+una sentencia válida, así que con dos ramas void el error es
+`ERR_TERNARIO_RAMA_VOID` sobre el `?` (lo que ya prueba Error 04) y no el
+`;`. Cambiar ese orden movería etiquetas de casos base. La tabla de la spec
+se corrigió.
