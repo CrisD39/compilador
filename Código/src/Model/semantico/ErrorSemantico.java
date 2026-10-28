@@ -13,11 +13,21 @@ public final class ErrorSemantico {
     private final int linea;
     private final String lexema;
     // Dato extra para la descripción cuando un mismo código cubre variantes
-    // que el lexema solo no distingue. Hoy sólo lo usa
-    // ERR_HERENCIA_TIPO_INCORRECTO (D1): qué se esperaba en la relación,
-    // "una clase" o "una interfaz". null en el resto. Nunca va en la
-    // etiqueta [Error:...].
+    // que el lexema solo no distingue. Nunca va en la etiqueta [Error:...].
+    // Lo usan:
+    // - ERR_HERENCIA_TIPO_INCORRECTO (spec 0001, D1): qué se esperaba en la
+    //   relación, "una clase" o "una interfaz".
+    // - ERR_ARGUMENTO_INCOMPATIBLE, ERR_CONSTRUCTOR_NO_ENCONTRADO y
+    //   ERR_ACCESO_PRIVADO (logro Super!, spec 0006, D8): DETALLE_SUPER si el
+    //   error es de super(...) y no de new C(...); lo pasa
+    //   ChequeoLlamada.chequearConstructor(). No se deduce del lexema porque
+    //   otro camino podría reportar esos códigos sobre un token super.
+    // null en el resto.
     private final String detalle;
+
+    // Variante super(...) de los tres códigos de la resolución de un
+    // constructor (ver detalle).
+    public static final String DETALLE_SUPER = "super(...)";
 
     public ErrorSemantico(String codigo, int linea, String lexema) {
         this(codigo, linea, lexema, null);
@@ -48,6 +58,7 @@ public final class ErrorSemantico {
     // vacío aunque se olvide agregarlo acá.
     public String getDescripcion() {
         String x = "\"" + lexema + "\"";
+        boolean deSuper = DETALLE_SUPER.equals(detalle);
         return switch (codigo) {
             case "ERR_CLASE_DUPLICADA" -> "ya existe una clase o interfaz llamada " + x;
             case "ERR_INTERFAZ_DUPLICADA" -> "la interfaz " + x + " está repetida en la lista de supertipos";
@@ -99,13 +110,15 @@ public final class ErrorSemantico {
                     "no se puede seleccionar " + x + ": el receptor no es de una clase ni de una interfaz";
             case "ERR_METODO_NO_ENCONTRADO" -> "no existe un método " + x + " con esa cantidad de argumentos";
             case "ERR_METODO_NO_ESTATICO" -> "el método " + x + " no es estático y no hay un objeto receptor";
-            // Con super (spec 0006, D8) el lexema hace de nombre de la clase
-            // de new, y el texto nombra al constructor de la superclase.
-            case "ERR_ARGUMENTO_INCOMPATIBLE" -> esSuper()
+            // Con super(...) (spec 0006, D8; lo dice detalle) el lexema hace de
+            // nombre de la clase de new, y el texto nombra al constructor de
+            // la superclase.
+            case "ERR_ARGUMENTO_INCOMPATIBLE" -> deSuper
                     ? "los argumentos de super(...) no conforman con los parámetros del constructor de la superclase"
                     : "los argumentos de " + x + " no conforman con los tipos de sus parámetros";
             case "ERR_NEW_INTERFAZ" -> "no se puede crear un objeto de la interfaz " + x;
-            case "ERR_CONSTRUCTOR_NO_ENCONTRADO" -> esSuper()
+            // Igual que ERR_ARGUMENTO_INCOMPATIBLE: detalle elige el texto.
+            case "ERR_CONSTRUCTOR_NO_ENCONTRADO" -> deSuper
                     ? "la superclase no tiene un constructor con esa cantidad de argumentos"
                     : "la clase " + x + " no tiene un constructor con esa cantidad de argumentos";
             case "ERR_ASIGNACION_INCOMPATIBLE" -> "el valor asignado no conforma con el tipo del destino";
@@ -129,9 +142,10 @@ public final class ErrorSemantico {
             case "ERR_FOREACH_TIPO_INCOMPATIBLE" ->
                     "los elementos que recorre el " + x + " no conforman con el tipo de su variable";
             // En new, x es el nombre de la clase, cuyo constructor es el
-            // private; con super, el constructor es el de la superclase (un
-            // acceso con super lo reporta sobre el nombre del miembro).
-            case "ERR_ACCESO_PRIVADO" -> esSuper()
+            // private; con super(...) (lo dice detalle), el constructor es el
+            // de la superclase. Un acceso con super (super.x, super.m()) lo
+            // reporta sobre el nombre del miembro y sin detalle.
+            case "ERR_ACCESO_PRIVADO" -> deSuper
                     ? "no se puede llamar con super(...) al constructor de la superclase: es private y sólo se usa dentro de su clase"
                     : "no se puede acceder a " + x + ": es private y sólo se usa dentro de su clase";
             case "ERR_INSTANCEOF_GENERICO" -> "el tipo a la derecha de " + x + " no puede ser genérico";
@@ -143,11 +157,5 @@ public final class ErrorSemantico {
             case "ERR_NO_SOPORTADO" -> "la construcción en " + x + " todavía no se soporta";
             default -> codigo + " (" + x + ")";
         };
-    }
-
-    // Logro Super! (spec 0006, D8): super hace de nombre de la clase en los
-    // errores de super(...), y el texto genérico no se leería bien con él.
-    private boolean esSuper() {
-        return "super".equals(lexema);
     }
 }

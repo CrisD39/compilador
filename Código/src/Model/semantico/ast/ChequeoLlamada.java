@@ -3,6 +3,7 @@ package Model.semantico.ast;
 import Model.lexico.Token;
 import Model.semantico.Clase;
 import Model.semantico.Constructor;
+import Model.semantico.ErrorSemantico;
 import Model.semantico.ExcepcionSemantica;
 import Model.semantico.Metodo;
 import Model.semantico.OrigenParametroTipo;
@@ -47,23 +48,26 @@ final class ChequeoLlamada {
     // o en super(5) con extends Caja<String>, T es String (D10,
     // semIIError28). Todos los errores van sobre 'token': el nombre de la
     // clase en new, super en la llamada al constructor de la superclase.
-    // 'previoAConstruccion' dice si los argumentos se chequean en el contexto
-    // previo a la construcción (super(...), D9): la marca se prende sólo
-    // alrededor de ellos y vuelve a su valor anterior aunque uno lance, así
-    // el resto del constructor usa el objeto actual normalmente y un new
-    // anidado (super(new C(this))) no la apaga.
+    // 'deSuper' dice si la llamada es super(...) y no new, y de ahí salen
+    // dos cosas: esos errores llevan ErrorSemantico.DETALLE_SUPER, que elige
+    // su descripción, y los argumentos se chequean en el contexto previo a
+    // la construcción (D9). La marca se prende sólo alrededor de ellos y
+    // vuelve a su valor anterior aunque uno lance, así el resto del
+    // constructor usa el objeto actual normalmente y un new anidado
+    // (super(new C(this))) no la apaga.
     static void chequearConstructor(TablaSimbolos tabla, Tipo tipo, List<NodoExpresion> argumentos,
-                                    Token token, boolean previoAConstruccion) {
+                                    Token token, boolean deSuper) {
+        String detalle = deSuper ? ErrorSemantico.DETALLE_SUPER : null;
         if (!(tabla.entidadDe(tipo) instanceof Clase clase)) {
             throw new IllegalStateException("Constructor de algo que no es una clase: " + tipo.getToken().getLexema());
         }
         Constructor constructor = clase.getConstructores().stream()
                 .filter(c -> c.getParams().size() == argumentos.size())
                 .findFirst()
-                .orElseThrow(() -> new ExcepcionSemantica(token, "ERR_CONSTRUCTOR_NO_ENCONTRADO"));
-        ChequeoVisibilidad.exigirAcceso(tabla, constructor.isPrivado(), clase, clase, token);
+                .orElseThrow(() -> new ExcepcionSemantica(token, "ERR_CONSTRUCTOR_NO_ENCONTRADO", detalle));
+        ChequeoVisibilidad.exigirAcceso(tabla, constructor.isPrivado(), clase, clase, token, detalle);
         List<Tipo> tiposArgumentos;
-        if (previoAConstruccion) {
+        if (deSuper) {
             boolean anterior = tabla.prenderContextoPrevioAConstruccion();
             try {
                 tiposArgumentos = chequearArgumentos(tabla, argumentos);
@@ -73,7 +77,8 @@ final class ChequeoLlamada {
         } else {
             tiposArgumentos = chequearArgumentos(tabla, argumentos);
         }
-        exigirConformidad(tabla, constructor.getParams(), tabla.instanciacionDe(tipo), tiposArgumentos, token);
+        exigirConformidad(tabla, constructor.getParams(), tabla.instanciacionDe(tipo), tiposArgumentos, token,
+                detalle);
     }
 
     // Tipo de la llamada a un método ya resuelto. 'vista' es el mapa con que
@@ -87,7 +92,7 @@ final class ChequeoLlamada {
         if (!metodo.getParametrosTipoPropios().isEmpty()) {
             throw ExcepcionSemantica.noSoportado(nombre);
         }
-        exigirConformidad(tabla, metodo.getParams(), vista, tiposArgumentos, nombre);
+        exigirConformidad(tabla, metodo.getParams(), vista, tiposArgumentos, nombre, null);
         return metodo.getTipoDeLlamada().sustituir(vista);
     }
 
@@ -96,12 +101,14 @@ final class ChequeoLlamada {
     // tipos (semIIError16). Un argumento void no conforma con nada
     // (semIIError49). Cada formal se ve desde el receptor ('vista'): en
     // new Caja<String>(5) el parámetro T es String (semIIError28). El error va
-    // sobre el nombre del método o de la clase.
+    // sobre el nombre del método o de la clase, con el 'detalle' de
+    // chequearConstructor() (null en una llamada a método).
     static void exigirConformidad(TablaSimbolos tabla, List<Parametro> formales,
-                                  Map<OrigenParametroTipo, Tipo> vista, List<Tipo> actuales, Token token) {
+                                  Map<OrigenParametroTipo, Tipo> vista, List<Tipo> actuales, Token token,
+                                  String detalle) {
         for (int i = 0; i < formales.size(); i++) {
             if (!actuales.get(i).conformaCon(formales.get(i).getTipo().sustituir(vista), tabla)) {
-                throw new ExcepcionSemantica(token, "ERR_ARGUMENTO_INCOMPATIBLE");
+                throw new ExcepcionSemantica(token, "ERR_ARGUMENTO_INCOMPATIBLE", detalle);
             }
         }
     }

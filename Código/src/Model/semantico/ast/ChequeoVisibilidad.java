@@ -25,8 +25,15 @@ final class ChequeoVisibilidad {
     // la clase.
     static void exigirAcceso(TablaSimbolos tabla, boolean privado, Clase declarante,
                              EntidadDeclarada receptor, Token nombre) {
+        exigirAcceso(tabla, privado, declarante, receptor, nombre, null);
+    }
+
+    // Para el constructor de new y de super(...): 'detalle' va en el error y
+    // elige su descripción (ver ChequeoLlamada.chequearConstructor()).
+    static void exigirAcceso(TablaSimbolos tabla, boolean privado, Clase declarante,
+                             EntidadDeclarada receptor, Token nombre, String detalle) {
         if (privado && (tabla.getClaseActual() != declarante || receptor != declarante)) {
-            throw new ExcepcionSemantica(nombre, "ERR_ACCESO_PRIVADO");
+            throw new ExcepcionSemantica(nombre, "ERR_ACCESO_PRIVADO", detalle);
         }
     }
 }

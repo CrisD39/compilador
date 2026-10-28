@@ -11,16 +11,24 @@ import Model.lexico.Token;
 public class ExcepcionSemantica extends RuntimeException {
     private final Token token;
     private final String codigo;
+    // Pasa tal cual al ErrorSemantico que se registra (ver su campo detalle):
+    // quien lanza sabe qué variante del código es, y el token solo no lo dice.
+    private final String detalle;
     private final boolean enCascada;
 
     public ExcepcionSemantica(Token token, String codigo) {
-        this(token, codigo, false);
+        this(token, codigo, null, false);
     }
 
-    private ExcepcionSemantica(Token token, String codigo, boolean enCascada) {
+    public ExcepcionSemantica(Token token, String codigo, String detalle) {
+        this(token, codigo, detalle, false);
+    }
+
+    private ExcepcionSemantica(Token token, String codigo, String detalle, boolean enCascada) {
         super(codigo + " (" + token.getLexema() + ")");
         this.token = token;
         this.codigo = codigo;
+        this.detalle = detalle;
         this.enCascada = enCascada;
     }
 
@@ -29,7 +37,7 @@ public class ExcepcionSemantica extends RuntimeException {
     // excepción no agrega otro (TablaSimbolos.registrarError()), así un var
     // que falla no arrastra un "no declarada" por cada uso posterior.
     public static ExcepcionSemantica enCascada(Token token) {
-        return new ExcepcionSemantica(token, "ERR_EN_CASCADA", true);
+        return new ExcepcionSemantica(token, "ERR_EN_CASCADA", null, true);
     }
 
     public boolean esEnCascada() {
@@ -54,6 +62,6 @@ public class ExcepcionSemantica extends RuntimeException {
     // Lo que se agrega a la tabla al atraparla: mismo formato de salida que
     // los errores de declaraciones.
     public ErrorSemantico comoError() {
-        return new ErrorSemantico(codigo, token.getLinea(), token.getLexema());
+        return new ErrorSemantico(codigo, token.getLinea(), token.getLexema(), detalle);
     }
 }

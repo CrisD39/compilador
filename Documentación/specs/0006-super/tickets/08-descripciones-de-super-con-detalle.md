@@ -1,6 +1,6 @@
 ---
 titulo: Descripciones de super(...) con detalle
-estado: ready-for-agent
+estado: hecho
 spec: ../../0006-super.md
 ---
 
@@ -24,13 +24,13 @@ constructor, cuya firma cambian 06 y 07).
 **Origen:** `revision.md`, §2.6.
 
 **Criterios:**
-- [ ] `ErrorSemantico` ya no decide ninguna descripción por el lexema;
+- [x] `ErrorSemantico` ya no decide ninguna descripción por el lexema;
       el método que lo hacía desaparece.
-- [ ] La excepción semántica puede llevar el `detalle` hasta el
+- [x] La excepción semántica puede llevar el `detalle` hasta el
       `ErrorSemantico` que se registra.
-- [ ] El comentario de `detalle` lista sus usos nuevos, y los de los tres
+- [x] El comentario de `detalle` lista sus usos nuevos, y los de los tres
       códigos dicen de dónde sale el texto.
-- [ ] Las descripciones de `super(...)` son las mismas que hoy (se
+- [x] Las descripciones de `super(...)` son las mismas que hoy (se
       comprueba con el jar sobre los casos de `superKeyword` que dan esos
       tres códigos), y las de `new` también.
-- [ ] `./test.sh` en verde, sin tocar casos.
+- [x] `./test.sh` en verde, sin tocar casos.
