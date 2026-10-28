@@ -16,7 +16,7 @@ Para facilitar la escritura se utilizará regex para referirse a expresión regu
 
 Notación usada en esta sección (expresiones regulares estilo POSIX/ERE): `[a-z]` clase de caracteres, `*` cero o más, `+` uno o más, `?` cero o uno, `{m,n}` entre `m` y `n` repeticiones, `|` alternativa, `[^...]` cualquier carácter salvo los listados, y todo lo que no sea un metacarácter de regex es literal. El nombre de cada token es el que efectivamente imprime el compilador (el `getNombre()` de `TokenType`), para que sea fácil cruzarlo contra la salida real.
 
-**Aclaración importante:** las expresiones de acá describen el **lenguaje que arma un token válido**. La mayoría de los estados del autómata, al toparse con algo que *casi* matchea pero no del todo (una letra pegada a un número, un `&` sin su segundo `&`, un salto de línea dentro de un string), no simplemente fallan el match y prueban con otra regla: consumen lo que corresponda y reportan un error explícito (REQ-AL-19/22, ver "Autómata finito" y "Casos de prueba" para el detalle de cada uno). Eso se menciona en la nota de cada token donde aplica, pero no forma parte de la regex del token en sí.
+**Aclaración importante:** las expresiones de acá describen el **lenguaje que arma un token válido**. La mayoría de los estados del autómata, al toparse con algo que *casi* matchea pero no del todo (un `e` sin dígitos de exponente, un `&` sin su segundo `&`, un salto de línea dentro de un string), no simplemente fallan el match y prueban con otra regla: consumen lo que corresponda y reportan un error explícito (REQ-AL-19/22, ver "Autómata finito" y "Casos de prueba" para el detalle de cada uno). Eso se menciona en la nota de cada token donde aplica, pero no forma parte de la regex del token en sí. Los literales numéricos son la excepción: lo que no continúa su estructura (una letra, un `_`) no es error, cierra el literal y arranca el token siguiente (ver "Dígito seguido inmediatamente de letra o `_`").
 
 ## Palabras clave (REQ-AL-03)
 
@@ -84,7 +84,7 @@ Notas: minúscula seguida de cero o más caracteres. Cualquier palabra clave es,
 Notas: el `{1,9}` es la forma de expresar "al menos un dígito, como máximo nueve" con un solo cuantificador. Si aparece un 10º dígito (o más) sin punto ni exponente de por medio, el autómata no corta en el noveno: sigue leyendo el lexema completo y lo reporta como error de desborde, en vez de dejar el resto suelto.
 
 `floatLiteral` — `[0-9]+(\.[0-9]*([eE][+-]?[0-9]+)?|[eE][+-]?[0-9]+)[fFdD]?`
-Notas: dos formas válidas — con punto (`3.14`, `3.`, `3.14e10`) o sin punto pero con exponente (`3e10`); un entero suelto sin punto ni `e`/`E` es `intLiteral`, no float. La parte decimal después del punto puede tener **cero** dígitos (`3.` es válido, como en Java). El exponente, si aparece, exige **al menos un dígito** (`3e` o `3e+` solos son error). El sufijo `f`/`F`/`d`/`D` final es opcional. **A diferencia de `intLiteral`, acá no hay límite de 9 dígitos** — ni en la parte entera ni en la decimal — porque REQ-AL-21 no lo impone (confirmado: `1234567890.5` y `1234567890e2` son válidos).
+Notas: dos formas válidas — con punto (`3.14`, `3.`, `3.14e10`) o sin punto pero con exponente (`3e10`); un entero suelto sin punto ni `e`/`E` es `intLiteral`, no float. La parte decimal después del punto puede tener **cero** dígitos (`3.` es válido, como en Java). El exponente, si aparece, exige **al menos un dígito** (`3e` o `3e+` solos son error). El sufijo `f`/`F`/`d`/`D` final es opcional. **A diferencia de `intLiteral`, acá no hay límite de 9 dígitos** — ni en la parte entera ni en la decimal — porque REQ-AL-21 no lo impone (confirmado: `1234567890.5` y `1234567890e2` son válidos). Después de `dígitos .`, el carácter siguiente decide si el `.` es del número: un dígito sigue la parte decimal (`3.14`), `e`/`E` abre el exponente (`3.e5`), `f`/`F`/`d`/`D` es el sufijo del float `3.` (`3.f`), y cualquier otra letra o `_` deja el `.` afuera: `4.metodo1` es `intLiteral(4)` + `punto` + `idMV(metodo1)` (spec 0008, D2). Se mira un solo carácter, igual que javac, así que `4.foo` es `floatLiteral(4.f)` + `idMV(oo)` y `4.equals` es el error de exponente sin dígitos sobre `4.e`.
 
 ## Literales de carácter y string
 
@@ -420,6 +420,7 @@ stateDiagram-v2
     estadoEntero --> estadoParteExponente: e o E
     estadoEntero --> estadoInicial: otro, hasta 9 dígitos / LIT_INT
     estadoEntero --> estadoInicial: otro, más de 9 dígitos / ERROR
+    estadoParteDecimal --> estadoInicial: sin dígitos tras el punto, letra que no es e/E/f/F/d/D o guion bajo / LIT_INT, y PUNTO en reserva
     estadoParteDecimal --> estadoParteDecimal: dígito
     estadoParteDecimal --> estadoParteExponente: e o E
     estadoParteDecimal --> estadoInicial: otro / LIT_FLOAT
@@ -484,23 +485,32 @@ stateDiagram-v2
     estadoInicial --> [*]: EOF, arma token EOF con lexema "$"
 ```
 
+El `PUNTO` en reserva es la única vez que un estado arma dos tokens. Cuando `estadoParteDecimal` ve la letra, el `.` ya se consumió, y `SourceManager` no tiene `unread`/`peek` para devolverlo: el `intLiteral` sale en la llamada actual y el `PUNTO` queda en el campo `tokenEnReserva`, que `startAnalizar` y `nextToken` entregan antes de volver a `estadoInicial`. La letra sigue en `caracterActual`, así que el identificador se arma por el camino normal.
+
 ## Casos de prueba
 
 Además de la batería de archivos en `resources/sinErrores/` y `resources/conErrores/` (probados contra la implementación real, no derivados a mano), durante el desarrollo se fueron encontrando casos límite que vale la pena dejar documentados acá: combinaciones de caracteres que un lenguaje parecido a Java podría tentar a escribir, y que ponen a prueba una transición puntual del autómata. Para cada uno se indica el resultado **actual**, verificado contra `out/interpretador.jar`, no una expectativa teórica.
 
 ### Dígito seguido inmediatamente de letra o `_`
 
-Hasta antes de este relevamiento, un literal numérico seguido sin separador de una letra se partía silenciosamente en dos tokens (ej. `345a` → `intLiteral(345)` + `idMV(a)`), sin ningún error. Se agregó un chequeo (`consumirSufijoInvalidoDeNumero`, en `estadoEntero`/`estadoParteDecimal`/`estadoDigitosExponente`) para que ese sufijo pegado sea, en cambio, un único lexema inválido reportado como error — **con la excepción del sufijo de tipo `f`/`F`/`d`/`D` de Java sobre un float ya formado** (con punto o exponente), que sí es válido por REQ-AL-21 y se resuelve en `cerrarLiteralFloat()` antes de caer en este chequeo (ver tabla siguiente).
+Un literal numérico termina donde deja de valer su estructura (dígitos, parte decimal opcional, exponente opcional, sufijo `f`/`F`/`d`/`D` opcional en un float), y el carácter que lo corta arranca el token siguiente, **sea o no una letra o `_`**. No hay error léxico: si la secuencia no forma un programa válido, lo reporta el sintáctico (spec 0008).
 
 | Caso | Entrada | Resultado actual |
 | :---- | :---- | :---- |
-| Letra pegada a un entero | `345a` | Error: `345a` |
-| Separador numérico de Java (`1_000`) | `1_000` | Error: `1_000` — miniJava no tiene separador de dígitos |
-| Sufijo `long` de Java | `100L` | Error: `100L` — miniJava no tiene ese tipo (y `L` no es un sufijo float válido) |
-| Literal hexadecimal de Java (`0x...`) | `0x1F` | Error: `0x1F` — REQ-AL-09 exige base 10, no hay prefijo hex |
-| Mayúscula pegada a un entero | `5Persona` | Error: `5Persona` — el chequeo no distingue mayúscula/minúscula |
-| Letra pegada a un decimal sin dígitos tras el punto | `3.a` | Error: `3.a` — cubre también el caso de 0 dígitos después de `.`; `a` no es un sufijo float válido |
-| Sufijo float + letra extra pegada | `3.14fx` | Error: `3.14fx` — el sufijo `f`/`F`/`d`/`D` solo es válido si cierra el lexema; otra letra pegada después sigue siendo inválida |
+| Letra pegada a un entero | `345a` | `intLiteral(345)` + `idMV(a)` |
+| Separador numérico de Java (`1_000`) | `1_000` | `intLiteral(1)`, error léxico en `_` (no es un carácter válido para empezar un token), `intLiteral(000)` |
+| Sufijo `long` de Java | `100L` | `intLiteral(100)` + `idGen(L)` — miniJava no tiene `long`, y `L` no es un sufijo float |
+| Literal hexadecimal de Java (`0x...`) | `0x1F` | `intLiteral(0)` + `idMV(x1F)` — REQ-AL-09 exige base 10, no hay prefijo hex |
+| Mayúscula pegada a un entero | `5Persona` | `intLiteral(5)` + `idClase(Persona)` |
+| Letra pegada a un decimal sin dígitos tras el punto | `3.a` | `intLiteral(3)` + `punto` + `idMV(a)` — el `.` no es del número (D2 de la spec) |
+| Llamada sobre un literal | `4.metodo1()` | `intLiteral(4)` + `punto` + `idMV(metodo1)` + ...; en ET2/ET4, error sintáctico sobre el `.` (un literal no admite encadenamiento) |
+| Sufijo float + letra extra pegada | `3.14fx` | `floatLiteral(3.14f)` + `idMV(x)` |
+| Exponente + letra pegada | `3e10x` | `floatLiteral(3e10)` + `idMV(x)` |
+| Sufijo float sin parte decimal | `3.f` / `3.e5` | `floatLiteral(3.f)` / `floatLiteral(3.e5)`, como en Java |
+| Letra de sufijo que empieza un nombre | `4.foo` / `4.equals` | `floatLiteral(4.f)` + `idMV(oo)` / error de exponente sin dígitos sobre `4.e` — se mira un solo carácter, igual que javac |
+| Entero de más de 9 dígitos + letra | `1234567890a` | error de desborde sobre `1234567890`, después `idMV(a)` |
+
+**Por qué cambió.** Hasta la spec 0008 esta sección documentaba la regla contraria: un chequeo (`consumirSufijoInvalidoDeNumero`, en `estadoEntero`/`estadoParteDecimal`/`estadoDigitosExponente`/`cerrarLiteralFloat`) consumía todo lo pegado al número y lo reportaba como un único lexema inválido ("un literal numérico no puede ir seguido inmediatamente de una letra o guion bajo"), con la sola excepción del sufijo `f`/`F`/`d`/`D` de un float. Se había agregado a propósito, para que `345a` no se partiera "silenciosamente" en dos tokens. La corrección de la cátedra (2026-10-28) la marcó como incorrecta, a raíz de `4.metodo1()`, que daba el error léxico `[Error:4.metodo1|5]`: ningún requerimiento léxico prohíbe que un número vaya seguido de una letra, y decidir que esa secuencia no forma un programa válido es trabajo del sintáctico. Así lo hace javac, que parte la entrada en tokens válidos y deja el error al parser. Se borró el chequeo con su mensaje; los casos `lexConErrores13`, `15`, `16`, `17` y `18` pasaron a `resources/sinErrores/` como casos de tokens, y `lexConErrores14` (`1_000`) quedó como error sobre `_`. En estos casos ya no queda ninguna diferencia con javac.
 
 ### Comportamientos confirmados como correctos (no generan error)
 

@@ -1,6 +1,6 @@
 ---
 titulo: Número seguido de letra (Etapa 1)
-estado: ready-for-agent
+estado: hecho
 origen: corrección de la cátedra (2026-10-28), plan 1 de 2 (el 2 es la gramática de locales clásicas)
 fecha: 2026-10-28
 ---
@@ -151,3 +151,9 @@ identificador se arma por el camino normal.
 
 1. `01-corte-en-el-lexico`: D1–D4 en `AnalizadorLexicoImpl` y los casos.
 2. `02-cierre`: documentación.
+
+**Cierre (2026-10-28):** `./test.sh` en verde. Léxico 25 + 19 (antes
+14 + 24: salen 5 casos de `conErrores` y entran 11 en `sinErrores`),
+sintáctico 38 + 66 + 4 de modo pánico (entran `sintError64`–`66`);
+semántico 37 + 104 y Sem2 (93 + 172 + 207 de logros) sin cambios por esta
+spec.
