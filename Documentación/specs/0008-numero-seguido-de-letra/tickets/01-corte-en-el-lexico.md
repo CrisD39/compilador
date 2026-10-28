@@ -1,6 +1,6 @@
 ---
 titulo: Corte en el léxico
-estado: ready-for-agent
+estado: hecho
 spec: ../../0008-numero-seguido-de-letra.md
 ---
 
@@ -39,12 +39,12 @@ salida).
   `x = 345a;` → `[Error:a|L]`, `3.a` en una expresión.
 
 **Criterios:**
-- [ ] `4.metodo1` da los tokens `4`, `.`, `metodo1` y ningún error léxico.
-- [ ] El archivo del reporte en ET4 da un solo error, sintáctico, sobre el
+- [x] `4.metodo1` da los tokens `4`, `.`, `metodo1` y ningún error léxico.
+- [x] El archivo del reporte en ET4 da un solo error, sintáctico, sobre el
       `.`.
-- [ ] `3.f`, `3.14f`, `3.e5` y `3e10f` siguen siendo un único
+- [x] `3.f`, `3.14f`, `3.e5` y `3e10f` siguen siendo un único
       `floatLiteral`.
-- [ ] `3e`, `4.e` y `1234567890` siguen siendo errores léxicos.
-- [ ] Ya no existe el mensaje "un literal numérico no puede ir seguido
+- [x] `3e`, `4.e` y `1234567890` siguen siendo errores léxicos.
+- [x] Ya no existe el mensaje "un literal numérico no puede ir seguido
       inmediatamente de una letra o guion bajo".
-- [ ] `./test.sh` en verde.
+- [x] `./test.sh` en verde.

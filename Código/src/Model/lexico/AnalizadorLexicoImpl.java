@@ -25,6 +25,12 @@ public class AnalizadorLexicoImpl implements AnalizadorLexico
     // puntos de entrada se arranque.
     private boolean iniciado;
 
+    // Token ya reconocido que se entrega en la llamada siguiente, antes de leer
+    // otro carácter. Sólo lo usa "dígitos . letra" (spec 0008, D2/D3): cuando
+    // se ve la letra, el '.' ya se consumió, y SourceManager no tiene
+    // unread/peek para devolverlo. Se emite el intLiteral y el '.' queda acá.
+    private Token tokenEnReserva;
+
     public AnalizadorLexicoImpl(SourceManager sourceManager, ResultadoLexicoListener listener)
     {
         this.sourceManager = sourceManager;
@@ -94,8 +100,14 @@ public class AnalizadorLexicoImpl implements AnalizadorLexico
         iniciado = true;
         actualizarCaracterActual();
 
-        while(caracterActual != SourceManager.END_OF_FILE)
+        while(caracterActual != SourceManager.END_OF_FILE || tokenEnReserva != null)
         {
+            if(tokenEnReserva != null)
+            {
+                listener.onToken(tomarTokenEnReserva());
+                continue;
+            }
+
             lexema.setLength(0);
             tokenAnalizado = null;
 
@@ -131,6 +143,11 @@ public class AnalizadorLexicoImpl implements AnalizadorLexico
                 actualizarCaracterActual();
             }
 
+            if(tokenEnReserva != null)
+            {
+                return tomarTokenEnReserva();
+            }
+
             while(caracterActual != SourceManager.END_OF_FILE)
             {
                 lexema.setLength(0);
@@ -158,6 +175,13 @@ public class AnalizadorLexicoImpl implements AnalizadorLexico
             // sintáctico es pull y sin checked exceptions); se re-lanza envuelta.
             throw new UncheckedIOException(e);
         }
+    }
+
+    private Token tomarTokenEnReserva()
+    {
+        Token token = tokenEnReserva;
+        tokenEnReserva = null;
+        return token;
     }
 
     private void estadoInicial() throws IOException
@@ -251,6 +275,11 @@ public class AnalizadorLexicoImpl implements AnalizadorLexico
         estadoEntero();
     }
 
+    // Spec 0008, D1: un literal numérico termina donde deja de valer su
+    // estructura, y el carácter que lo corta queda de lookahead para el token
+    // siguiente aunque sea una letra o '_'. "345a" es intLiteral(345) +
+    // idMV(a), como en javac: decidir que eso no forma un programa es trabajo
+    // del sintáctico. (Hasta la spec 0008 se armaba un único lexema inválido.)
     private void estadoEntero() throws IOException
     {
         while(Character.isDigit(caracterActual))
@@ -271,13 +300,19 @@ public class AnalizadorLexicoImpl implements AnalizadorLexico
             actualizarCaracterActual();
             estadoParteExponente();
         }
-        else if(Character.isLetter(caracterActual) || caracterActual == '_')
+        else
         {
-            consumirSufijoInvalidoDeNumero();
+            cerrarLiteralEntero(nroColumna - 1);
         }
-        else if(lexema.length() > 9)
+    }
+
+    // "columna" es la del último dígito: quien llama sabe cuántos caracteres
+    // de lookahead consumió después de él (uno, o dos si ya pasó un '.').
+    private void cerrarLiteralEntero(int columna)
+    {
+        if(lexema.length() > 9)
         {
-            reportarError(lexema.toString(), "el literal entero supera los 9 dígitos permitidos", nroColumna - 1);
+            reportarError(lexema.toString(), "el literal entero supera los 9 dígitos permitidos", columna);
         }
         else
         {
@@ -285,25 +320,24 @@ public class AnalizadorLexicoImpl implements AnalizadorLexico
         }
     }
 
-    // REQ-AL-09/REQ-AL-21: un literal numérico exige empezar con dígito, no
-    // prohíben explícitamente terminar en letra, pero sin este chequeo "345a" se
-    // partiría silenciosamente en intLiteral(345) + idMV(a). Se consume el sufijo
-    // completo y se reporta como un único lexema inválido en vez de partirlo.
-    private void consumirSufijoInvalidoDeNumero() throws IOException
-    {
-        while(Character.isLetterOrDigit(caracterActual) || caracterActual == '_')
-        {
-            actualizarLexema();
-            actualizarCaracterActual();
-        }
-        reportarError(lexema.toString(), "un literal numérico no puede ir seguido inmediatamente de una letra o guion bajo", nroColumna - 1);
-    }
-
     // Parte decimal: ya se consumió el '.'. No exige dígitos después (Java acepta
     // "3." como float válido), así que solo se queda mientras sigan llegando dígitos.
     // Si aparece 'e'/'E' pasa al exponente; cualquier otro carácter cierra como float.
+    // Spec 0008, D2: si después del '.' no vino ningún dígito y viene una letra
+    // que no continúa el float (ni exponente ni sufijo f/F/d/D) o un '_', el '.'
+    // no es del número: "4.metodo1" es 4 . metodo1, y el parser reporta el '.'.
+    // Ver la letra no alcanza para "adivinar" un nombre ("4.foo" es 4.f + oo,
+    // igual que en javac), y no se mira más de un carácter adelante.
     private void estadoParteDecimal() throws IOException
     {
+        if((Character.isLetter(caracterActual) || caracterActual == '_')
+                && caracterActual != 'e' && caracterActual != 'E'
+                && !esSufijoFloatValido(caracterActual))
+        {
+            partirEnteroYPunto();
+            return;
+        }
+
         while(Character.isDigit(caracterActual))
         {
             actualizarLexema();
@@ -356,12 +390,23 @@ public class AnalizadorLexicoImpl implements AnalizadorLexico
         cerrarLiteralFloat();
     }
 
+    // El lexema es "dígitos." y caracterActual es la letra (o '_') que sigue: se
+    // saca el '.' del lexema, se cierra el entero y el '.' queda en reserva con
+    // la misma línea (no hubo salto en el medio). El entero va antes que el
+    // '.', así que su límite de 9 dígitos se controla igual que sin el punto.
+    private void partirEnteroYPunto()
+    {
+        lexema.setLength(lexema.length() - 1);
+        cerrarLiteralEntero(nroColumna - 2);
+        tokenEnReserva = new Token(TokenType.PUNTO, ".", sourceManager.getLineNumber());
+    }
+
     // REQ-AL-21: "misma estructura que los floats de Java" incluye el sufijo de
     // tipo f/F/d/D (FloatTypeSuffix de la gramática de Java), aun cuando miniJava
     // no distinga float de double como tipos declarables (no hay keyword para
     // ninguno de los dos): se acepta y se descarta como parte del lexema, sin
-    // armar un TokenType distinto. Cualquier otra letra o '_' pegada después
-    // sigue siendo inválida, con el mismo criterio que en los enteros.
+    // armar un TokenType distinto. Lo que venga después arranca otro token, con
+    // el mismo criterio que en los enteros ("3.14fx" es 3.14f + x; spec 0008, D1).
     private void cerrarLiteralFloat() throws IOException
     {
         if(esSufijoFloatValido(caracterActual))
@@ -369,15 +414,7 @@ public class AnalizadorLexicoImpl implements AnalizadorLexico
             actualizarLexema();
             actualizarCaracterActual();
         }
-
-        if(Character.isLetterOrDigit(caracterActual) || caracterActual == '_')
-        {
-            consumirSufijoInvalidoDeNumero();
-        }
-        else
-        {
-            armarToken(TokenType.LIT_FLOAT);
-        }
+        armarToken(TokenType.LIT_FLOAT);
     }
 
     private boolean esSufijoFloatValido(char c)
