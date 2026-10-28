@@ -245,8 +245,9 @@ _Evitar_: retorno parcial
 
 **Tipo esperado**:
 Tipo que el lugar donde aparece una expresión le exige: el del destino de
-una asignación, el del atributo que se inicializa, el de retorno del
-método, o el del parámetro formal que recibe un argumento.
+una asignación, el del atributo o la variable local clásica que se
+inicializa, el de retorno del método, o el del parámetro formal que recibe
+un argumento.
 _Evitar_: tipo destino (se confunde con el destino de `=`), target type
 
 **Ternario**:
@@ -257,6 +258,23 @@ conforma. A diferencia de Java, ahí no busca un supertipo común: con dos
 clases hermanas es incorrecto. Como no hay boxing, `null` con un primitivo
 también es incorrecto.
 _Evitar_: operador condicional, if en línea
+
+### Variables locales
+
+**Variable local clásica**:
+Variable local declarada con su tipo escrito, sin `var` (`int x;`). Una
+misma declaración puede introducir varias, todas del mismo tipo. Sin
+inicializador queda declarada igual y se puede usar: a diferencia de Java,
+no se controla que tenga un valor asignado antes de leerla.
+_Evitar_: variable instancia, variable tipada
+
+**Declarador**:
+Cada nombre de una declaración de variables locales clásicas, con su
+inicializador opcional. El inicializador vale sólo para su nombre: en
+`int x, y, z = 10;` sólo `z` vale 10. Los declaradores se procesan de
+izquierda a derecha, así que un inicializador ve los nombres anteriores de
+la misma declaración pero no el propio.
+_Evitar_: valor común, inicializador compartido
 
 ### Nombres
 
