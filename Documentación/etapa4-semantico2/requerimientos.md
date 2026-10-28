@@ -382,6 +382,13 @@ sentencia del cuerpo de un constructor, como en JDK 21 y no como en JDK 25
   del uso.
 - **§6.3 se mantiene.** Un constructor sin `super(...)` no llama a ningún
   constructor de la superclase, ni se le exige a ésta uno sin parámetros.
+- **Herencia sin argumento** (revisión de la spec 0006, ticket 05). Con
+  `class B extends A` y `A<T>` genérica (excepción de herencia del ADR
+  0007), un miembro heredado conserva su `T` también en la Etapa 4 (spec
+  0001, D5): no se trata como `Object`, así que sólo `null` conforma con
+  él. `super(5)`, `super.m(5)` y `m(5)` dan error, y en Java compilan
+  (`semIIError173`, `semIISuperError21`; gemelos `semIICorrecto95` y
+  `semIISuperCorrecto07`).
 
 ### Para el informe de la Etapa 4
 

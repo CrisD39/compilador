@@ -99,6 +99,7 @@ Están en `logros/superKeyword/` (spec 0006) y los corre `TesterLogrosSem2`. Nin
 | `semIISuperCorrecto04` | — | Llamada en lugar: `super()` sin `extends`, `super(1, true)` por aridad entre sobrecargados, `super()` con una superclase sin constructores declarados, y un constructor sin `super(...)` cuya superclase sólo tiene constructores con parámetros (§6.3). |
 | `semIISuperCorrecto05` | — | Lo que vale en los argumentos de `super(...)`: un parámetro con el nombre de un atributo heredado, literales, `A1.m()`, un método estático propio sin receptor, `new` de la clase actual, `p.x` y `p.m()`. |
 | `semIISuperCorrecto06` | — | Contextos de instancia: `super.b` en un inicializador (no es referencia adelantada) y accesos con super en un constructor, después de `super()` y en otro sin `super(...)`. |
+| `semIISuperCorrecto07` | — | Herencia sin argumento de `A1<T>` (ADR 0007): la `T` heredada se conserva (spec 0001, D5) y `null` conforma con ella en `super(null)` y `super.m(null)`. |
 | `semIISuperError01` | `noExiste` | `super.noExiste()`. |
 | `semIISuperError02` | `x` | `super.x` con `x` declarado sólo en la clase actual. |
 | `semIISuperError03` | `m` | `super.m()` con `m` que sólo viene de la interfaz implementada. |
@@ -119,6 +120,7 @@ Están en `logros/superKeyword/` (spec 0006) y los corre `TesterLogrosSem2`. Nin
 | `semIISuperError18` | `m`, `super`, `this` | Antes de la construcción: `super(m())` con `m` de instancia, `super(super.x)` y `super(new C(this))`. |
 | `semIISuperError19` | `super` | Sentencia inalcanzable: `super.m();` después de un `return;`. |
 | `semIISuperError20` | `noExiste`, `=`, `+` | Multi-detección: `super.noExiste();`, `super.x = true;` con `int x` y `this.y = 1 + true;`. |
+| `semIISuperError21` | `super`, `m` | Herencia sin argumento de `A1<T>` (ADR 0007): la `T` heredada se conserva (spec 0001, D5), así que `super(5)` y `super.m(5)` no conforman. En Java compilan. |
 
 ## Índice
 
@@ -292,6 +294,7 @@ Están en `logros/superKeyword/` (spec 0006) y los corre `TesterLogrosSem2`. Nin
 | `semIIError170` | 10.1 | `dato` | no se permiten acceder atributos sobre un receptor de tipo parametrico T |
 | `semIIError171` | 10.2 | `procesar` | argumento incompatible en llamada a metodo estatico calificado |
 | `semIIError172` | D11 | `A1` | El diamante también en la creación de un arreglo (`new A1<>[2]`): logro no soportado. |
+| `semIIError173` | 10.2 | `m` | `m(5)` con `m(T t)` heredado sin argumento de `A1<T>` (ADR 0007): la `T` se conserva (spec 0001, D5) y no conforma. En Java compila. |
 
 ### Sin errores
 
@@ -384,3 +387,4 @@ Están en `logros/superKeyword/` (spec 0006) y los corre `TesterLogrosSem2`. Nin
 | `semIICorrecto92` | 10.5 | variable tipada con interfaz e invocacion de su metodo |
 | `semIICorrecto93` | 9.4 | toString heredado de Object y accesible sobre un arreglo |
 | `semIICorrecto94` | 9.4 | null como argumento y en comparaciones con referencias y arreglos |
+| `semIICorrecto95` | 10.2 | `m(null)` con `m(T t)` heredado sin argumento de `A1<T>`: la `T` se conserva y `null` conforma con ella |

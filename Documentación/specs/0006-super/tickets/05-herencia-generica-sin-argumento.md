@@ -1,6 +1,6 @@
 ---
 titulo: Miembros heredados de una superclase genérica sin argumento
-estado: ready-for-agent
+estado: hecho
 spec: ../../0006-super.md
 ---
 
@@ -42,11 +42,11 @@ que cambiar.
   e índice "Casos del logro Super!").
 
 **Criterios:**
-- [ ] Los casos nuevos dan la etiqueta de la tabla de arriba: `super` en
+- [x] Los casos nuevos dan la etiqueta de la tabla de arriba: `super` en
       `super(...)`, el nombre del método en `m(...)` y en `super.m(...)`.
-- [ ] Los casos con error del logro tienen exactamente esa etiqueta
+- [x] Los casos con error del logro tienen exactamente esa etiqueta
       (`TesterLogrosSem2`), y el base la tiene como primera
       (`TesterConErroresSem2`).
-- [ ] `requerimientos.md` y `casos-de-prueba.md` actualizados; el conteo
+- [x] `requerimientos.md` y `casos-de-prueba.md` actualizados; el conteo
       de casos de `superKeyword` en `CLAUDE.md` también.
-- [ ] `./test.sh` en verde.
+- [x] `./test.sh` en verde.
