@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-MiniJava compiler for the Compiladores e Intérpretes course (UNS), built in stages: Etapa 1 lexer, Etapa 2 LL(1) recursive-descent parser with panic mode, Etapa 3 semantic analysis (declaration checking via a symbol table), Etapa 4 statement checking (Sem2: base rules of §9–§12 plus the Multi-detección, Postfijos, For, Instanceof, Visibilidad chequeada, Todos los caminos llevan al retorno sin código muerto, Atributos inicializados, Super!, Ternarios and Variables Locales Clásicas logros; the other logros are pending). Plain Java (no Maven/Gradle), JDK 21. Code, comments, identifiers and docs are in Spanish; keep it that way.
+MiniJava compiler for the Compiladores e Intérpretes course (UNS), built in stages: Etapa 1 lexer, Etapa 2 LL(1) recursive-descent parser with panic mode, Etapa 3 semantic analysis (declaration checking via a symbol table), Etapa 4 statement checking (Sem2: base rules of §9–§12 plus the Multi-detección, Postfijos, For, Instanceof, Visibilidad chequeada, Todos los caminos llevan al retorno sin código muerto, Atributos inicializados, Super!, Ternarios and Variables Locales Clásicas logros; Etapa 4 closes with these, and the other logros (Minilambdas, Floats y Coerción, Genericidad Avanzada, Métodos Genéricos E4) move to the next stage, see "Estado de la implementación" in `Documentación/etapa4-semantico2/requerimientos.md`). Plain Java (no Maven/Gradle), JDK 21. Code, comments, identifiers and docs are in Spanish; keep it that way.
 
 ## Commands
 

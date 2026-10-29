@@ -520,7 +520,16 @@ asignación definida.
 
 ## Estado de la implementación (2026-10-28)
 
-Las specs 0003, 0004, 0005, 0006, 0007 y 0009 están cerradas. Quedó implementado:
+**La Etapa 4 se cierra con lo implementado hasta acá** (decisión del
+2026-10-28): lo base de §9–§12 y los logros *Multi-detección*,
+*Postfijos*, *For*, *Instanceof*, *Visibilidad chequeada*, *Todos los
+caminos llevan al retorno sin código muerto*, *Atributos inicializados*,
+*Super!*, *Ternarios* y *Variables Locales Clásicas*. Los demás logros
+(*Minilambdas*, *Floats y Coerción*, *Genericidad Avanzada* y *Métodos
+Genéricos E4*) pasan a la próxima etapa; ver la lista de pendientes al
+final de esta sección.
+
+Las specs 0003, 0004, 0005, 0006, 0007 y 0009 están cerradas, y el ADR 0013 está aplicado. Quedó implementado:
 
 - **Lo base de §9–§12.** Todos los casos de `resources/semantico2/{sinErrores,conErrores}`
   pasan con `ModuloPrincipalET4`, que es el main del jar. La tercera pasada es `TablaSimbolos.chequearSentencias()`, y sólo
@@ -776,13 +785,16 @@ Correcciones posteriores al cierre de la spec 0003 (code review,
 - `TesterLogrosSem2` exige que las etiquetas de la salida sean exactamente
   las esperadas y en orden; antes sólo controlaba que aparecieran.
 
-Siguen pendientes, cada uno para una spec propia. El parser ya los acepta y
-arma sus nodos, pero el chequeo reporta `ERR_NO_SOPORTADO` (spec 0003, D11):
+Quedan para la próxima etapa, cada uno para una spec propia. El parser ya
+los acepta y arma sus nodos, pero el chequeo reporta `ERR_NO_SOPORTADO`
+(spec 0003, D11):
 
 - *Minilambdas*, *Métodos Genéricos E4* y *Genericidad Avanzada*
   (diamante). Los inicializadores de arreglo, cuando se implementen, tienen
   que pasar el tipo esperado con `chequearConTipoEsperado` (ADR 0011); en
-  una local clásica, el tipo declarado.
+  una local clásica, el tipo declarado. *Genericidad Avanzada* vuelve
+  válido el diamante de `semIIError172`, que hoy espera
+  `ERR_NO_SOPORTADO`.
 - *Floats y coerción*: además hay que decidir qué pasa con los casos base
   que lo contradicen (`semIIError33`, `34`, `52`, `59`, `70`).
 
