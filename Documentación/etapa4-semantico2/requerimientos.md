@@ -536,13 +536,18 @@ Las specs 0003, 0004, 0005, 0006, 0007 y 0009 están cerradas. Quedó implementa
   logro al pie de la letra, la inicialización era una asignación o un `var`
   (`int i = 0` y una llamada eran `ERR_FOR_INICIALIZACION`). Desde la spec
   0009 también vale una local clásica (`for (int i = 0; …)`), como en Java,
-  y una llamada sigue siendo error. La condición es
-  boolean y la actualización es una asignación (`i++` es
-  `ERR_FOR_ACTUALIZACION`). Las cláusulas vacías valen (`for (;;)`). Los
-  errores propios del for van sobre `for`. El parser admite `var` en la
+  y una llamada sigue siendo error. La condición es boolean y la
+  actualización es una asignación. Desde el ADR 0013 (2026-10-29), un
+  postfijo (`i++`, `i--`) cuenta como asignación en la inicialización y en
+  la actualización, porque con el logro *Postfijos* ya es una sentencia
+  válida; sólo cuenta la raíz de la expresión (`i++ + 1` y `(i++)` siguen
+  siendo error) y una llamada o un `new` también. Las cláusulas vacías
+  valen (`for (;;)`). Los errores propios del for van sobre `for`; los del
+  postfijo, sobre su operador. El parser admite `var` en la
   inicialización. `for` está en `LOGROS_HABILITADOS`. Casos:
-  `semIIForCorrecto01`–`04` y `10`, y `semIIForError01`–`09`, sin el
-  `04`, que pasó a `semIIForCorrecto10` con la spec 0009.
+  `semIIForCorrecto01`–`04` y `10`–`12`, y `semIIForError01`–`09` y
+  `28`–`31`, sin el `04`, que pasó a `semIIForCorrecto10` con la spec 0009,
+  ni el `02`, que pasó a `semIIForCorrecto11` con el ADR 0013.
 - **Logro *For*, for-each** (2026-10-25). Con esto el logro *For* queda
   completo. `MiniIterable<T>` es una interfaz
   predefinida (`void start(); T next(); boolean hasNext();`), registrada en

@@ -44,8 +44,8 @@ Es el contrato de la spec 0003 (D7): todos los casos con error lo cumplen. El c�
 | Tipo de una local clásica inexistente o genérico sin argumento (logro Variables locales clásicas) | el token del tipo | `ERR_TIPO_NO_DECLARADO` / `ERR_TIPO_SIN_ARGUMENTO` (de la Etapa 3) |
 | `var` con `null` o `void` | nombre de la local | `ERR_VAR_SIN_TIPO` |
 | `var` o local clásica como cuerpo directo de if/else/while/for | `var`; en una local clásica, su primer nombre | `ERR_DECLARACION_COMO_CUERPO` |
-| Inicialización del for que no es una asignación ni una declaración (`var` o local clásica; logros For y Variables locales clásicas) | `for` | `ERR_FOR_INICIALIZACION` |
-| Actualización del for que no es una asignación (logro For) | `for` | `ERR_FOR_ACTUALIZACION` |
+| Inicialización del for que no es una asignación, un postfijo ni una declaración (`var` o local clásica; logros For y Variables locales clásicas, ADR 0013) | `for` | `ERR_FOR_INICIALIZACION` |
+| Actualización del for que no es una asignación ni un postfijo (logro For, ADR 0013) | `for` | `ERR_FOR_ACTUALIZACION` |
 | Expresión del for-each que no conforma con `MiniIterable` (arreglos incluidos; logro For) | `for` | `ERR_FOREACH_NO_ITERABLE` |
 | Elemento del for-each que no conforma con el tipo de la variable (logro For) | `for` | `ERR_FOREACH_TIPO_INCOMPATIBLE` |
 | Destino genérico de `instanceof`, con argumento o raw (logro Instanceof) | `instanceof` | `ERR_INSTANCEOF_GENERICO` |
@@ -186,7 +186,7 @@ Están en `logros/ternarios/` (spec 0007, ADR 0011) y los corre `TesterLogrosSem
 
 ## Casos del logro Variables locales clásicas
 
-Están en `logros/variablesLocalesClasicas/` (spec 0009, ADR 0012) y los corre `TesterLogrosSem2`. Ningún caso base usa locales clásicas, así que habilitar el logro no cambió ninguna etiqueta de la base. `semIIVarLocalError01`, que probaba `var x = null` (ya cubierto en la base), se reescribió con `int x = true;`. En el logro *For*, `semIIForError04` (`for (int i = 0; …)`) pasó a `semIIForCorrecto10`, y su número no se reusa: el logro queda con 10 casos correctos y 26 con error. Dos `=` o dos nombres iguales en la misma línea darían la misma etiqueta, así que cuando un caso tiene que distinguir declaradores (Error 02 y 03) el que falla va en su propia línea.
+Están en `logros/variablesLocalesClasicas/` (spec 0009, ADR 0012) y los corre `TesterLogrosSem2`. Ningún caso base usa locales clásicas, así que habilitar el logro no cambió ninguna etiqueta de la base. `semIIVarLocalError01`, que probaba `var x = null` (ya cubierto en la base), se reescribió con `int x = true;`. En el logro *For*, `semIIForError04` (`for (int i = 0; …)`) pasó a `semIIForCorrecto10`, y su número no se reusa: el logro quedó con 10 casos correctos y 26 con error. Con el ADR 0013, `semIIForError02` (`i++` en la actualización) pasó a `semIIForCorrecto11`, tampoco se reusa su número, y se agregaron `semIIForCorrecto12` y `semIIForError28`–`31`: 12 correctos y 29 con error. Dos `=` o dos nombres iguales en la misma línea darían la misma etiqueta, así que cuando un caso tiene que distinguir declaradores (Error 02 y 03) el que falla va en su propia línea.
 
 | Caso | Etiquetas | Qué prueba |
 |---|---|---|
@@ -390,6 +390,7 @@ Están en `logros/variablesLocalesClasicas/` (spec 0009, ADR 0012) y los corre `
 | `semIIError171` | 10.2 | `procesar` | argumento incompatible en llamada a metodo estatico calificado |
 | `semIIError172` | D11 | `A1` | El diamante también en la creación de un arreglo (`new A1<>[2]`): logro no soportado. |
 | `semIIError173` | 10.2 | `m` | `m(5)` con `m(T t)` heredado sin argumento de `A1<T>` (ADR 0007): la `T` se conserva (spec 0001, D5) y no conforma. En Java compila. |
+| `semIIError174` | 12.2 | `;` | `(4 + true);`: una expresión parentizada no es sentencia válida aunque adentro tenga un error de tipos; la forma se controla antes de tipar (spec 0007, D5), como javac. |
 
 ### Sin errores
 

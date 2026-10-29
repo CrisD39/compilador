@@ -33,10 +33,13 @@ public class NodoFor extends NodoSentencia {
         return tokenFor;
     }
 
-    // Logro For: la inicialización es una asignación, un var o una local
-    // clásica (no una llamada; spec 0009, D8), la condición es boolean y la
-    // actualización es una asignación (no un postfijo ni una llamada). La
-    // local clásica se chequea igual que en un bloque. Una cláusula vacía no
+    // Logro For: la inicialización es una asignación, un postfijo, un var o
+    // una local clásica (no una llamada; spec 0009, D8), la condición es
+    // boolean y la actualización es una asignación o un postfijo (no una
+    // llamada ni un new). El postfijo cuenta como asignación porque, con el
+    // logro Postfijos, i++ ya es una sentencia válida (ADR 0013); su tipo y
+    // su destino los controla NodoExpPostfija. La local clásica se chequea
+    // igual que en un bloque. Una cláusula vacía no
     // es un componente mal puesto: for (;;) vale, como en Java. Los errores
     // propios del for van sobre "for", como la condición de if/while.
     // La variable de la inicialización vive en un scope propio que cubre las
@@ -52,7 +55,7 @@ public class NodoFor extends NodoSentencia {
             if (inicializacion != null) {
                 if (!(inicializacion instanceof NodoVarLocal
                         || inicializacion instanceof NodoVarLocalClasica
-                        || esAsignacion(inicializacion))) {
+                        || esAsignacionOPostfijo(inicializacion))) {
                     throw new ExcepcionSemantica(tokenFor, "ERR_FOR_INICIALIZACION");
                 }
                 inicializacion.chequear(tabla);
@@ -61,7 +64,7 @@ public class NodoFor extends NodoSentencia {
                 throw new ExcepcionSemantica(tokenFor, "ERR_CONDICION_NO_BOOLEAN");
             }
             if (actualizacion != null) {
-                if (!(actualizacion instanceof NodoExpAsignacion)) {
+                if (!esAsignacionOPostfijo(actualizacion)) {
                     throw new ExcepcionSemantica(tokenFor, "ERR_FOR_ACTUALIZACION");
                 }
                 actualizacion.chequear(tabla);
@@ -82,8 +85,13 @@ public class NodoFor extends NodoSentencia {
     }
 
     // Una asignación como sentencia llega envuelta en NodoSentenciaExpresion.
-    private static boolean esAsignacion(NodoSentencia sentencia) {
+    private static boolean esAsignacionOPostfijo(NodoSentencia sentencia) {
         return sentencia instanceof NodoSentenciaExpresion sentenciaExpresion
-                && sentenciaExpresion.getExpresion() instanceof NodoExpAsignacion;
+                && esAsignacionOPostfijo(sentenciaExpresion.getExpresion());
+    }
+
+    // Sólo mira la raíz: i++ + 1, (i++) y -i++ no son postfijos (ADR 0013).
+    private static boolean esAsignacionOPostfijo(NodoExpresion expresion) {
+        return expresion instanceof NodoExpAsignacion || expresion instanceof NodoExpPostfija;
     }
 }
