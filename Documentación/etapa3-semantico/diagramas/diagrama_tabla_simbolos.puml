@@ -22,296 +22,296 @@ skinparam class<<interface>> {
 skinparam class<<final>> {
   BackgroundColor #F4F4F4
 }
-skinparam package {
-  BackgroundColor #FFFFFF
-  BorderColor #999999
-}
 hide empty members
 
-package Model {
+' ================= Interfaces =================
 
-  ' ================= Interfaces =================
+interface Chequeable <<interface>> {
+  + estaBienDeclarado(tabla : TablaSimbolos, entornoGenerico : Map<String, OrigenParametroTipo>) : void
+}
 
-  interface Chequeable <<interface>> {
+interface OrigenParametroTipo <<interface>> {
+}
+
+interface EntidadDeclarada <<interface>> {
+  + getName() : String
+  + getLinea() : int
+  + getParametrosTipo() : List<Token>
+}
+
+' ================= Tabla de símbolos =================
+
+together {
+class TablaSimbolos {
+    - clases : LinkedHashMap<String, EntidadDeclarada>
+    - claseActual : Clase
+    - metodoActual : Metodo
+    - errores : List<ErrorSemantico>
+    - nombresInvalidados : Set<String>
+    --
+    + TablaSimbolos()
+    - registrarPredefinidas() : void
+    - {static} agregarPrintPredefinido(system : Clase, nombre : String, param : String, tipo : TokenType, lexemaTipo : String) : void
+    - crearPredefinida(nombre : String, esFinal : boolean) : Clase
+    - {static} metodoPredefinido(nombre : String, estatico : boolean, retorno : Tipo, params : Parametro...) : Metodo
+    - {static} parametroPredefinido(nombre : String, tipo : Tipo) : Parametro
+    - {static} tipoPrimitivo(tipo : TokenType, lexema : String) : Tipo
+    - {static} tipoClase(nombre : String) : Tipo
+    + getObject() : Clase
+    + agregarError(error : ErrorSemantico) : void
+    + getErrores() : List<ErrorSemantico>
+    + setClaseActual(actual : Clase) : void
+    + getClaseActual() : Clase
+    + setMetodoActual(actual : Metodo) : void
+    + insertarClase(entidad : EntidadDeclarada) : boolean
+    + buscarClase(nombre : String) : EntidadDeclarada
+    + buscarInterfaz(nombre : String) : EntidadDeclarada
+    + chequearCategoriaSupertipo(supertipo : Tipo, esperaClase : boolean) : void
+    - {static} esPredefinida(entidad : EntidadDeclarada) : boolean
+    + setTipoRetornoAMetodoActual(tipoRetorno : Tipo) : void
+    + setParametrosAMetodoActual(parametros : List<Parametro>) : void
+    + setParametrosTipoAMetodoActual(parametrosTipo : List<Token>) : void
+    + agregarMetodoActualAClaseActual() : void
+    + estaBienDeclarado() : void
+    + consolidar() : void
+  }
+
+  class ErrorSemantico <<final>> {
+    - codigo : String {readOnly}
+    - linea : int {readOnly}
+    - lexema : String {readOnly}
+    - detalle : String {readOnly}
+    --
+    + ErrorSemantico(codigo : String, linea : int, lexema : String)
+    + ErrorSemantico(codigo : String, linea : int, lexema : String, detalle : String)
+    + getCodigo() : String
+    + getLinea() : int
+    + getLexema() : String
+    + getDescripcion() : String
+  }
+}
+
+' ================= Entidades declaradas =================
+
+together {
+class Clase {
+    - nombre : Token
+    - herencia : Tipo
+    - atributos : HashMap<String, Atributo>
+    - metodos : HashMap<String, Metodo>
+    - constructores : List<Constructor>
+    - interfaz : Tipo
+    - consolidado : boolean
+    - enCiclo : boolean
+    - tablaSimbolos : TablaSimbolos
+    - sealed : boolean
+    - nonSealed : boolean
+    - esFinal : boolean
+    - permitidos : LinkedHashSet<Token>
+    - parametrosTipo : List<Token>
+    - tieneSupertipoSellado : boolean
+    - predefinida : boolean
+    - padreEfectivo : Clase
+    - instanciacion : Map<OrigenParametroTipo, Tipo>
+    --
+    + Clase(nombre : Token, tablaSimbolos : TablaSimbolos)
+    + getName() : String
+    + getNombre() : Token
+    + getLinea() : int
+    + setSealed(sealed : boolean) : void
+    + setNonSealed(nonSealed : boolean) : void
+    + setFinal(esFinal : boolean) : void
+    + isFinal() : boolean
+    + setPredefinida(predefinida : boolean) : void
+    + isPredefinida() : boolean
+    + agregarPermitido(permitido : Token) : void
+    + setInterfaz(interfaz : Tipo) : void
+    + getInterfaz() : Tipo
+    + agregarAtributo(atributo : Atributo) : void
+    + agregarMetodo(metodo : Metodo) : void
+    + buscarMetodo(clave : String) : Metodo
+    + getMetodos() : Iterable<Metodo>
+    + agregarConstructor(constructor : Constructor) : void
+    + agregarConstructorPorDefectoSiFalta() : void
+    + getConstructores() : List<Constructor>
+    + setHerencia(herencia : Tipo) : void
+    + getHerencia() : Tipo
+    + getPadreEfectivo() : Clase
+    + getInstanciacion() : Map<OrigenParametroTipo, Tipo>
+    + getParametrosTipo() : List<Token>
+    + setParametrosTipo(parametrosTipo : List<Token>) : void
+    + estaBienDeclarado(tabla : TablaSimbolos, entornoGenericoExterno : Map<String, OrigenParametroTipo>) : void
+    + consolidar() : void
+    + consolidarHerencia(camino : LinkedHashSet<Clase>) : void
+    - consolidarConPadre(padre : Clase) : void
+    - chequearRedefinicion(propio : Metodo, heredado : Metodo) : void
+    - consolidarInterfaces() : void
+    - validarNonSealed() : void
+    - validarPermitidos() : void
+    - esSubclaseDirecta(entidad : EntidadDeclarada) : boolean
+    - permiteComoSubclase(lexemaHijo : String) : boolean
+    - marcarCicloDesde(padre : Clase, camino : LinkedHashSet<Clase>) : void
+  }
+
+  class Interfaz {
+    - nombre : Token
+    - parametrosTipo : List<Token>
+    - metodos : HashMap<String, Metodo>
+    - consolidado : boolean
+    - enCiclo : boolean
+    - tablaSimbolos : TablaSimbolos
+    - herencias : LinkedHashSet<Tipo>
+    - sealed : boolean
+    - nonSealed : boolean
+    - permitidos : LinkedHashSet<Token>
+    - tieneSupertipoSellado : boolean
+    - instanciacion : Map<OrigenParametroTipo, Tipo>
+    - ancestrosEnConflicto : Set<OrigenParametroTipo> {readOnly}
+    --
+    + Interfaz(nombre : Token, tablaSimbolos : TablaSimbolos)
+    + getName() : String
+    + getNombre() : Token
+    + getLinea() : int
+    + setSealed(sealed : boolean) : void
+    + isSealed() : boolean
+    + setNonSealed(nonSealed : boolean) : void
+    + agregarPermitido(permitido : Token) : void
+    + agregarHerencia(padre : Tipo) : void
+    + agregarMetodo(metodo : Metodo) : void
+    + getParametrosTipo() : List<Token>
+    + setParametrosTipo(parametrosTipo : List<Token>) : void
+    + getHerencias() : Iterable<Tipo>
+    + getMetodos() : Iterable<Metodo>
+    + getInstanciacion() : Map<OrigenParametroTipo, Tipo>
+    + estaBienDeclarado(tabla : TablaSimbolos, entornoGenericoExterno : Map<String, OrigenParametroTipo>) : void
+    + consolidar() : void
+    + permiteComoSubclase(lexemaHijo : String) : boolean
+    - consolidarHerencia(camino : LinkedHashSet<Interfaz>) : void
+    - unirInstanciacion(delPadre : Map<OrigenParametroTipo, Tipo>) : void
+    - heredarMetodosDe(padre : Interfaz, propios : Map<String, Metodo>, heredados : Map<String, Metodo>, redefinicionesReportadas : Set<Metodo>) : void
+    - heredarDeObject(propios : Map<String, Metodo>, redefinicionesReportadas : Set<Metodo>) : void
+    - validarNonSealed() : void
+    - validarPermitidos() : void
+    - esSubtipoDirecto(entidad : EntidadDeclarada) : boolean
+    - marcarCicloDesde(padre : Interfaz, camino : LinkedHashSet<Interfaz>) : void
+  }
+}
+
+' ================= Miembros =================
+
+together {
+class Metodo {
+    - nombre : Token
+    - tipoRetorno : Tipo
+    - estatico : boolean
+    - esFinal : boolean
+    - parametros : List<Parametro>
+    - variablesLocales : List<Atributo>
+    - miClase : Clase
+    - parametrosTipoPropios : List<Token>
+    --
+    + Metodo(nombre : Token, tipoRetorno : Tipo, estatico : boolean, params : List<Parametro>)
+    + getNombre() : Token
+    + setTipoRetorno(tipoRetorno : Tipo) : void
+    + getTipoRetorno() : Tipo
+    + setParametros(parametros : List<Parametro>) : void
+    + getParams() : List<Parametro>
+    + isEstatico() : boolean
+    + setFinal(esFinal : boolean) : void
+    + isFinal() : boolean
+    + getParametrosTipoPropios() : List<Token>
+    + setParametrosTipoPropios(parametrosTipoPropios : List<Token>) : void
+    + getClave() : String
+    + mismaSignatura(otro : Metodo) : boolean
+    + mismaSignatura(otro : Metodo, vista : UnaryOperator<Tipo>) : boolean
+    + estaBienDeclarado(tabla : TablaSimbolos, entornoContenedor : Map<String, OrigenParametroTipo>) : void
+    - indiceEnPropios(lexema : String) : int
+    - {static} mismoTipo(propio : Tipo, delOtro : Tipo, verEste : UnaryOperator<Tipo>, verElOtro : UnaryOperator<Tipo>) : boolean
+  }
+
+  class Constructor {
+    - nombre : Token
+    - parametros : List<Parametro>
+    --
+    + Constructor(nombre : Token, parametros : List<Parametro>)
+    + getNombre() : Token
+    + getClave() : String
     + estaBienDeclarado(tabla : TablaSimbolos, entornoGenerico : Map<String, OrigenParametroTipo>) : void
   }
 
-  interface OrigenParametroTipo <<interface>> {
-  }
-
-  interface EntidadDeclarada <<interface>> {
-    + getName() : String
-    + getLinea() : int
-    + getParametrosTipo() : List<Token>
-  }
-
-  ' ================= Tabla de símbolos =================
-
-  together {
-  class TablaSimbolos {
-      - clases : LinkedHashMap<String, EntidadDeclarada>
-      - claseActual : Clase
-      - metodoActual : Metodo
-      - errores : List<ErrorSemantico>
-      - nombresInvalidados : Set<String>
-      --
-      + TablaSimbolos()
-      - registrarPredefinidas() : void
-      + getObject() : Clase
-      + agregarError(error : ErrorSemantico) : void
-      + getErrores() : List<ErrorSemantico>
-      + setClaseActual(actual : Clase) : void
-      + getClaseActual() : Clase
-      + setMetodoActual(actual : Metodo) : void
-      + insertarClase(entidad : EntidadDeclarada) : boolean
-      + buscarClase(nombre : String) : EntidadDeclarada
-      + buscarInterfaz(nombre : String) : EntidadDeclarada
-      + chequearCategoriaSupertipo(supertipo : Tipo, esperaClase : boolean) : void
-      - {static} esPredefinida(entidad : EntidadDeclarada) : boolean
-      + setTipoRetornoAMetodoActual(tipoRetorno : Tipo) : void
-      + setParametrosAMetodoActual(parametros : List<Parametro>) : void
-      + setParametrosTipoAMetodoActual(parametrosTipo : List<Token>) : void
-      + agregarMetodoActualAClaseActual() : void
-      + estaBienDeclarado() : void
-      + consolidar() : void
-    }
-
-    class ErrorSemantico <<final>> {
-      - codigo : String {readOnly}
-      - linea : int {readOnly}
-      - lexema : String {readOnly}
-      - detalle : String {readOnly}
-      --
-      + ErrorSemantico(codigo : String, linea : int, lexema : String)
-      + ErrorSemantico(codigo : String, linea : int, lexema : String, detalle : String)
-      + getCodigo() : String
-      + getLinea() : int
-      + getLexema() : String
-      + getDescripcion() : String
-    }
-  }
-
-  ' ================= Entidades declaradas =================
-
-  together {
-  class Clase {
-      - nombre : Token
-      - herencia : Tipo
-      - atributos : HashMap<String, Atributo>
-      - metodos : HashMap<String, Metodo>
-      - constructores : List<Constructor>
-      - interfaz : Tipo
-      - consolidado : boolean
-      - enCiclo : boolean
-      - tablaSimbolos : TablaSimbolos
-      - sealed : boolean
-      - nonSealed : boolean
-      - esFinal : boolean
-      - permitidos : LinkedHashSet<Token>
-      - parametrosTipo : List<Token>
-      - tieneSupertipoSellado : boolean
-      - predefinida : boolean
-      - padreEfectivo : Clase
-      - instanciacion : Map<OrigenParametroTipo, Tipo>
-      --
-      + Clase(nombre : Token, tablaSimbolos : TablaSimbolos)
-      + getName() : String
-      + getNombre() : Token
-      + getLinea() : int
-      + setSealed(sealed : boolean) : void
-      + setNonSealed(nonSealed : boolean) : void
-      + setFinal(esFinal : boolean) : void
-      + isFinal() : boolean
-      + setPredefinida(predefinida : boolean) : void
-      + isPredefinida() : boolean
-      + agregarPermitido(permitido : Token) : void
-      + setInterfaz(interfaz : Tipo) : void
-      + getInterfaz() : Tipo
-      + agregarAtributo(atributo : Atributo) : void
-      + agregarMetodo(metodo : Metodo) : void
-      + buscarMetodo(clave : String) : Metodo
-      + getMetodos() : Iterable<Metodo>
-      + agregarConstructor(constructor : Constructor) : void
-      + agregarConstructorPorDefectoSiFalta() : void
-      + getConstructores() : List<Constructor>
-      + setHerencia(herencia : Tipo) : void
-      + getHerencia() : Tipo
-      + getPadreEfectivo() : Clase
-      + getInstanciacion() : Map<OrigenParametroTipo, Tipo>
-      + getParametrosTipo() : List<Token>
-      + setParametrosTipo(parametrosTipo : List<Token>) : void
-      + estaBienDeclarado(tabla : TablaSimbolos, entornoGenericoExterno : Map<String, OrigenParametroTipo>) : void
-      + consolidar() : void
-      + consolidarHerencia(camino : LinkedHashSet<Clase>) : void
-      - consolidarConPadre(padre : Clase) : void
-      - chequearRedefinicion(propio : Metodo, heredado : Metodo) : void
-      - consolidarInterfaces() : void
-      - validarNonSealed() : void
-      - validarPermitidos() : void
-      - esSubclaseDirecta(entidad : EntidadDeclarada) : boolean
-      - permiteComoSubclase(lexemaHijo : String) : boolean
-      - marcarCicloDesde(padre : Clase, camino : LinkedHashSet<Clase>) : void
-    }
-
-    class Interfaz {
-      - nombre : Token
-      - parametrosTipo : List<Token>
-      - metodos : HashMap<String, Metodo>
-      - consolidado : boolean
-      - enCiclo : boolean
-      - tablaSimbolos : TablaSimbolos
-      - herencias : LinkedHashSet<Tipo>
-      - sealed : boolean
-      - nonSealed : boolean
-      - permitidos : LinkedHashSet<Token>
-      - tieneSupertipoSellado : boolean
-      - instanciacion : Map<OrigenParametroTipo, Tipo>
-      - ancestrosEnConflicto : Set<OrigenParametroTipo> {readOnly}
-      --
-      + Interfaz(nombre : Token, tablaSimbolos : TablaSimbolos)
-      + getName() : String
-      + getNombre() : Token
-      + getLinea() : int
-      + setSealed(sealed : boolean) : void
-      + isSealed() : boolean
-      + setNonSealed(nonSealed : boolean) : void
-      + agregarPermitido(permitido : Token) : void
-      + agregarHerencia(padre : Tipo) : void
-      + agregarMetodo(metodo : Metodo) : void
-      + getParametrosTipo() : List<Token>
-      + setParametrosTipo(parametrosTipo : List<Token>) : void
-      + getHerencias() : Iterable<Tipo>
-      + getMetodos() : Iterable<Metodo>
-      + getInstanciacion() : Map<OrigenParametroTipo, Tipo>
-      + estaBienDeclarado(tabla : TablaSimbolos, entornoGenericoExterno : Map<String, OrigenParametroTipo>) : void
-      + consolidar() : void
-      + permiteComoSubclase(lexemaHijo : String) : boolean
-      - consolidarHerencia(camino : LinkedHashSet<Interfaz>) : void
-      - unirInstanciacion(delPadre : Map<OrigenParametroTipo, Tipo>) : void
-      - heredarMetodosDe(padre : Interfaz, propios : Map<String, Metodo>, heredados : Map<String, Metodo>, redefinicionesReportadas : Set<Metodo>) : void
-      - heredarDeObject(propios : Map<String, Metodo>, redefinicionesReportadas : Set<Metodo>) : void
-      - validarNonSealed() : void
-      - validarPermitidos() : void
-      - esSubtipoDirecto(entidad : EntidadDeclarada) : boolean
-      - marcarCicloDesde(padre : Interfaz, camino : LinkedHashSet<Interfaz>) : void
-    }
-  }
-
-  ' ================= Miembros =================
-
-  together {
-  class Metodo {
-      - nombre : Token
-      - tipoRetorno : Tipo
-      - estatico : boolean
-      - esFinal : boolean
-      - parametros : List<Parametro>
-      - variablesLocales : List<Atributo>
-      - miClase : Clase
-      - parametrosTipoPropios : List<Token>
-      --
-      + Metodo(nombre : Token, tipoRetorno : Tipo, estatico : boolean, params : List<Parametro>)
-      + getNombre() : Token
-      + setTipoRetorno(tipoRetorno : Tipo) : void
-      + getTipoRetorno() : Tipo
-      + setParametros(parametros : List<Parametro>) : void
-      + getParams() : List<Parametro>
-      + isEstatico() : boolean
-      + setFinal(esFinal : boolean) : void
-      + isFinal() : boolean
-      + getParametrosTipoPropios() : List<Token>
-      + setParametrosTipoPropios(parametrosTipoPropios : List<Token>) : void
-      + getClave() : String
-      + mismaSignatura(otro : Metodo) : boolean
-      + mismaSignatura(otro : Metodo, vista : UnaryOperator<Tipo>) : boolean
-      + estaBienDeclarado(tabla : TablaSimbolos, entornoContenedor : Map<String, OrigenParametroTipo>) : void
-      - indiceEnPropios(lexema : String) : int
-      - {static} mismoTipo(propio : Tipo, delOtro : Tipo, verEste : UnaryOperator<Tipo>, verElOtro : UnaryOperator<Tipo>) : boolean
-    }
-
-    class Constructor {
-      - nombre : Token
-      - parametros : List<Parametro>
-      --
-      + Constructor(nombre : Token, parametros : List<Parametro>)
-      + getNombre() : Token
-      + getClave() : String
-      + estaBienDeclarado(tabla : TablaSimbolos, entornoGenerico : Map<String, OrigenParametroTipo>) : void
-    }
-
-    class Atributo {
-      - nombre : Token
-      - tipo : Tipo
-      --
-      + Atributo(nombre : Token, tipo : Tipo)
-      + getNombre() : Token
-      + getTipo() : Tipo
-      + getClave() : String
-      + estaBienDeclarado(tabla : TablaSimbolos, entornoGenerico : Map<String, OrigenParametroTipo>) : void
-    }
-  }
-
-  together {
-  class Parametro {
-      - nombre : Token
-      - tipo : Tipo
-      --
-      + Parametro(nombre : Token, tipo : Tipo)
-      + getNombre() : Token
-      + getTipo() : Tipo
-      + estaBienDeclarado(tabla : TablaSimbolos, entornoGenerico : Map<String, OrigenParametroTipo>) : void
-    }
-
-    ' ================= Tipos y auxiliares =================
-
-    class Tipo {
-      - token : Token {readOnly}
-      - argumento : Tipo {readOnly}
-      - dimensiones : int {readOnly}
-      - origen : OrigenParametroTipo
-      --
-      + Tipo(token : Token)
-      + Tipo(token : Token, argumento : Tipo)
-      + Tipo(token : Token, argumento : Tipo, dimensiones : int)
-      + getToken() : Token
-      + getArgumento() : Tipo
-      + getDimensiones() : int
-      + esParametroDeTipo() : boolean
-      + getOrigen() : OrigenParametroTipo
-      + conDimensiones(dimensiones : int) : Tipo
-      ~ {static} parametroDeTipo(token : Token, origen : OrigenParametroTipo) : Tipo
-      + reemplazarParametros(reemplazo : Function<Tipo, Tipo>) : Tipo
-      + sustituir(instanciacion : Map<OrigenParametroTipo, Tipo>) : Tipo
-      + {static} componerInstanciacion(delSupertipo : Map<OrigenParametroTipo, Tipo>, supertipo : OrigenParametroTipo, argumento : Tipo) : Map<OrigenParametroTipo, Tipo>
-      + equals(o : Object) : boolean
-      + hashCode() : int
-      + toString() : String
-      + estaBienDeclarado(tabla : TablaSimbolos, entornoGenerico : Map<String, OrigenParametroTipo>) : void
-      + estaBienDeclaradoComoSupertipo(tabla : TablaSimbolos, entornoGenerico : Map<String, OrigenParametroTipo>) : void
-    }
-  }
-
-  class Token <<final>> {
-    - tipo : TokenType {readOnly}
-    - lexema : String {readOnly}
-    - linea : int {readOnly}
+  class Atributo {
+    - nombre : Token
+    - tipo : Tipo
     --
-    + Token(tipo : TokenType, lexema : String, linea : int)
-    + getTipo() : TokenType
-    + getLexema() : String
-    + getLinea() : int
-    + toString() : String
+    + Atributo(nombre : Token, tipo : Tipo)
+    + getNombre() : Token
+    + getTipo() : Tipo
+    + getClave() : String
+    + estaBienDeclarado(tabla : TablaSimbolos, entornoGenerico : Map<String, OrigenParametroTipo>) : void
+  }
+}
+
+together {
+class Parametro {
+    - nombre : Token
+    - tipo : Tipo
+    --
+    + Parametro(nombre : Token, tipo : Tipo)
+    + getNombre() : Token
+    + getTipo() : Tipo
+    + estaBienDeclarado(tabla : TablaSimbolos, entornoGenerico : Map<String, OrigenParametroTipo>) : void
   }
 
-  enum TokenType <<enum>> {
-    ID_CLASE
-    ID_GEN
-    ID_MET_VAR
-    PR_INT
-    PR_CHAR
-    PR_BOOLEAN
-    (resto de los tokens del léxico)
+  ' ================= Tipos y auxiliares =================
+
+  class Tipo {
+    - token : Token {readOnly}
+    - argumento : Tipo {readOnly}
+    - dimensiones : int {readOnly}
+    - origen : OrigenParametroTipo
+    --
+    + Tipo(token : Token)
+    + Tipo(token : Token, argumento : Tipo)
+    + Tipo(token : Token, argumento : Tipo, dimensiones : int)
+    + getToken() : Token
+    + getArgumento() : Tipo
+    + getDimensiones() : int
+    + esParametroDeTipo() : boolean
+    + getOrigen() : OrigenParametroTipo
+    + conDimensiones(dimensiones : int) : Tipo
+    ~ {static} parametroDeTipo(token : Token, origen : OrigenParametroTipo) : Tipo
+    + reemplazarParametros(reemplazo : Function<Tipo, Tipo>) : Tipo
+    + sustituir(instanciacion : Map<OrigenParametroTipo, Tipo>) : Tipo
+    + {static} componerInstanciacion(delSupertipo : Map<OrigenParametroTipo, Tipo>, supertipo : OrigenParametroTipo, argumento : Tipo) : Map<OrigenParametroTipo, Tipo>
+    + equals(o : Object) : boolean
+    + hashCode() : int
+    + toString() : String
+    + estaBienDeclarado(tabla : TablaSimbolos, entornoGenerico : Map<String, OrigenParametroTipo>) : void
+    + estaBienDeclaradoComoSupertipo(tabla : TablaSimbolos, entornoGenerico : Map<String, OrigenParametroTipo>) : void
+    - validar(tabla : TablaSimbolos, entornoGenerico : Map<String, OrigenParametroTipo>, admiteSinArgumento : boolean) : void
   }
+}
+
+class Token <<final>> {
+  - tipo : TokenType {readOnly}
+  - lexema : String {readOnly}
+  - linea : int {readOnly}
+  --
+  + Token(tipo : TokenType, lexema : String, linea : int)
+  + getTipo() : TokenType
+  + getLexema() : String
+  + getLinea() : int
+  + toString() : String
+}
+
+enum TokenType <<enum>> {
+  ID_CLASE
+  ID_GEN
+  ID_MET_VAR
+  PR_INT
+  PR_CHAR
+  PR_BOOLEAN
+  (resto de los tokens del léxico)
 }
 
 ' ================= Realizaciones =================
