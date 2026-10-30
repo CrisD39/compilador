@@ -9,8 +9,8 @@ MiniJava compiler for the Compiladores e Intérpretes course (UNS), built in sta
 All commands run from `Código/` — testers resolve case folders with relative paths like `resources/semantico/conErrores/`, so they fail from anywhere else.
 
 ```bash
-./build.sh                                     # compiles src/Model, src/Controller, src/View into out/classes and builds out/compilador.jar (main: View.ModuloPrincipalET4)
-java -jar out/compilador.jar <archivo-fuente>  # run lexer + parser + semantic checks on one file
+./build.sh                                     # compiles src/Model, src/Controller, src/View into out/classes and builds out/Compilador.jar (main: View.ModuloPrincipalET4)
+java -jar out/Compilador.jar <archivo-fuente>  # run lexer + parser + semantic checks on one file
 ./test.sh                                      # build + run every tester (Stages 1-3 and Sem2), one line each (failures listed); exit 1 if any fails
 ./test.sh etapas1-3                            # only the Stage 1-3 testers; `sem2` = only the Sem2 ones
 ```

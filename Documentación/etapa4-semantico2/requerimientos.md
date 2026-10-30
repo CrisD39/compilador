@@ -248,10 +248,10 @@ encarar esta etapa.
     implementarlo hay que decidir, idealmente con la cátedra, si el logro
     reemplaza a la regla base (y se ajustan esos casos) o si las dos
     conviven de algún modo.
-- **Prerrequisito: `Metodo.miClase` nunca se setea.** "Solo miembros
-  propios" compara `m.getMiClase() == this`, pero hoy el campo queda en
-  `null`. Hay que setearlo al registrar el método, igual que la clase
-  declarante de `Atributo` y `Constructor`.
+- **Prerrequisito: `Metodo.miClase`** (resuelto en la spec 0003, D4).
+  "Solo miembros propios" compara `m.getMiClase() == this`, y el campo
+  quedaba en `null`. Ahora `Clase.agregarMetodo()` lo setea al registrar el
+  método, igual que la clase declarante de `Atributo` y `Constructor`.
 - Quedan como están los nodos de inicializadores de arreglo (⚠11, ⚠12).
   Los ejemplos de atributos `static` de "Atributos inicializados" (la
   gramática sólo admite `static` en métodos, §6.1) se reemplazaron en la
@@ -901,7 +901,9 @@ En el AST vas a tener dos grandes familias de nodos, y el método `chequear()` t
 Representan cálculos que producen un valor y tienen un tipo (`2 + 3`, `a && b`, `x`, `this.foo()`). Por lo tanto, su método devuelve un objeto Tipo: `public abstract Tipo chequear(TablaSimbolos tabla);`
 Además tienen `esAsignable()` y `esLlamable()` (ver "Nodos asignables y llamables").
 
-**TODO!** Falta ver tipos de todo expresión 
+El tipo de cada expresión sale del §11 del enunciado
+(`MiniJava-Semantica-Completa-2026.pdf`); la conformidad está en la
+spec 0003, D9, y la vista desde el receptor en D10.
 
 ## Scope local.
 

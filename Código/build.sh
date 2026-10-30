@@ -1,8 +1,8 @@
 #!/bin/bash
-# Compila el compilador (léxico + sintáctico + semántico, etapa 4) y arma out/compilador.jar (REQ-MP-07).
+# Compila el compilador (léxico + sintáctico + semántico, etapa 4) y arma out/Compilador.jar (REQ-MP-07).
 # Uso:
 #   ./build.sh
-#   java -jar out/compilador.jar <archivo-fuente>
+#   java -jar out/Compilador.jar <archivo-fuente>
 set -e
 cd "$(dirname "$0")"
 
@@ -11,6 +11,6 @@ mkdir -p out/classes
 
 javac -d out/classes $(find src/Model src/Controller src/View -name "*.java")
 
-jar --create --file out/compilador.jar --main-class View.ModuloPrincipalET4 -C out/classes .
+jar --create --file out/Compilador.jar --main-class View.ModuloPrincipalET4 -C out/classes .
 
-echo "Listo: out/compilador.jar"
+echo "Listo: out/Compilador.jar"

@@ -24,7 +24,7 @@ public final class ModuloPrincipalET4 implements ResultadoLexicoListener {
 
     public static void main(String[] args) {
         if (args.length != 1) {
-            System.out.println("Uso: java -jar compilador.jar <archivo-fuente>");
+            System.out.println("Uso: java -jar Compilador.jar <archivo-fuente>");
             return;
         }
         new ModuloPrincipalET4().ejecutar(args[0]);

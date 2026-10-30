@@ -65,6 +65,6 @@ cd Código
 ./test.sh etapas1-3   # sólo Etapas 1-3; `./test.sh sem2` sólo Sem2
 ```
 
-Un único caso: `java -jar out/compilador.jar resources/semantico/conErrores/semError15.java` y comparar con su primera línea.
+Un único caso: `java -jar out/Compilador.jar resources/semantico/conErrores/semError15.java` y comparar con su primera línea.
 
 `./test.sh` ya incluye los testers de las etapas anteriores. Reportar los resultados tal cual (cuántos pasan / fallan y cuáles).

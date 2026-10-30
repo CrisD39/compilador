@@ -59,16 +59,19 @@ En general implica chequear que:
   sintáctico.]
 - Todo nombre usado en una declaración haya sido declarado en el contexto
   adecuado (ej: el tipo de un atributo o el retorno de un método).
-- Cuestiones propias de cada... _(pendiente de completar)_
+- Se cumplan las restricciones propias de cada entidad (redefinición,
+  contratos de interfaz, constructores, tipos predefinidos): ver
+  "Decisiones: tipos predefinidos, clave y redefinición", al final de este
+  documento.
 
-**TODO — Chequeo de corrección.** La idea es que quede desligado de la
+**Chequeo de corrección.** La idea es que quede desligado de la
 construcción de la TS (que es lo que cubre el EDT de la sección "Acciones
 semánticas sobre la gramática original"): la construcción arma los objetos y
 los registra; el chequeo de corrección corre **después**, recorriendo la
 `TablaSimbolos` ya consolidada (no el árbol de parseo) — reglas que necesitan
 todo resuelto de antemano, como herencia circular, compatibilidad de firmas
 al overridear un método heredado, o que los tipos referenciados efectivamente
-existan. Es lo que insinúa `Chequeable.estaBienDeclarado()` /
+existan. Es lo que hacen `Chequeable.estaBienDeclarado()` /
 `TablaSimbolos.estaBienDeclarado()` + `TablaSimbolos.consolidar()` en el código.
 
 **Estado actual (ya implementado, vía `estaBienDeclarado(TablaSimbolos,
@@ -102,11 +105,12 @@ parámetro, retorno o argumento de un supertipo) reporta
 `ERR_TIPO_GENERICO_NO_DECLARADO`. **Redefinición, contratos e instanciación
 genérica — implementados** (spec 0001): ver "Decisiones: tipos
 predefinidos, clave y redefinición", al final de este documento.
-**Todavía pendiente:** la jerarquía `Tipo` completa
-(`TipoPrimitivo`/`TipoReferencia`/`TipoGenerico`/`TipoArreglo` — hoy `Tipo`
-es una sola clase recursiva que guarda cabeza, argumento, dimensiones y
-origen) y la sustitución de tipos en usos concretos (`Lista<T>` →
-`Lista<Integer>` al chequear sentencias), que son de la Etapa 4 — ver
+**En la Etapa 4:** la jerarquía `Tipo` completa
+(`TipoPrimitivo`/`TipoReferencia`/`TipoGenerico`/`TipoArreglo`) no se hizo:
+`Tipo` sigue siendo una sola clase recursiva que guarda cabeza, argumento,
+dimensiones y origen (spec 0003, D5). La sustitución de tipos en usos
+concretos (`Lista<T>` → `Lista<Integer>` al chequear sentencias) se hizo con
+`Tipo.sustituir(Map<OrigenParametroTipo, Tipo>)` (spec 0003, D10). Ver
 `casos-de-prueba.md` secciones 3.2/3.5/3.6/5.3/5.6 para el detalle de qué
 está cubierto por archivo de test.
 
@@ -271,6 +275,10 @@ instancias de `Clase` obligaría a forzar campos que nunca se usan
 validar).
 
 ### Diseño: jerarquía `Tipo`
+
+> **No se implementó:** `Tipo` quedó como una sola clase, con
+> `conformaCon`, `Tipo.NULL` y `Tipo.VOID` (spec 0003, D5). Lo de abajo es
+> el boceto original.
 
 Una interfaz o clase abstracta `Tipo`, con una implementación por cada forma
 en que puede resolverse `<TipoBase> <DimensionesOpcionales>`:
@@ -749,6 +757,10 @@ para todas las ramas y el `if`-chain solo decide cómo consumirlo, patrón 2
 
 ## Chequeo de sentencias
 
+> **Reemplazado:** el diseño vigente del chequeo de sentencias está en
+> `etapa4-semantico2/requerimientos.md` y en la spec 0003. Esta sección
+> describe el estado del código antes de la Etapa 4.
+
 ### Por qué no se puede resolver como las declaraciones
 
 `bloque()`/`listaSentencias()`/`sentencia()` (en `AnalizadorSintacticoImpl.java`)
@@ -885,6 +897,10 @@ resuelto adentro) y se vuelve a `cuerpoMiembro()`/`restoMiembro()`/
 ```
 
 ### `Entorno`: scope para variables locales
+
+> **Reemplazado:** no hay clase `Entorno`. Las locales viven en una pila de
+> bloques de `TablaSimbolos` (`abrirBloque`/`cerrarBloque`, `buscarVariable`;
+> spec 0003, D6).
 
 Separado de `TablaSimbolos` (que resuelve clases/tipos globales), hace falta
 una estructura más chica para resolver nombres locales — una pila/cadena de

@@ -24,7 +24,7 @@ public final class ModuloPrincipalET3 implements ResultadoLexicoListener {
 
     public static void main(String[] args) {
         if (args.length != 1) {
-            System.out.println("Uso: java -jar compilador.jar <archivo-fuente>");
+            System.out.println("Uso: java -cp Compilador.jar View.ModuloPrincipalET3 <archivo-fuente>");
             return;
         }
         new ModuloPrincipalET3().ejecutar(args[0]);
